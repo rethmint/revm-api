@@ -1,10 +1,5 @@
 use std::collections::HashMap;
 
-use initia_move_storage::table_view::TableView;
-use initia_move_types::access_path::AccessPath;
-use initia_move_types::iterator::Order;
-use initia_move_types::table::TableHandle;
-
 use crate::db::Db;
 use crate::error::GoError;
 use crate::iterator::GoIter;
@@ -26,7 +21,7 @@ impl<'r> GoTableStorage<'r> {
     }
 }
 
-impl<'r> TableView for GoTableStorage<'r> {
+impl<'r> TableResolver for GoTableStorage<'r> {
     fn resolve_table_entry(
         &self,
         handle: &TableHandle,

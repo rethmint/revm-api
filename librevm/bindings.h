@@ -105,22 +105,6 @@ typedef struct {
   size_t cap;
 } UnmanagedVector;
 
-/**
- * A view into an externally owned byte slice (Go `[]byte`).
- * Use this for the current call only. A view cannot be copied for safety reasons.
- * If you need a copy, use [`ByteSliceView::to_owned`].
- *
- * Go's nil value is fully supported, such that we can differentiate between nil and an empty slice.
- */
-typedef struct {
-  /**
-   * True if and only if the byte slice is nil in Go. If this is true, the other fields must be ignored.
-   */
-  bool is_nil;
-  const uint8_t *ptr;
-  size_t len;
-} ByteSliceView;
-
 typedef struct {
   uint8_t _private[0];
 } db_t;
@@ -175,114 +159,35 @@ typedef struct {
   Db_vtable vtable;
 } Db;
 
+/**
+ * A view into an externally owned byte slice (Go `[]byte`).
+ * Use this for the current call only. A view cannot be copied for safety reasons.
+ * If you need a copy, use [`ByteSliceView::to_owned`].
+ *
+ * Go's nil value is fully supported, such that we can differentiate between nil and an empty slice.
+ */
 typedef struct {
-  uint8_t _private[0];
-} api_t;
+  /**
+   * True if and only if the byte slice is nil in Go. If this is true, the other fields must be ignored.
+   */
+  bool is_nil;
+  const uint8_t *ptr;
+  size_t len;
+} ByteSliceView;
 
-typedef struct {
-  int32_t (*query)(const api_t*,
-                   U8SliceView,
-                   uint64_t,
-                   UnmanagedVector*,
-                   uint64_t*,
-                   UnmanagedVector*);
-  int32_t (*get_account_info)(const api_t*,
-                              U8SliceView,
-                              bool*,
-                              uint64_t*,
-                              uint64_t*,
-                              uint8_t*,
-                              UnmanagedVector*);
-  int32_t (*amount_to_share)(const api_t*,
-                             U8SliceView,
-                             U8SliceView,
-                             uint64_t,
-                             uint64_t*,
-                             UnmanagedVector*);
-  int32_t (*share_to_amount)(const api_t*,
-                             U8SliceView,
-                             U8SliceView,
-                             uint64_t,
-                             uint64_t*,
-                             UnmanagedVector*);
-  int32_t (*unbond_timestamp)(const api_t*, uint64_t*, UnmanagedVector*);
-  int32_t (*get_price)(const api_t*,
-                       U8SliceView,
-                       UnmanagedVector*,
-                       uint64_t*,
-                       uint64_t*,
-                       UnmanagedVector*);
-} GoApi_vtable;
-
-typedef struct {
-  const api_t *state;
-  GoApi_vtable vtable;
-} GoApi;
-
-vm_t *allocate_vm(size_t module_cache_capacity, size_t script_cache_capacity);
-
-UnmanagedVector convert_module_name(UnmanagedVector *errmsg,
-                                    ByteSliceView precompiled,
-                                    ByteSliceView module_name);
-
-UnmanagedVector decode_module_bytes(UnmanagedVector *errmsg, ByteSliceView module_bytes);
-
-UnmanagedVector decode_move_resource(Db db,
-                                     UnmanagedVector *errmsg,
-                                     ByteSliceView struct_tag,
-                                     ByteSliceView resource_bytes);
-
-UnmanagedVector decode_move_value(Db db,
-                                  UnmanagedVector *errmsg,
-                                  ByteSliceView type_tag,
-                                  ByteSliceView value_bytes);
-
-UnmanagedVector decode_script_bytes(UnmanagedVector *errmsg, ByteSliceView script_bytes);
+vm_t *allocate_vm(void);
 
 void destroy_unmanaged_vector(UnmanagedVector v);
 
-UnmanagedVector execute_contract(vm_t *vm_ptr,
-                                 Db db,
-                                 GoApi api,
-                                 ByteSliceView env_payload,
-                                 uint64_t gas_limit,
-                                 ByteSliceView senders,
-                                 ByteSliceView entry_function_payload,
-                                 UnmanagedVector *errmsg);
-
-UnmanagedVector execute_script(vm_t *vm_ptr,
-                               Db db,
-                               GoApi api,
-                               ByteSliceView env_payload,
-                               uint64_t gas_limit,
-                               ByteSliceView senders,
-                               ByteSliceView script_payload,
-                               UnmanagedVector *errmsg);
-
-UnmanagedVector execute_view_function(vm_t *vm_ptr,
-                                      Db db,
-                                      GoApi api,
-                                      ByteSliceView env_payload,
-                                      uint64_t gas_limit,
-                                      ByteSliceView view_function_payload,
-                                      UnmanagedVector *errmsg);
-
-void initialize(vm_t *vm_ptr,
-                Db db,
-                GoApi api,
-                ByteSliceView env_payload,
-                ByteSliceView module_bundle_payload,
-                ByteSliceView allowed_publishers_payload,
-                UnmanagedVector *errmsg);
+UnmanagedVector initialize(vm_t *vm_ptr,
+                           Db db,
+                           ByteSliceView env_payload,
+                           ByteSliceView module_bundle_payload,
+                           ByteSliceView allowed_publishers_payload,
+                           UnmanagedVector *errmsg);
 
 UnmanagedVector new_unmanaged_vector(bool nil, const uint8_t *ptr, size_t length);
 
-UnmanagedVector parse_struct_tag(UnmanagedVector *errmsg, ByteSliceView struct_tag_str);
-
-UnmanagedVector read_module_info(UnmanagedVector *errmsg, ByteSliceView compiled);
-
 void release_vm(vm_t *vm);
-
-UnmanagedVector stringify_struct_tag(UnmanagedVector *errmsg, ByteSliceView struct_tag);
 
 #endif /* __LIBMOVEVM__ */

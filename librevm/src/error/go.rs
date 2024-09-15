@@ -1,6 +1,5 @@
-use initia_move_types::errors::BackendError;
-
 use crate::memory::UnmanagedVector;
+use types::BackendError;
 
 /// This enum gives names to the status codes returned from Go callbacks to Rust.
 /// The Go code will return one of these variants when returning.

@@ -1,44 +1,24 @@
-use crate::api::GoApi;
-use crate::error::Error;
-use crate::result::generate_result;
-use crate::result::to_vec;
-use crate::storage::Storage;
-use crate::table_storage::GoTableStorage;
+use crate::{error::RustError as Error, GoStorage};
+use revm_primitives::Address;
+use vm::Revm;
+
 use crate::Db;
-use crate::GoStorage;
-
-use initia_move_gas::Gas;
-use initia_move_storage::state_view_impl::StateViewImpl;
-use initia_move_storage::table_view_impl::TableViewImpl;
-use initia_move_types::access_path::AccessPath;
-use initia_move_types::env::Env;
-use initia_move_types::errors::BackendError;
-use initia_move_types::view_function::ViewFunction;
-use initia_move_types::write_set::WriteSet;
-use initia_move_types::{message::Message, module::ModuleBundle};
-use initia_move_vm::MoveVM;
-
-use move_core_types::account_address::AccountAddress;
-use move_core_types::effects::Op;
 
 pub(crate) fn initialize_vm(
-    vm: &mut MoveVM,
+    vm: &mut Revm,
     db_handle: Db,
-    api: GoApi,
-    env: Env,
-    module_bundle: ModuleBundle,
-    allowed_publishers: Vec<AccountAddress>,
-) -> Result<(), Error> {
+    allowed_publishers: Vec<Address>,
+) -> Result<Vec<u8>, Error> {
     let mut storage = GoStorage::new(&db_handle);
     let mut table_storage = GoTableStorage::new(&db_handle);
 
-    let state_view_impl = StateViewImpl::new(&storage);
-    let mut table_view_impl = TableViewImpl::new(&mut table_storage);
+    let state_view_impl =
+        StateViewImpl::new_with_deserialize_config(&storage, vm.deserialize_config().clone());
     let output = vm.initialize(
         &api,
         &env,
         &state_view_impl,
-        &mut table_view_impl,
+        &mut table_storage,
         module_bundle,
         allowed_publishers,
     )?;
@@ -46,30 +26,30 @@ pub(crate) fn initialize_vm(
     // write state change to storage
     push_write_set(&mut storage, output.write_set())?;
 
-    Ok(())
+    let res = generate_result(output)?;
+    to_vec(&res)
 }
 
 pub(crate) fn execute_contract(
-    vm: &mut MoveVM,
+    vm: &mut InitiaVM,
+    gas_meter: &mut InitiaGasMeter,
     db_handle: Db,
     api: GoApi,
     env: Env,
-    gas: u64,
     message: Message,
 ) -> Result<Vec<u8>, Error> {
     let mut storage = GoStorage::new(&db_handle);
     let mut table_storage = GoTableStorage::new(&db_handle);
-    let gas_limit = Gas::new(gas);
 
-    let state_view_impl = StateViewImpl::new(&storage);
-    let mut table_view_impl = TableViewImpl::new(&mut table_storage);
+    let state_view_impl =
+        StateViewImpl::new_with_deserialize_config(&storage, vm.deserialize_config().clone());
 
     let output = vm.execute_message(
+        gas_meter,
         &api,
         &env,
         &state_view_impl,
-        &mut table_view_impl,
-        gas_limit,
+        &mut table_storage,
         message,
     )?;
 
@@ -81,28 +61,26 @@ pub(crate) fn execute_contract(
 }
 
 pub(crate) fn execute_script(
-    vm: &mut MoveVM,
+    vm: &mut InitiaVM,
+    gas_meter: &mut InitiaGasMeter,
     db_handle: Db,
     api: GoApi,
     env: Env,
-    gas: u64,
     message: Message,
 ) -> Result<Vec<u8>, Error> {
     let mut storage = GoStorage::new(&db_handle);
     let mut table_storage = GoTableStorage::new(&db_handle);
 
-    let gas_limit = Gas::new(gas);
-
     // NOTE - storage passed as mut for iterator implementation
-    let state_view_impl = StateViewImpl::new(&storage);
-    let mut table_view_impl = TableViewImpl::new(&mut table_storage);
+    let state_view_impl =
+        StateViewImpl::new_with_deserialize_config(&storage, vm.deserialize_config().clone());
 
     let output = vm.execute_message(
+        gas_meter,
         &api,
         &env,
         &state_view_impl,
-        &mut table_view_impl,
-        gas_limit,
+        &mut table_storage,
         message,
     )?;
 
@@ -115,27 +93,26 @@ pub(crate) fn execute_script(
 
 // execute view function
 pub(crate) fn execute_view_function(
-    vm: &mut MoveVM,
+    vm: &mut InitiaVM,
+    gas_meter: &mut InitiaGasMeter,
     db_handle: Db,
     api: GoApi,
     env: Env,
-    gas: u64,
     view_fn: ViewFunction,
 ) -> Result<Vec<u8>, Error> {
     let storage = GoStorage::new(&db_handle);
     let mut table_storage = GoTableStorage::new(&db_handle);
-    let gas_limit = Gas::new(gas);
 
-    let state_view_impl = StateViewImpl::new(&storage);
-    let mut table_view_impl = TableViewImpl::new(&mut table_storage);
+    let state_view_impl =
+        StateViewImpl::new_with_deserialize_config(&storage, vm.deserialize_config().clone());
 
     let output = vm.execute_view_function(
+        gas_meter,
         &api,
         &env,
         &state_view_impl,
-        &mut table_view_impl,
+        &mut table_storage,
         &view_fn,
-        gas_limit,
     )?;
 
     to_vec(&output)

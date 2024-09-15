@@ -1,13 +1,9 @@
 use bytes::Bytes;
-use initia_move_storage::state_view::StateView;
-use initia_move_types::access_path::AccessPath;
-use initia_move_types::errors::BackendError;
-
-use crate::db::Db;
-use crate::error::GoError;
-use crate::memory::{U8SliceView, UnmanagedVector};
 
 use anyhow::anyhow;
+use types::BackendError;
+
+use crate::{Db, GoError, U8SliceView, UnmanagedVector};
 
 /// Access to the VM's backend storage, i.e. the chain
 pub trait Storage {

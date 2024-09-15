@@ -3,13 +3,6 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::slice;
 
-use move_core_types::language_storage::TypeTag;
-use move_core_types::parser::parse_transaction_argument;
-use move_core_types::parser::parse_transaction_arguments;
-use move_core_types::parser::parse_type_tag;
-use move_core_types::parser::parse_type_tags;
-use move_core_types::transaction_argument::TransactionArgument;
-
 // It is a copy of the one from cosmwasm/lib crate. We owe them a lot!
 
 /// A view into an externally owned byte slice (Go `[]byte`).
@@ -90,33 +83,34 @@ impl From<ByteSliceView> for Option<PathBuf> {
     }
 }
 
-impl From<ByteSliceView> for Option<TypeTag> {
-    fn from(val: ByteSliceView) -> Self {
-        val.read()
-            .map(|s| parse_type_tag(std::str::from_utf8(s).unwrap()).unwrap())
-    }
-}
-
-impl From<ByteSliceView> for Option<Vec<TypeTag>> {
-    fn from(val: ByteSliceView) -> Self {
-        val.read()
-            .map(|s| parse_type_tags(std::str::from_utf8(s).unwrap()).unwrap())
-    }
-}
-
-impl From<ByteSliceView> for Option<TransactionArgument> {
-    fn from(val: ByteSliceView) -> Self {
-        val.read()
-            .map(|s| parse_transaction_argument(std::str::from_utf8(s).unwrap()).unwrap())
-    }
-}
-
-impl From<ByteSliceView> for Option<Vec<TransactionArgument>> {
-    fn from(val: ByteSliceView) -> Self {
-        val.read()
-            .map(|s| parse_transaction_arguments(std::str::from_utf8(s).unwrap()).unwrap())
-    }
-}
+// TODO: revm type tags creation
+//impl From<ByteSliceView> for Option<TypeTag> {
+//    fn from(val: ByteSliceView) -> Self {
+//        val.read()
+//            .map(|s| parse_type_tag(std::str::from_utf8(s).unwrap()).unwrap())
+//    }
+//}
+//
+//impl From<ByteSliceView> for Option<Vec<TypeTag>> {
+//    fn from(val: ByteSliceView) -> Self {
+//        val.read()
+//            .map(|s| parse_type_tags(std::str::from_utf8(s).unwrap()).unwrap())
+//    }
+//}
+//
+//impl From<ByteSliceView> for Option<TransactionArgument> {
+//    fn from(val: ByteSliceView) -> Self {
+//        val.read()
+//            .map(|s| parse_transaction_argument(std::str::from_utf8(s).unwrap()).unwrap())
+//    }
+//}
+//
+//impl From<ByteSliceView> for Option<Vec<TransactionArgument>> {
+//    fn from(val: ByteSliceView) -> Self {
+//        val.read()
+//            .map(|s| parse_transaction_arguments(std::str::from_utf8(s).unwrap()).unwrap())
+//    }
+//}
 
 /// A view into a `Option<&[u8]>`, created and maintained by Rust.
 ///

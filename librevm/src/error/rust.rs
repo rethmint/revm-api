@@ -1,7 +1,6 @@
 use errno::{set_errno, Errno};
-use initia_move_types::errors::BackendError;
-use move_core_types::vm_status::VMStatus;
 use thiserror::Error;
+use types::BackendError;
 
 use crate::memory::UnmanagedVector;
 
@@ -99,27 +98,27 @@ impl RustError {
     }
 }
 
-impl From<VMStatus> for RustError {
-    fn from(source: VMStatus) -> Self {
-        match &source {
-            VMStatus::Executed => RustError::success(),
-            VMStatus::Error {
-                status_code: _,
-                sub_status: _,
-                message: _,
-            } => RustError::vm_err(source),
-            VMStatus::MoveAbort(location, code) => RustError::aborted(location, *code),
-            VMStatus::ExecutionFailure {
-                status_code: _,
-                sub_status: _,
-                message: _,
-                location,
-                function,
-                code_offset,
-            } => RustError::vm_failure(&source, location, *function, *code_offset),
-        }
-    }
-}
+//impl From<VMStatus> for RustError {
+//    fn from(source: VMStatus) -> Self {
+//        match &source {
+//            VMStatus::Executed => RustError::success(),
+//            VMStatus::Error {
+//                status_code: _,
+//                sub_status: _,
+//                message: _,
+//            } => RustError::vm_err(source),
+//            VMStatus::MoveAbort(location, code) => RustError::aborted(location, *code),
+//            VMStatus::ExecutionFailure {
+//                status_code: _,
+//                sub_status: _,
+//                message: _,
+//                location,
+//                function,
+//                code_offset,
+//            } => RustError::vm_failure(&source, location, *function, *code_offset),
+//        }
+//    }
+//}
 
 impl From<BackendError> for RustError {
     fn from(source: BackendError) -> Self {

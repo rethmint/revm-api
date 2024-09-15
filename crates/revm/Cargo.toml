@@ -33,17 +33,17 @@ dyn-clone = "1.0"
 
 # Optional
 serde = { version = "1.0", default-features = false, features = [
-    "derive",
-    "rc",
+	"derive",
+	"rc",
 ], optional = true }
 serde_json = { version = "1.0", default-features = false, features = [
-    "alloc",
+	"alloc",
 ], optional = true }
 
 # ethersdb
 tokio = { version = "1.40", features = [
-    "rt-multi-thread",
-    "macros",
+	"rt-multi-thread",
+	"macros",
 ], optional = true }
 ethers-providers = { version = "2.0", optional = true }
 ethers-core = { version = "2.0", optional = true }
@@ -55,7 +55,7 @@ alloy-transport = { version = "0.3", optional = true, default-features = false }
 
 [dev-dependencies]
 alloy-sol-types = { version = "0.8.2", default-features = false, features = [
-    "std",
+	"std",
 ] }
 ethers-contract = { version = "2.0.14", default-features = false }
 anyhow = "1.0.87"
@@ -69,11 +69,11 @@ alloy-provider = "0.3"
 [features]
 default = ["std", "c-kzg", "secp256k1", "portable", "blst"]
 std = [
-    "serde?/std",
-    "serde_json?/std",
-    "serde_json?/preserve_order",
-    "revm-interpreter/std",
-    "revm-precompile/std",
+	"serde?/std",
+	"serde_json?/std",
+	"serde_json?/preserve_order",
+	"revm-interpreter/std",
+	"revm-precompile/std",
 ]
 hashbrown = ["revm-interpreter/hashbrown", "revm-precompile/hashbrown"]
 serde = ["dep:serde", "revm-interpreter/serde"]
@@ -87,21 +87,21 @@ test-utils = []
 ethersdb = ["std", "dep:tokio", "dep:ethers-providers", "dep:ethers-core"]
 
 alloydb = [
-    "std",
-    "dep:tokio",
-    "dep:alloy-provider",
-    "dep:alloy-eips",
-    "dep:alloy-transport",
+	"std",
+	"dep:tokio",
+	"dep:alloy-provider",
+	"dep:alloy-eips",
+	"dep:alloy-transport",
 ]
 
 dev = [
-    "memory_limit",
-    "optional_balance_check",
-    "optional_block_gas_limit",
-    "optional_eip3607",
-    "optional_gas_refund",
-    "optional_no_base_fee",
-    "optional_beneficiary_reward",
+	"memory_limit",
+	"optional_balance_check",
+	"optional_block_gas_limit",
+	"optional_eip3607",
+	"optional_gas_refund",
+	"optional_no_base_fee",
+	"optional_beneficiary_reward",
 ]
 memory_limit = ["revm-interpreter/memory_limit"]
 optional_balance_check = ["revm-interpreter/optional_balance_check"]

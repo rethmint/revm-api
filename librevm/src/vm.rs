@@ -10,18 +10,8 @@ pub(crate) fn initialize_vm(
     allowed_publishers: Vec<Address>,
 ) -> Result<Vec<u8>, Error> {
     let mut storage = GoStorage::new(&db_handle);
-    let mut table_storage = GoTableStorage::new(&db_handle);
 
-    let state_view_impl =
-        StateViewImpl::new_with_deserialize_config(&storage, vm.deserialize_config().clone());
-    let output = vm.initialize(
-        &api,
-        &env,
-        &state_view_impl,
-        &mut table_storage,
-        module_bundle,
-        allowed_publishers,
-    )?;
+    let output = vm.initialize(allowed_publishers)?;
 
     // write state change to storage
     push_write_set(&mut storage, output.write_set())?;

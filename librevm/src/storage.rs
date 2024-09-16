@@ -1,7 +1,8 @@
 use bytes::Bytes;
 
 use anyhow::anyhow;
-use types::BackendError;
+use storage::StateView;
+use types::{AccessPath, BackendError};
 
 use crate::{Db, GoError, U8SliceView, UnmanagedVector};
 
@@ -51,7 +52,8 @@ impl<'r> StateView for GoStorage<'r> {
         let output = output.consume();
 
         // return complete error message (reading from buffer for GoError::Other)
-        let default = || format!("Failed to read a key in the db: {}", access_path);
+        // TODO: add format impl for accesspath
+        let default = || format!("Failed to read a key in the db");
         unsafe {
             if let Err(err) = go_error.into_result(error_msg, default) {
                 return Err(anyhow!(err));

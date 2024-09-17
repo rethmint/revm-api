@@ -83,35 +83,6 @@ impl From<ByteSliceView> for Option<PathBuf> {
     }
 }
 
-// TODO: revm type tags creation
-//impl From<ByteSliceView> for Option<TypeTag> {
-//    fn from(val: ByteSliceView) -> Self {
-//        val.read()
-//            .map(|s| parse_type_tag(std::str::from_utf8(s).unwrap()).unwrap())
-//    }
-//}
-//
-//impl From<ByteSliceView> for Option<Vec<TypeTag>> {
-//    fn from(val: ByteSliceView) -> Self {
-//        val.read()
-//            .map(|s| parse_type_tags(std::str::from_utf8(s).unwrap()).unwrap())
-//    }
-//}
-//
-//impl From<ByteSliceView> for Option<TransactionArgument> {
-//    fn from(val: ByteSliceView) -> Self {
-//        val.read()
-//            .map(|s| parse_transaction_argument(std::str::from_utf8(s).unwrap()).unwrap())
-//    }
-//}
-//
-//impl From<ByteSliceView> for Option<Vec<TransactionArgument>> {
-//    fn from(val: ByteSliceView) -> Self {
-//        val.read()
-//            .map(|s| parse_transaction_arguments(std::str::from_utf8(s).unwrap()).unwrap())
-//    }
-//}
-
 /// A view into a `Option<&[u8]>`, created and maintained by Rust.
 ///
 /// This can be copied into a []byte in Go.

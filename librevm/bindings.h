@@ -14,48 +14,9 @@
 #include <stdlib.h>
 
 
-enum ErrnoValue {
-  ErrnoValue_Success = 0,
-  ErrnoValue_Other = 1,
-};
-typedef int32_t ErrnoValue;
-
 /**
- * This enum gives names to the status codes returned from Go callbacks to Rust.
- * The Go code will return one of these variants when returning.
- *
- * 0 means no error, all the other cases are some sort of error.
- *
+ * * idea sep 17 * 1. Receive env from GoApi and initialize context * 2. Use the context to initialize vm * 3. Use the VM with the env to call 'call' and 'create' *
  */
-enum GoError {
-  GoError_None = 0,
-  /**
-   * Go panicked for an unexpected reason.
-   */
-  GoError_Panic = 1,
-  /**
-   * Go received a bad argument from Rust
-   */
-  GoError_BadArgument = 2,
-  /**
-   * Error while trying to serialize data in Go code (typically json.Marshal)
-   */
-  GoError_CannotSerialize = 3,
-  /**
-   * An error happened during normal operation of a Go callback, which should be fed back to the contract
-   */
-  GoError_User = 4,
-  /**
-   * Unimplemented
-   */
-  GoError_Unimplemented = 5,
-  /**
-   * An error type that should never be created by us. It only serves as a fallback for the i32 to GoError conversion.
-   */
-  GoError_Other = -1,
-};
-typedef int32_t GoError;
-
 typedef struct {
 
 } vm_t;
@@ -105,60 +66,6 @@ typedef struct {
   size_t cap;
 } UnmanagedVector;
 
-typedef struct {
-  uint8_t _private[0];
-} db_t;
-
-/**
- * A view into a `Option<&[u8]>`, created and maintained by Rust.
- *
- * This can be copied into a []byte in Go.
- */
-typedef struct {
-  /**
-   * True if and only if this is None. If this is true, the other fields must be ignored.
-   */
-  bool is_none;
-  const uint8_t *ptr;
-  size_t len;
-} U8SliceView;
-
-typedef struct {
-  /**
-   * An ID assigned to this contract call
-   */
-  uint64_t call_id;
-  uint64_t iterator_index;
-} iterator_t;
-
-typedef struct {
-  int32_t (*next_db)(iterator_t, UnmanagedVector*, UnmanagedVector*);
-} Iterator_vtable;
-
-typedef struct {
-  iterator_t state;
-  Iterator_vtable vtable;
-  size_t prefix_len;
-} GoIter;
-
-typedef struct {
-  int32_t (*read_db)(db_t*, U8SliceView, UnmanagedVector*, UnmanagedVector*);
-  int32_t (*write_db)(db_t*, U8SliceView, U8SliceView, UnmanagedVector*);
-  int32_t (*remove_db)(db_t*, U8SliceView, UnmanagedVector*);
-  int32_t (*scan_db)(db_t*,
-                     U8SliceView,
-                     U8SliceView,
-                     U8SliceView,
-                     int32_t,
-                     GoIter*,
-                     UnmanagedVector*);
-} Db_vtable;
-
-typedef struct {
-  db_t *state;
-  Db_vtable vtable;
-} Db;
-
 /**
  * A view into an externally owned byte slice (Go `[]byte`).
  * Use this for the current call only. A view cannot be copied for safety reasons.
@@ -175,19 +82,71 @@ typedef struct {
   size_t len;
 } ByteSliceView;
 
-vm_t *allocate_vm(void);
+/**
+ * A view into a `Option<&[u8]>`, created and maintained by Rust.
+ *
+ * This can be copied into a []byte in Go.
+ */
+typedef struct {
+  /**
+   * True if and only if this is None. If this is true, the other fields must be ignored.
+   */
+  bool is_none;
+  const uint8_t *ptr;
+  size_t len;
+} U8SliceView;
+
+typedef struct {
+  uint8_t _private[0];
+} api_t;
+
+typedef struct {
+  int32_t (*query)(const api_t*,
+                   U8SliceView,
+                   uint64_t,
+                   UnmanagedVector*,
+                   uint64_t*,
+                   UnmanagedVector*);
+  int32_t (*get_account_info)(const api_t*,
+                              U8SliceView,
+                              bool*,
+                              uint64_t*,
+                              uint64_t*,
+                              uint8_t*,
+                              bool*,
+                              UnmanagedVector*);
+  int32_t (*amount_to_share)(const api_t*,
+                             U8SliceView,
+                             U8SliceView,
+                             uint64_t,
+                             UnmanagedVector*,
+                             UnmanagedVector*);
+  int32_t (*share_to_amount)(const api_t*,
+                             U8SliceView,
+                             U8SliceView,
+                             U8SliceView,
+                             uint64_t*,
+                             UnmanagedVector*);
+  int32_t (*unbond_timestamp)(const api_t*, uint64_t*, UnmanagedVector*);
+  int32_t (*get_price)(const api_t*,
+                       U8SliceView,
+                       UnmanagedVector*,
+                       uint64_t*,
+                       uint64_t*,
+                       UnmanagedVector*);
+} GoApi_vtable;
+
+typedef struct {
+  const api_t *state;
+  GoApi_vtable vtable;
+} GoApi;
+
+vm_t *allocate_executor(void);
 
 void destroy_unmanaged_vector(UnmanagedVector v);
 
-UnmanagedVector initialize(vm_t *vm_ptr,
-                           Db db,
-                           ByteSliceView env_payload,
-                           ByteSliceView module_bundle_payload,
-                           ByteSliceView allowed_publishers_payload,
-                           UnmanagedVector *errmsg);
+UnmanagedVector initialize(ByteSliceView call_request_bytes);
 
 UnmanagedVector new_unmanaged_vector(bool nil, const uint8_t *ptr, size_t length);
-
-void release_vm(vm_t *vm);
 
 #endif /* __LIBMOVEVM__ */

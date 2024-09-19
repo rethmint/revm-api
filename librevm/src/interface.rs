@@ -12,9 +12,10 @@ use revm::{
     Context, Evm, EvmBuilder, EvmContext, EvmHandler, State,
 };
 use revm_primitives::{
-    AccessList, AccountInfo, Address, Authorization, Bytes, Env, EnvWiring, EthereumWiring,
+    AccessList, AccountInfo, Address, Authorization, BlockEnv, Bytes, CfgEnv, Env, EnvWiring,
+    EthereumWiring,
     SpecId::{self, CANCUN},
-    TxKind, TxType, B256, U256,
+    Transaction, TxEnv, TxKind, TxType, B256, U256,
 };
 use serde::{Deserialize, Serialize};
 
@@ -152,6 +153,29 @@ pub extern "C" fn initialize(
             .modify_env(|e| e.clone_from(&env))
             .with_spec_id(CANCUN)
             .build();
+
+    let res = evm.transact_commit();
+    println!("Result, {:#?}", res);
+
+    UnmanagedVector::new(None)
+}
+
+pub fn initialize_native(
+    //vm_ptr: *mut vm_t,
+    //api: GoApi,
+    env: Env<BlockEnv, TxEnv>,
+    //errmsg: Option<&mut UnmanagedVector>,
+) -> UnmanagedVector {
+    let env = Env::boxed(env.cfg, env.block, env.tx);
+
+    let mut state = revm::db::State::builder().build();
+
+    let mut evm = Evm::<EthereumWiring<&mut State<EmptyDB>, ()>>::builder()
+        .with_db(&mut state)
+        .with_default_ext_ctx()
+        .modify_env(|e| e.clone_from(&env))
+        .with_spec_id(CANCUN)
+        .build();
 
     let res = evm.transact_commit();
     println!("Result, {:#?}", res);

@@ -1,4 +1,3 @@
-mod api;
 mod interface;
 mod memory;
 mod tests;

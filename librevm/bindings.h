@@ -19,7 +19,7 @@
  */
 typedef struct {
 
-} vm_t;
+} evm_t;
 
 /**
  * An optional Vector type that requires explicit creation and destruction
@@ -96,57 +96,14 @@ typedef struct {
   size_t len;
 } U8SliceView;
 
-typedef struct {
-  uint8_t _private[0];
-} api_t;
-
-typedef struct {
-  int32_t (*query)(const api_t*,
-                   U8SliceView,
-                   uint64_t,
-                   UnmanagedVector*,
-                   uint64_t*,
-                   UnmanagedVector*);
-  int32_t (*get_account_info)(const api_t*,
-                              U8SliceView,
-                              bool*,
-                              uint64_t*,
-                              uint64_t*,
-                              uint8_t*,
-                              bool*,
-                              UnmanagedVector*);
-  int32_t (*amount_to_share)(const api_t*,
-                             U8SliceView,
-                             U8SliceView,
-                             uint64_t,
-                             UnmanagedVector*,
-                             UnmanagedVector*);
-  int32_t (*share_to_amount)(const api_t*,
-                             U8SliceView,
-                             U8SliceView,
-                             U8SliceView,
-                             uint64_t*,
-                             UnmanagedVector*);
-  int32_t (*unbond_timestamp)(const api_t*, uint64_t*, UnmanagedVector*);
-  int32_t (*get_price)(const api_t*,
-                       U8SliceView,
-                       UnmanagedVector*,
-                       uint64_t*,
-                       uint64_t*,
-                       UnmanagedVector*);
-} GoApi_vtable;
-
-typedef struct {
-  const api_t *state;
-  GoApi_vtable vtable;
-} GoApi;
-
-vm_t *allocate_executor(void);
+evm_t *allocate_vm(void);
 
 void destroy_unmanaged_vector(UnmanagedVector v);
 
-UnmanagedVector initialize(ByteSliceView call_request_bytes);
+void execute_evm(vm_t *vm_ptr, Db db, uint64_t chain_id, ByteSliceView block, ByteSliceView tx);
 
 UnmanagedVector new_unmanaged_vector(bool nil, const uint8_t *ptr, size_t length);
+
+void release_vm(vm_t *vm);
 
 #endif /* __LIBMOVEVM__ */

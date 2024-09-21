@@ -1,5 +1,5 @@
 [package]
-name = "movevm"
+name = "librevm"
 version = "0.1.0"
 publish = false
 description = "Initia Move VM Engine"
@@ -36,19 +36,26 @@ serde_bytes = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 log = { workspace = true, features = [
-    "max_level_debug",
-    "release_max_level_warn",
+	"max_level_debug",
+	"release_max_level_warn",
 ] }
+k256 = { version = "0.13.3", features = ["ecdsa"] }
 
-initia-move-vm = { workspace = true, features = ["backtraces"] }
-initia-move-natives = { workspace = true }
-initia-move-types = { workspace = true }
-initia-move-gas = { workspace = true }
-initia-move-storage = { workspace = true }
+# revm
+vm = { path = "../crates/vm" }
+types = { path = "../crates/types" }
+storage = { path = "../crates/storage" }
 
-move-core-types = { workspace = true }
-move-resource-viewer = { workspace = true }
-move-binary-format = { workspace = true }
+revm-interpreter = { path = "../crates/interpreter", version = "10.0.1", default-features = false }
+revm-primitives = { path = "../crates/primitives", version = "9.0.1", default-features = false }
+revm = { path = "../crates/revm", version = "14.0.1", default-features = false }
+revm-precompile = { path = "../crates/precompile", version = "11.0.1", default-features = false }
+rlp = "0.6.1"
+
+alloy-eips = { version = "0.3", default-features = false, features = ["k256"] }
+alloy-primitives = { version = "0.8.2", default-features = false, features = [
+	"rlp",
+] }
 
 [build-dependencies]
 cbindgen = { workspace = true }

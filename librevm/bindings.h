@@ -118,6 +118,8 @@ typedef struct {
   size_t len;
 } ByteSliceView;
 
+vm_t *allocate_vm(size_t module_cache_capacity, size_t script_cache_capacity);
+
 void destroy_unmanaged_vector(UnmanagedVector v);
 
 void execute_evm(evm_t *vm_ptr, Db db, uint64_t chain_id, ByteSliceView block, ByteSliceView tx);
@@ -126,12 +128,6 @@ evm_t *init_vm(void);
 
 UnmanagedVector new_unmanaged_vector(bool nil, const uint8_t *ptr, size_t length);
 
-UnmanagedVector parse_struct_tag(UnmanagedVector *errmsg, ByteSliceView struct_tag_str);
-
-UnmanagedVector read_module_info(UnmanagedVector *errmsg, ByteSliceView compiled);
-
 void release_vm(vm_t *vm);
-
-UnmanagedVector stringify_struct_tag(UnmanagedVector *errmsg, ByteSliceView struct_tag);
 
 #endif /* __LIBMOVEVM__ */

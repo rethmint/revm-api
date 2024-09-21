@@ -48,7 +48,7 @@ use crate::{ gstorage::GoStorage, ByteSliceView, Db, GoApi, UnmanagedVector };
 
 #[allow(non_camel_case_types)]
 #[repr(C)]
-pub struct vm_t {}
+pub struct evm_t {}
 
 pub fn to_evm(ptr: *mut evm_t) -> Option<&'static mut Evm<EthereumWiring<&mut State, ()>>> {
     if ptr.is_null() {
@@ -77,10 +77,11 @@ pub extern "C" fn init_vm(
 pub extern "C" fn release_vm(vm: *mut vm_t) {
     if !vm.is_null() {
         // this will free cache when it goes out of scope
-        let _ = unsafe { Box::from_raw(vm as *mut MoveVM) };
+        let _ = unsafe { Box::from_raw(vm as *mut Evm) };
     }
 }
 
+// TODO: make return type compatible with cosmos sdk
 #[no_mangle]
 pub extern "C" fn allocate_vm(
     module_cache_capacity: usize,

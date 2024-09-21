@@ -289,6 +289,7 @@ impl<BlockT: Block + Default, TxT: Transaction + Default> Env<BlockT, TxT> {
 
 /// EVM configuration.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+// Notice: manually added deserialize trait
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub struct CfgEnv {

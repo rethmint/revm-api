@@ -1,35 +1,50 @@
-use std::{
-    collections::{BTreeMap, HashMap},
-    convert::Infallible,
-    str::FromStr,
-};
+use std::{ collections::{ BTreeMap, HashMap }, convert::Infallible, str::FromStr };
 
 use k256::ecdsa::SigningKey;
 use revm::{
-    db::{EmptyDB, EmptyDBTyped},
+    db::{ EmptyDB, EmptyDBTyped },
     inspector_handle_register,
     inspectors::NoOpInspector,
-    CacheState, Context, Evm, EvmBuilder, EvmContext, EvmHandler, State,
+    CacheState,
+    Context,
+    Evm,
+    EvmBuilder,
+    EvmContext,
+    EvmHandler,
+    State,
 };
 use revm_primitives::{
-    AccessList, AccountInfo, Address, Authorization, BlockEnv, Bytes, CfgEnv, Env, EnvWiring,
+    AccessList,
+    AccountInfo,
+    Address,
+    Authorization,
+    BlockEnv,
+    Bytes,
+    CfgEnv,
+    Env,
+    EnvWiring,
     EthereumWiring,
-    SpecId::{self, CANCUN},
-    Transaction, TxEnv, TxKind, TxType, B256, U256,
+    SpecId::{ self, CANCUN },
+    Transaction,
+    TxEnv,
+    TxKind,
+    TxType,
+    B256,
+    U256,
 };
-use serde::{Deserialize, Serialize};
+use serde::{ Deserialize, Serialize };
 
-use crate::{ByteSliceView, GoApi, UnmanagedVector};
+use crate::{ ByteSliceView, GoApi, UnmanagedVector };
 
 // byte slice view: golang data type
 // unamangedvector: ffi safe vector data type compliants with rust's ownership and data types, for returning optional error value
 
 /**
-* idea sep 17
-* 1. Receive env from GoApi and initialize context
-* 2. Use the context to initialize vm
-* 3. Use the VM with the env to call 'call' and 'create'
-* */
+ * idea sep 17
+ * 1. Receive env from GoApi and initialize context
+ * 2. Use the context to initialize vm
+ * 3. Use the VM with the env to call 'call' and 'create'
+ * */
 
 #[allow(non_camel_case_types)]
 #[repr(C)]
@@ -45,12 +60,11 @@ pub fn to_vm(ptr: *mut vm_t) -> Option<&'static mut Evm<'static, EthereumWiring<
 }
 #[no_mangle]
 pub extern "C" fn allocate_executor() -> *mut vm_t {
-    let builder = EvmBuilder::default()
-        .with_default_db()
-        .with_default_ext_ctx();
+    let builder = EvmBuilder::default().with_default_db().with_default_ext_ctx();
 
-    let mainnet_handler =
-        EvmHandler::<'_, EthereumWiring<EmptyDB, ()>>::mainnet_with_spec(SpecId::CANCUN);
+    let mainnet_handler = EvmHandler::<'_, EthereumWiring<EmptyDB, ()>>::mainnet_with_spec(
+        SpecId::CANCUN
+    );
     let builder = builder.with_handler(mainnet_handler);
 
     let evm = builder.build();
@@ -95,7 +109,7 @@ pub fn recover_address(private_key: &[u8]) -> Option<Address> {
 pub extern "C" fn initialize(
     //vm_ptr: *mut vm_t,
     //api: GoApi,
-    call_request_bytes: ByteSliceView,
+    call_request_bytes: ByteSliceView
     //errmsg: Option<&mut UnmanagedVector>,
 ) -> UnmanagedVector {
     let mut env = Box::<EnvWiring<EthereumWiring<&'static mut State<EmptyDB>, ()>>>::default();
@@ -109,9 +123,7 @@ pub extern "C" fn initialize(
     } else {
         recover_address(call_request.transaction.secret_key.as_slice()).unwrap()
     };
-    env.tx.gas_price = call_request
-        .transaction
-        .gas_price
+    env.tx.gas_price = call_request.transaction.gas_price
         .or(call_request.transaction.max_fee_per_gas)
         .unwrap_or_default();
     env.tx.gas_priority_fee = call_request.transaction.max_priority_fee_per_gas;
@@ -146,36 +158,65 @@ pub extern "C" fn initialize(
 
     let mut state = revm::db::State::builder().build();
 
-    let mut evm: Evm<'_, EthereumWiring<&mut State<EmptyDBTyped<Infallible>>, ()>> =
-        Evm::<EthereumWiring<&mut State<EmptyDB>, ()>>::builder()
-            .with_db(&mut state)
-            .with_default_ext_ctx()
-            .modify_env(|e| e.clone_from(&env))
-            .with_spec_id(CANCUN)
-            .build();
+    let mut evm: Evm<'_, EthereumWiring<&mut State<EmptyDBTyped<Infallible>>, ()>> = Evm::<
+        EthereumWiring<&mut State<EmptyDB>, ()>
+    >
+        ::builder()
+        .with_db(&mut state)
+        .with_default_ext_ctx()
+        .modify_env(|e| e.clone_from(&env))
+        .with_spec_id(CANCUN)
+        .build();
 
     let res = evm.transact_commit();
     println!("Result, {:#?}", res);
 
     UnmanagedVector::new(None)
 }
-
-pub fn initialize_native(
-    //vm_ptr: *mut vm_t,
-    //api: GoApi,
-    env: Env<BlockEnv, TxEnv>,
-    cache_state: CacheState, //errmsg: Option<&mut UnmanagedVector>,
-) -> UnmanagedVector {
+//
+pub fn execute_evm(vm_ptr: *mut vm_t, env: Env<BlockEnv, TxEnv>) {
+    match env.tx.transact_to {
+        TxKind::Call(Address) => evm_call(vm_ptr, env),
+        TxKind::Create => evm_create(vm_ptr, env),
+    }
+}
+fn evm_call(vm_ptr: *mut vm_t, env: Env<BlockEnv, TxEnv>) -> UnmanagedVector {
     let env = Env::boxed(env.cfg, env.block, env.tx);
 
     let mut cache = cache_state.clone();
     cache.set_state_clear_flag(SpecId::enabled(SpecId::CANCUN, SpecId::SPURIOUS_DRAGON));
-    let mut state = revm::db::State::builder()
+    let mut state = revm::db::State
+        ::builder()
         .with_cached_prestate(cache)
         .with_bundle_update()
         .build();
 
-    let mut evm = Evm::<EthereumWiring<&mut State<EmptyDB>, ()>>::builder()
+    let mut evm = Evm::<EthereumWiring<&mut State<EmptyDB>, ()>>
+        ::builder()
+        .with_db(&mut state)
+        .with_default_ext_ctx()
+        .modify_env(|e| e.clone_from(&env))
+        .with_spec_id(CANCUN)
+        .build();
+
+    let res = evm.transact_commit();
+    println!("Result, {:#?}", res);
+
+    UnmanagedVector::new(None)
+}
+fn evm_create(vm_ptr: *mut vm_t, env: Env<BlockEnv, TxEnv>) -> UnmanagedVector {
+    let env = Env::boxed(env.cfg, env.block, env.tx);
+
+    let mut cache = cache_state.clone();
+    cache.set_state_clear_flag(SpecId::enabled(SpecId::CANCUN, SpecId::SPURIOUS_DRAGON));
+    let mut state = revm::db::State
+        ::builder()
+        .with_cached_prestate(cache)
+        .with_bundle_update()
+        .build();
+
+    let mut evm = Evm::<EthereumWiring<&mut State<EmptyDB>, ()>>
+        ::builder()
         .with_db(&mut state)
         .with_default_ext_ctx()
         .modify_env(|e| e.clone_from(&env))

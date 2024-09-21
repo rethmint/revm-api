@@ -8,23 +8,14 @@ mod error;
 mod interface;
 mod iterator;
 mod memory;
-mod move_api;
-mod result;
-mod storage;
-mod table_storage;
+mod state;
+mod db;
 mod vm;
-
-// We only interact with this crate via `extern "C"` interfaces, not those public
-// exports. There are no guarantees those exports are stable.
-// We keep them here such that we can access them in the docs (`cargo doc`).
-pub use api::{GoApi, GoApi_vtable};
-pub use db::{db_t, Db};
-pub use error::GoError;
-pub use iterator::Iterator_vtable;
-pub use memory::{
-    destroy_unmanaged_vector, new_unmanaged_vector, ByteSliceView, U8SliceView, UnmanagedVector,
-};
-pub use storage::GoStorage;
-
-#[cfg(test)]
+mod gstorage;
 mod tests;
+
+pub use api::*;
+pub use interface::*;
+pub use memory::*;
+pub use db::*;
+pub use vm::*;

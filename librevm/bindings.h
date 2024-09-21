@@ -14,52 +14,6 @@
 #include <stdlib.h>
 
 
-enum ErrnoValue {
-  ErrnoValue_Success = 0,
-  ErrnoValue_Other = 1,
-};
-typedef int32_t ErrnoValue;
-
-/**
- * This enum gives names to the status codes returned from Go callbacks to Rust.
- * The Go code will return one of these variants when returning.
- *
- * 0 means no error, all the other cases are some sort of error.
- *
- */
-enum GoError {
-  GoError_None = 0,
-  /**
-   * Go panicked for an unexpected reason.
-   */
-  GoError_Panic = 1,
-  /**
-   * Go received a bad argument from Rust
-   */
-  GoError_BadArgument = 2,
-  /**
-   * Error while trying to serialize data in Go code (typically json.Marshal)
-   */
-  GoError_CannotSerialize = 3,
-  /**
-   * An error happened during normal operation of a Go callback, which should be fed back to the contract
-   */
-  GoError_User = 4,
-  /**
-   * Unimplemented
-   */
-  GoError_Unimplemented = 5,
-  /**
-   * An error type that should never be created by us. It only serves as a fallback for the i32 to GoError conversion.
-   */
-  GoError_Other = -1,
-};
-typedef int32_t GoError;
-
-typedef struct {
-
-} vm_t;
-
 /**
  * An optional Vector type that requires explicit creation and destruction
  * and can be sent via FFI.
@@ -106,20 +60,11 @@ typedef struct {
 } UnmanagedVector;
 
 /**
- * A view into an externally owned byte slice (Go `[]byte`).
- * Use this for the current call only. A view cannot be copied for safety reasons.
- * If you need a copy, use [`ByteSliceView::to_owned`].
- *
- * Go's nil value is fully supported, such that we can differentiate between nil and an empty slice.
+ *  * idea sep 17  * 1. Receive env from GoApi and initialize context  * 2. Use the context to initialize vm  * 3. Use the VM with the env to call 'call' and 'create'  *
  */
 typedef struct {
-  /**
-   * True if and only if the byte slice is nil in Go. If this is true, the other fields must be ignored.
-   */
-  bool is_nil;
-  const uint8_t *ptr;
-  size_t len;
-} ByteSliceView;
+
+} evm_t;
 
 typedef struct {
   uint8_t _private[0];
@@ -140,24 +85,6 @@ typedef struct {
 } U8SliceView;
 
 typedef struct {
-  /**
-   * An ID assigned to this contract call
-   */
-  uint64_t call_id;
-  uint64_t iterator_index;
-} iterator_t;
-
-typedef struct {
-  int32_t (*next_db)(iterator_t, UnmanagedVector*, UnmanagedVector*);
-} Iterator_vtable;
-
-typedef struct {
-  iterator_t state;
-  Iterator_vtable vtable;
-  size_t prefix_len;
-} GoIter;
-
-typedef struct {
   int32_t (*read_db)(db_t*, U8SliceView, UnmanagedVector*, UnmanagedVector*);
   int32_t (*write_db)(db_t*, U8SliceView, U8SliceView, UnmanagedVector*);
   int32_t (*remove_db)(db_t*, U8SliceView, UnmanagedVector*);
@@ -175,105 +102,27 @@ typedef struct {
   Db_vtable vtable;
 } Db;
 
+/**
+ * A view into an externally owned byte slice (Go `[]byte`).
+ * Use this for the current call only. A view cannot be copied for safety reasons.
+ * If you need a copy, use [`ByteSliceView::to_owned`].
+ *
+ * Go's nil value is fully supported, such that we can differentiate between nil and an empty slice.
+ */
 typedef struct {
-  uint8_t _private[0];
-} api_t;
-
-typedef struct {
-  int32_t (*query)(const api_t*,
-                   U8SliceView,
-                   uint64_t,
-                   UnmanagedVector*,
-                   uint64_t*,
-                   UnmanagedVector*);
-  int32_t (*get_account_info)(const api_t*,
-                              U8SliceView,
-                              bool*,
-                              uint64_t*,
-                              uint64_t*,
-                              uint8_t*,
-                              UnmanagedVector*);
-  int32_t (*amount_to_share)(const api_t*,
-                             U8SliceView,
-                             U8SliceView,
-                             uint64_t,
-                             uint64_t*,
-                             UnmanagedVector*);
-  int32_t (*share_to_amount)(const api_t*,
-                             U8SliceView,
-                             U8SliceView,
-                             uint64_t,
-                             uint64_t*,
-                             UnmanagedVector*);
-  int32_t (*unbond_timestamp)(const api_t*, uint64_t*, UnmanagedVector*);
-  int32_t (*get_price)(const api_t*,
-                       U8SliceView,
-                       UnmanagedVector*,
-                       uint64_t*,
-                       uint64_t*,
-                       UnmanagedVector*);
-} GoApi_vtable;
-
-typedef struct {
-  const api_t *state;
-  GoApi_vtable vtable;
-} GoApi;
-
-vm_t *allocate_vm(size_t module_cache_capacity, size_t script_cache_capacity);
-
-UnmanagedVector convert_module_name(UnmanagedVector *errmsg,
-                                    ByteSliceView precompiled,
-                                    ByteSliceView module_name);
-
-UnmanagedVector decode_module_bytes(UnmanagedVector *errmsg, ByteSliceView module_bytes);
-
-UnmanagedVector decode_move_resource(Db db,
-                                     UnmanagedVector *errmsg,
-                                     ByteSliceView struct_tag,
-                                     ByteSliceView resource_bytes);
-
-UnmanagedVector decode_move_value(Db db,
-                                  UnmanagedVector *errmsg,
-                                  ByteSliceView type_tag,
-                                  ByteSliceView value_bytes);
-
-UnmanagedVector decode_script_bytes(UnmanagedVector *errmsg, ByteSliceView script_bytes);
+  /**
+   * True if and only if the byte slice is nil in Go. If this is true, the other fields must be ignored.
+   */
+  bool is_nil;
+  const uint8_t *ptr;
+  size_t len;
+} ByteSliceView;
 
 void destroy_unmanaged_vector(UnmanagedVector v);
 
-UnmanagedVector execute_contract(vm_t *vm_ptr,
-                                 Db db,
-                                 GoApi api,
-                                 ByteSliceView env_payload,
-                                 uint64_t gas_limit,
-                                 ByteSliceView senders,
-                                 ByteSliceView entry_function_payload,
-                                 UnmanagedVector *errmsg);
+void execute_evm(evm_t *vm_ptr, Db db, uint64_t chain_id, ByteSliceView block, ByteSliceView tx);
 
-UnmanagedVector execute_script(vm_t *vm_ptr,
-                               Db db,
-                               GoApi api,
-                               ByteSliceView env_payload,
-                               uint64_t gas_limit,
-                               ByteSliceView senders,
-                               ByteSliceView script_payload,
-                               UnmanagedVector *errmsg);
-
-UnmanagedVector execute_view_function(vm_t *vm_ptr,
-                                      Db db,
-                                      GoApi api,
-                                      ByteSliceView env_payload,
-                                      uint64_t gas_limit,
-                                      ByteSliceView view_function_payload,
-                                      UnmanagedVector *errmsg);
-
-void initialize(vm_t *vm_ptr,
-                Db db,
-                GoApi api,
-                ByteSliceView env_payload,
-                ByteSliceView module_bundle_payload,
-                ByteSliceView allowed_publishers_payload,
-                UnmanagedVector *errmsg);
+evm_t *init_vm(void);
 
 UnmanagedVector new_unmanaged_vector(bool nil, const uint8_t *ptr, size_t length);
 

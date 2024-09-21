@@ -1,5 +1,10 @@
+use std::collections::HashMap;
+
 use alloy_primitives::Bytes;
-use revm_primitives::{address, Address, BlockEnv, Env, TxEnv, TxKind, U256};
+use revm_interpreter::analysis::to_analysed;
+use revm_primitives::{
+    address, keccak256, Address, BlockEnv, Bytecode, Env, FixedBytes, TxEnv, TxKind, U256,
+};
 
 use crate::{initialize, initialize_native, ByteSliceView, CallRequest, CallTransaction};
 
@@ -42,8 +47,8 @@ fn test_revm_initialize_function() {
     env.tx.gas_price = U256::from(0x3e8);
     env.tx.transact_to = TxKind::Create;
     env.tx.value = U256::ZERO;
-    env.tx.data = "0x60fe60005360016000f3".to_string().into();
-    env.tx.nonce = 0x0 as u64;
+    env.tx.data = "0x".to_string().into();
+    env.tx.nonce = 0x1 as u64;
     env.tx.access_list = Vec::new();
     env.tx.gas_priority_fee = None;
     env.tx.blob_hashes = Vec::new();
@@ -68,9 +73,90 @@ fn test_revm_initialize_function() {
     //    Err(InvalidTransaction::InvalidChainId)
     //);
 
-    let result = initialize_native(env);
+    // pre
+    let mut pre = HashMap::new();
+    pre.insert(
+        Address::from_word(address!("e100713fc15400d1e94096a545879e7c6407001e").into_word()),
+        TestAccountInfo {
+            balance: U256::from(0x3b9aca01),
+            code: "0x".to_string().into(),
+            nonce: 1 as u64,
+            storage: HashMap::new(),
+        },
+    );
+
+    let mut cache_state = revm::CacheState::new(false);
+    for (address, info) in pre {
+        let code_hash = keccak256(&info.code);
+        let bytecode = to_analysed(Bytecode::new_raw(info.code));
+        let acc_info = revm::primitives::AccountInfo {
+            balance: info.balance,
+            code_hash,
+            code: None,
+            nonce: info.nonce,
+        };
+        cache_state.insert_account_with_storage(address, acc_info, info.storage);
+    }
+
+    let result = initialize_native(env, cache_state);
 
     assert!(result.is_some());
+}
+
+//{
+//  "create_tx_empty": {
+//    "env": {
+//      "currentBaseFee": "0x3e7",
+//      "currentCoinbase": "0x00000000000000000000000000000000c014bace",
+//      "currentGasLimit": "0xf4240",
+//      "currentNumber": "0x1",
+//      "currentTimestamp": "0x0"
+//    },
+//    "post": {
+//      "Shanghai": [
+//        {
+//          "hash": "0x8ae438f7a4a14dbc25410dfaa12e95e7b36f311ab904b4358c3b544e06df4c50",
+//          "indexes": {
+//            "data": 0,
+//            "gas": 0,
+//            "value": 0
+//          },
+//          "logs": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"
+//        }
+//      ]
+//    },
+//    "pre": {
+//      "0xe100713fc15400d1e94096a545879e7c6407001e": {
+//        "balance": "0x3b9aca01",
+//        "code": "0x",
+//        "nonce": "0x1",
+//        "storage": {}
+//      }
+//    },
+//    "transaction": {
+//      "data": [
+//        "0x"
+//      ],
+//      "gasLimit": [
+//        "0xf4240"
+//      ],
+//      "maxFeePerGas": "0x3e8",
+//      "maxPriorityFeePerGas": "0x3e8",
+//      "nonce": "0x1",
+//      "secretKey": "0x00000000000000000000000000000000000000000000000000000002b1263d2b",
+//      "sender": "0xe100713fc15400d1e94096a545879e7c6407001e",
+//      "value": [
+//        "0x0"
+//      ]
+//    }
+//  }
+//}
+
+pub struct TestAccountInfo {
+    pub balance: U256,
+    pub code: Bytes,
+    pub nonce: u64,
+    pub storage: HashMap<U256, U256>,
 }
 
 //{

@@ -9,7 +9,7 @@ use revm::{
     db::{EmptyDB, EmptyDBTyped},
     inspector_handle_register,
     inspectors::NoOpInspector,
-    Context, Evm, EvmBuilder, EvmContext, EvmHandler, State,
+    CacheState, Context, Evm, EvmBuilder, EvmContext, EvmHandler, State,
 };
 use revm_primitives::{
     AccessList, AccountInfo, Address, Authorization, BlockEnv, Bytes, CfgEnv, Env, EnvWiring,
@@ -164,11 +164,16 @@ pub fn initialize_native(
     //vm_ptr: *mut vm_t,
     //api: GoApi,
     env: Env<BlockEnv, TxEnv>,
-    //errmsg: Option<&mut UnmanagedVector>,
+    cache_state: CacheState, //errmsg: Option<&mut UnmanagedVector>,
 ) -> UnmanagedVector {
     let env = Env::boxed(env.cfg, env.block, env.tx);
 
-    let mut state = revm::db::State::builder().build();
+    let mut cache = cache_state.clone();
+    cache.set_state_clear_flag(SpecId::enabled(SpecId::CANCUN, SpecId::SPURIOUS_DRAGON));
+    let mut state = revm::db::State::builder()
+        .with_cached_prestate(cache)
+        .with_bundle_update()
+        .build();
 
     let mut evm = Evm::<EthereumWiring<&mut State<EmptyDB>, ()>>::builder()
         .with_db(&mut state)

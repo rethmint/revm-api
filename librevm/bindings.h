@@ -59,9 +59,6 @@ typedef struct {
   size_t cap;
 } UnmanagedVector;
 
-/**
- *  * idea sep 17  * 1. Receive env from GoApi and initialize context  * 2. Use the context to initialize vm  * 3. Use the VM with the env to call 'call' and 'create'  *
- */
 typedef struct {
 
 } evm_t;

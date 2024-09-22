@@ -3,8 +3,6 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::slice;
 
-// It is a copy of the one from cosmwasm/lib crate. We owe them a lot!
-
 /// A view into an externally owned byte slice (Go `[]byte`).
 /// Use this for the current call only. A view cannot be copied for safety reasons.
 /// If you need a copy, use [`ByteSliceView::to_owned`].
@@ -44,11 +42,7 @@ impl ByteSliceView {
     /// Provides a reference to the included data to be parsed or copied elsewhere
     /// This is safe as long as the `ByteSliceView` is constructed correctly.
     pub fn read(&self) -> Option<&[u8]> {
-        if self.is_nil {
-            None
-        } else {
-            Some(unsafe { slice::from_raw_parts(self.ptr, self.len) })
-        }
+        if self.is_nil { None } else { Some(unsafe { slice::from_raw_parts(self.ptr, self.len) }) }
     }
 
     /// Creates an owned copy that can safely be stored and mutated.
@@ -78,8 +72,7 @@ impl From<ByteSliceView> for Option<Vec<String>> {
 
 impl From<ByteSliceView> for Option<PathBuf> {
     fn from(val: ByteSliceView) -> Self {
-        val.read()
-            .map(|s| Path::new(&String::from_utf8(s.to_vec()).unwrap()).to_path_buf())
+        val.read().map(|s| Path::new(&String::from_utf8(s.to_vec()).unwrap()).to_path_buf())
     }
 }
 
@@ -97,16 +90,18 @@ pub struct U8SliceView {
 impl U8SliceView {
     pub fn new(source: Option<&[u8]>) -> Self {
         match source {
-            Some(data) => Self {
-                is_none: false,
-                ptr: data.as_ptr(),
-                len: data.len(),
-            },
-            None => Self {
-                is_none: true,
-                ptr: std::ptr::null::<u8>(),
-                len: 0,
-            },
+            Some(data) =>
+                Self {
+                    is_none: false,
+                    ptr: data.as_ptr(),
+                    len: data.len(),
+                },
+            None =>
+                Self {
+                    is_none: true,
+                    ptr: std::ptr::null::<u8>(),
+                    len: 0,
+                },
         }
     }
 }
@@ -173,12 +168,13 @@ impl UnmanagedVector {
                     cap,
                 }
             }
-            None => Self {
-                is_none: true,
-                ptr: std::ptr::null_mut::<u8>(),
-                len: 0,
-                cap: 0,
-            },
+            None =>
+                Self {
+                    is_none: true,
+                    ptr: std::ptr::null_mut::<u8>(),
+                    len: 0,
+                    cap: 0,
+                },
         }
     }
 
@@ -221,7 +217,7 @@ impl Default for UnmanagedVector {
 pub extern "C" fn new_unmanaged_vector(
     nil: bool,
     ptr: *const u8,
-    length: usize,
+    length: usize
 ) -> UnmanagedVector {
     if nil {
         UnmanagedVector::new(None)
@@ -247,9 +243,9 @@ mod test {
 
     #[test]
     fn byte_slice_view_read_works() {
-        let data = vec![0xAA, 0xBB, 0xCC];
+        let data = vec![0xaa, 0xbb, 0xcc];
         let view = ByteSliceView::new(&data);
-        assert_eq!(view.read().unwrap(), &[0xAA, 0xBB, 0xCC]);
+        assert_eq!(view.read().unwrap(), &[0xaa, 0xbb, 0xcc]);
 
         let data = vec![];
         let view = ByteSliceView::new(&data);
@@ -261,9 +257,9 @@ mod test {
 
     #[test]
     fn byte_slice_view_to_owned_works() {
-        let data = vec![0xAA, 0xBB, 0xCC];
+        let data = vec![0xaa, 0xbb, 0xcc];
         let view = ByteSliceView::new(&data);
-        assert_eq!(view.to_owned().unwrap(), vec![0xAA, 0xBB, 0xCC]);
+        assert_eq!(view.to_owned().unwrap(), vec![0xaa, 0xbb, 0xcc]);
 
         let data = vec![];
         let view = ByteSliceView::new(&data);

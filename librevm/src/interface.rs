@@ -12,6 +12,7 @@ use revm::{
     EvmBuilder,
     EvmContext,
     EvmHandler,
+    Handler,
     State,
 };
 use revm_primitives::{
@@ -35,17 +36,19 @@ use revm_primitives::{
 };
 use serde::{ Deserialize, Serialize };
 
-use crate::{ gstorage::GoStorage, ByteSliceView, Db, GoApi, UnmanagedVector };
+use crate::{
+    gstorage::GoStorage,
+    BlockData,
+    ByteSliceView,
+    Db,
+    GoApi,
+    TransactionData,
+    UnmanagedVector,
+};
 // byte slice view: golang data type
 // unamangedvector: ffi safe vector data type compliants with rust's ownership and data types, for returning optional error value
-
-/**
- * idea sep 17
- * 1. Receive env from GoApi and initialize context
- * 2. Use the context to initialize vm
- * 3. Use the VM with the env to call 'call' and 'create'
- * */
-
+pub const BLOCK: &str = "block";
+pub const TRANSACTION: &str = "transaction";
 #[allow(non_camel_case_types)]
 #[repr(C)]
 pub struct evm_t {}
@@ -95,10 +98,10 @@ pub extern "C" fn allocate_vm(
 #[no_mangle]
 pub extern "C" fn execute_evm(
     vm_ptr: *mut evm_t,
-    db: Db, // -> State
+    db: Db, // -> Block Cache State from KVStore
     chain_id: u64,
-    block: ByteSliceView,
-    tx: ByteSliceView
+    block: ByteSliceView, // -> block JSON Data
+    tx: ByteSliceView // -> tx JSON Data
 ) {
     let mut evm = match to_evm(vm_ptr) {
         Some(vm) => { vm }
@@ -106,16 +109,29 @@ pub extern "C" fn execute_evm(
             panic!("Failed to get VM");
         }
     };
-    let mut storage = GoStorage::new(&db);
-    // TODO: cast storage to database with trait Database in evm
+    let block = BlockData::from_json(
+        &String::from_utf8(
+            block
+                .read()
+                .ok_or_else(|| Error::unset_arg(BLOCK))?
+                .to_vec()
+        )?
+    );
+    let tx = TransactionData::from_json(
+        &String::from_utf8(
+            tx
+                .read()
+                .ok_or_else(|| Error::unset_arg(TRANSACTION))?
+                .to_vec()
+        )?
+    );
 
+    let mut storage = GoStorage::new(&db);
+    // @winterjihwan
+    // TODO: cast storage to database with trait Database in evm
     evm.context = Context::new_with_db(db);
-    // let mut evm = Evm::<EthereumWiring<&mut State, ()>>
-    //     ::builder()
-    //     .with_db(&mut state)
-    //     .with_default_ext_ctx()
-    //     .modify_env(|e| e.clone_from(&env))
-    //     .with_spec_id(CANCUN)
-    //     .build();
+    evm.context.evm.inner.env.block = block;
+    evm.context.evm.inner.env.tx = tx;
+
     evm.transact_commit();
 }

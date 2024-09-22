@@ -5,6 +5,7 @@ mod db;
 mod block;
 mod tx;
 mod vm;
+mod result;
 mod gstorage;
 mod tests;
 

@@ -149,6 +149,9 @@ pub struct UnmanagedVector {
     cap: usize,
 }
 
+impl<HaltReasonT: serde::Serialize> ExecutionResultExt<HaltReasonT>
+for ExecutionResult<HaltReasonT> {}
+
 impl UnmanagedVector {
     /// Consumes this optional vector for manual management.
     /// This is a zero-copy operation.
@@ -176,6 +179,14 @@ impl UnmanagedVector {
                     cap: 0,
                 },
         }
+    }
+
+    pub fn from_data<T>(data: &T) -> UnmanagedVector {
+        let data = match serde_json::to_vec(data) {
+            Ok(vec) => Some(vec),
+            Err(_) => None,
+        };
+        UnmanagedVector::new(data)
     }
 
     /// Creates a non-none UnmanagedVector with the given data.

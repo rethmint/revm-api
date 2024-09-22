@@ -23,9 +23,13 @@ use revm_primitives::{
     BlockEnv,
     Bytes,
     CfgEnv,
+    EVMResultGeneric,
     Env,
     EnvWiring,
     EthereumWiring,
+    EvmWiring,
+    ExecutionResult,
+    HaltReason,
     SpecId::{ self, CANCUN },
     Transaction,
     TxEnv,
@@ -77,7 +81,7 @@ pub extern "C" fn init_vm(
 }
 
 #[no_mangle]
-pub extern "C" fn release_vm(vm: *mut vm_t) {
+pub extern "C" fn release_vm(vm: *mut evm_t) {
     if !vm.is_null() {
         // this will free cache when it goes out of scope
         let _ = unsafe { Box::from_raw(vm as *mut Evm) };
@@ -89,9 +93,9 @@ pub extern "C" fn release_vm(vm: *mut vm_t) {
 pub extern "C" fn allocate_vm(
     module_cache_capacity: usize,
     script_cache_capacity: usize
-) -> *mut vm_t {
+) -> *mut evm_t {
     let vm = Box::into_raw(Box::new(MoveVM::new(module_cache_capacity, script_cache_capacity)));
-    vm as *mut vm_t
+    vm as *mut evm_t
 }
 
 // VM initializer
@@ -99,10 +103,9 @@ pub extern "C" fn allocate_vm(
 pub extern "C" fn execute_evm(
     vm_ptr: *mut evm_t,
     db: Db, // -> Block Cache State from KVStore
-    chain_id: u64,
     block: ByteSliceView, // -> block JSON Data
     tx: ByteSliceView // -> tx JSON Data
-) {
+) -> UnmanagedVector {
     let mut evm = match to_evm(vm_ptr) {
         Some(vm) => { vm }
         None => {
@@ -133,5 +136,12 @@ pub extern "C" fn execute_evm(
     evm.context.evm.inner.env.block = block;
     evm.context.evm.inner.env.tx = tx;
 
-    evm.transact_commit();
+    let result: EVMResultGeneric<ExecutionResult<HaltReason>, EvmWiring> = evm.transact_commit();
+
+    match result {
+        Ok(res) => {
+            return UnmanagedVector::from_data(&res);
+        }
+        Err(e) => panic!("EVM Execution Result Error: {}", e),
+    }
 }

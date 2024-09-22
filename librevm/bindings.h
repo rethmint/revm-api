@@ -14,6 +14,10 @@
 #include <stdlib.h>
 
 
+typedef struct {
+
+} evm_t;
+
 /**
  * An optional Vector type that requires explicit creation and destruction
  * and can be sent via FFI.
@@ -60,10 +64,6 @@ typedef struct {
 } UnmanagedVector;
 
 typedef struct {
-
-} evm_t;
-
-typedef struct {
   uint8_t _private[0];
 } db_t;
 
@@ -85,13 +85,6 @@ typedef struct {
   int32_t (*read_db)(db_t*, U8SliceView, UnmanagedVector*, UnmanagedVector*);
   int32_t (*write_db)(db_t*, U8SliceView, U8SliceView, UnmanagedVector*);
   int32_t (*remove_db)(db_t*, U8SliceView, UnmanagedVector*);
-  int32_t (*scan_db)(db_t*,
-                     U8SliceView,
-                     U8SliceView,
-                     U8SliceView,
-                     int32_t,
-                     GoIter*,
-                     UnmanagedVector*);
 } Db_vtable;
 
 typedef struct {
@@ -115,16 +108,16 @@ typedef struct {
   size_t len;
 } ByteSliceView;
 
-vm_t *allocate_vm(size_t module_cache_capacity, size_t script_cache_capacity);
+evm_t *allocate_vm(size_t module_cache_capacity, size_t script_cache_capacity);
 
 void destroy_unmanaged_vector(UnmanagedVector v);
 
-void execute_evm(evm_t *vm_ptr, Db db, uint64_t chain_id, ByteSliceView block, ByteSliceView tx);
+UnmanagedVector execute_evm(evm_t *vm_ptr, Db db, ByteSliceView block, ByteSliceView tx);
 
 evm_t *init_vm(void);
 
 UnmanagedVector new_unmanaged_vector(bool nil, const uint8_t *ptr, size_t length);
 
-void release_vm(vm_t *vm);
+void release_vm(evm_t *vm);
 
 #endif /* __LIBMOVEVM__ */

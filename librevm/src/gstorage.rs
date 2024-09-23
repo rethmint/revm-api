@@ -1,7 +1,6 @@
 use bytes::Bytes;
-use initia_move_storage::state_view::StateView;
-use initia_move_types::access_path::AccessPath;
-use initia_move_types::errors::BackendError;
+use storage::StateView;
+use types::{AccessPath, BackendError};
 
 use crate::db::Db;
 use crate::error::GoError;

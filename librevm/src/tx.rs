@@ -1,6 +1,8 @@
-use crate::{ AccessListItem, Address, AuthorizationList, Bytes, TxKind, B256, GAS_PER_BLOB, U256 };
-use revm_primitives::Transaction;
-use serde::{ Deserialize, Serialize };
+use revm_primitives::{
+    AccessListItem, Address, AuthorizationList, Bytes, Transaction, TxKind, B256, GAS_PER_BLOB,
+    U256,
+};
+use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
 #[derive(Serialize, Deserialize, Debug)]

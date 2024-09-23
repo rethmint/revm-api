@@ -1,8 +1,7 @@
-use revm_primitives::Block;
+use revm_primitives::{Address, BlobExcessGasAndPrice, Block, B256, U256};
 
-use crate::{ Address, BlobExcessGasAndPrice, B256, U256 };
 use std::str::FromStr;
-#[derive(Serialize, Deserialize, Debug)]
+//#[derive(Serialize, Deserialize, Debug)]
 pub struct BlockData {
     pub number: U256,
     pub coinbase: Address,
@@ -23,36 +22,36 @@ impl BlockData {
     }
 }
 
-impl Block for BlockStruct {
-    fn number(&self) -> &U256 {
-        &self.number
-    }
-
-    fn coinbase(&self) -> &Address {
-        &self.coinbase
-    }
-
-    fn timestamp(&self) -> &U256 {
-        &self.timestamp
-    }
-
-    fn gas_limit(&self) -> &U256 {
-        &self.gas_limit
-    }
-
-    fn basefee(&self) -> &U256 {
-        &self.basefee
-    }
-
-    fn difficulty(&self) -> &U256 {
-        &self.difficulty
-    }
-
-    fn prevrandao(&self) -> Option<&B256> {
-        self.prevrandao.as_ref()
-    }
-
-    fn blob_excess_gas_and_price(&self) -> Option<&BlobExcessGasAndPrice> {
-        self.blob_excess_gas_and_price.as_ref()
-    }
-}
+//impl Block for BlockStruct {
+//    fn number(&self) -> &U256 {
+//        &self.number
+//    }
+//
+//    fn coinbase(&self) -> &Address {
+//        &self.coinbase
+//    }
+//
+//    fn timestamp(&self) -> &U256 {
+//        &self.timestamp
+//    }
+//
+//    fn gas_limit(&self) -> &U256 {
+//        &self.gas_limit
+//    }
+//
+//    fn basefee(&self) -> &U256 {
+//        &self.basefee
+//    }
+//
+//    fn difficulty(&self) -> &U256 {
+//        &self.difficulty
+//    }
+//
+//    fn prevrandao(&self) -> Option<&B256> {
+//        self.prevrandao.as_ref()
+//    }
+//
+//    fn blob_excess_gas_and_price(&self) -> Option<&BlobExcessGasAndPrice> {
+//        self.blob_excess_gas_and_price.as_ref()
+//    }
+//}

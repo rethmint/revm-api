@@ -2,7 +2,6 @@ use revm::{Context, Evm, EvmHandler, State};
 use revm_primitives::{
     EVMResultGeneric, EthereumWiring, EvmWiring, ExecutionResult, HaltReason, SpecId,
 };
-use serde::{Deserialize, Serialize};
 
 use crate::{gstorage::GoStorage, BlockData, ByteSliceView, Db, TransactionData, UnmanagedVector};
 // byte slice view: golang data type
@@ -85,8 +84,6 @@ pub extern "C" fn execute_evm(
     )?);
 
     let mut storage = GoStorage::new(&db);
-    // @winterjihwan
-    // TODO: cast storage to database with trait Database in evm
     evm.context = Context::new_with_db(db);
     evm.context.evm.inner.env.block = block;
     evm.context.evm.inner.env.tx = tx;

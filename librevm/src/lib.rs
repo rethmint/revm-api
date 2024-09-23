@@ -7,7 +7,8 @@ mod memory;
 mod state;
 mod tests;
 mod tx;
-mod vm;
+mod gstorage;
+mod tests;
 
 pub use block::*;
 pub use db::*;

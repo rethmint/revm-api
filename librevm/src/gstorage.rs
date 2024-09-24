@@ -1,12 +1,12 @@
 use anyhow::Ok;
 use revm::db::AccountStatus;
-use revm::{ Database, DatabaseCommit };
-use revm_primitives::{ AccountInfo, AccountStatus, Address, Bytecode, B256 };
-use types::{ AccessPath, BackendError };
+use revm::{Database, DatabaseCommit};
+use revm_primitives::{AccountInfo, AccountStatus, Address, Bytecode, B256};
+use types::{AccessPath, BackendError};
 
 use crate::db::Db;
 use crate::error::GoError;
-use crate::memory::{ U8SliceView, UnmanagedVector };
+use crate::memory::{U8SliceView, UnmanagedVector};
 /// Access to the VM's backend storage, i.e. the chain
 pub trait Storage {
     #[allow(dead_code)]
@@ -31,20 +31,22 @@ impl<'r> Storage for GoStorage<'r> {
     fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, BackendError> {
         let mut output = UnmanagedVector::default();
         let mut error_msg = UnmanagedVector::default();
-        let go_error: GoError = (self.db.vtable
-            .read_db)(
-                self.db.state,
-                U8SliceView::new(Some(key)),
-                &mut output as *mut UnmanagedVector,
-                &mut error_msg as *mut UnmanagedVector
-            )
-            .into();
+        let go_error: GoError = (self.db.vtable.read_db)(
+            self.db.state,
+            U8SliceView::new(Some(key)),
+            &mut output as *mut UnmanagedVector,
+            &mut error_msg as *mut UnmanagedVector,
+        )
+        .into();
         // We destruct the UnmanagedVector here, no matter if we need the data.
         let output = output.consume();
 
         // return complete error message (reading from buffer for GoError::Other)
         let default = || {
-            format!("Failed to read a key in the db: {}", String::from_utf8_lossy(key))
+            format!(
+                "Failed to read a key in the db: {}",
+                String::from_utf8_lossy(key)
+            )
         };
         unsafe {
             go_error.into_result(error_msg, default)?;
@@ -55,17 +57,19 @@ impl<'r> Storage for GoStorage<'r> {
 
     fn set(&mut self, key: &[u8], value: &[u8]) -> Result<(), BackendError> {
         let mut error_msg = UnmanagedVector::default();
-        let go_error: GoError = (self.db.vtable
-            .write_db)(
-                self.db.state,
-                U8SliceView::new(Some(key)),
-                U8SliceView::new(Some(value)),
-                &mut error_msg as *mut UnmanagedVector
-            )
-            .into();
+        let go_error: GoError = (self.db.vtable.write_db)(
+            self.db.state,
+            U8SliceView::new(Some(key)),
+            U8SliceView::new(Some(value)),
+            &mut error_msg as *mut UnmanagedVector,
+        )
+        .into();
         // return complete error message (reading from buffer for GoError::Other)
         let default = || {
-            format!("Failed to set a key in the db: {}", String::from_utf8_lossy(key))
+            format!(
+                "Failed to set a key in the db: {}",
+                String::from_utf8_lossy(key)
+            )
         };
         unsafe {
             go_error.into_result(error_msg, default)?;
@@ -75,15 +79,17 @@ impl<'r> Storage for GoStorage<'r> {
 
     fn remove(&mut self, key: &[u8]) -> Result<(), BackendError> {
         let mut error_msg = UnmanagedVector::default();
-        let go_error: GoError = (self.db.vtable
-            .remove_db)(
-                self.db.state,
-                U8SliceView::new(Some(key)),
-                &mut error_msg as *mut UnmanagedVector
-            )
-            .into();
+        let go_error: GoError = (self.db.vtable.remove_db)(
+            self.db.state,
+            U8SliceView::new(Some(key)),
+            &mut error_msg as *mut UnmanagedVector,
+        )
+        .into();
         let default = || {
-            format!("Failed to delete a key in the db: {}", String::from_utf8_lossy(key))
+            format!(
+                "Failed to delete a key in the db: {}",
+                String::from_utf8_lossy(key)
+            )
         };
         unsafe {
             go_error.into_result(error_msg, default)?;
@@ -146,13 +152,12 @@ impl EvmStoreKey for Address {
     }
 }
 fn extract_account(
-    output: Result<Option<Vec<u8>>, BackendError>
+    output: Result<Option<Vec<u8>>, BackendError>,
 ) -> Result<Option<revm_primitives::AccountInfo>, Self::Error> {
     match output {
         Ok(Some(vec)) => {
-            let balance = U256::from_big_endian(
-                output.get(0..32).ok_or("fail to extract balance")?
-            );
+            let balance =
+                U256::from_big_endian(output.get(0..32).ok_or("fail to extract balance")?);
             let nonce = u64::from_be_bytes(output.get(32..40).ok_or("fail to extract nonce")?);
             let code_hash: B256 = output.get(40..72).ok_or("fail to extract code_hash")?;
             let code = Bytecode::default();
@@ -163,13 +168,12 @@ fn extract_account(
 }
 
 fn extract_account(
-    output: Result<Option<Vec<u8>>, BackendError>
+    output: Result<Option<Vec<u8>>, BackendError>,
 ) -> Result<Option<revm_primitives::AccountInfo>, Self::Error> {
     match output {
         Ok(Some(vec)) => {
-            let balance = U256::from_big_endian(
-                output.get(0..32).ok_or("fail to extract balance")?
-            );
+            let balance =
+                U256::from_big_endian(output.get(0..32).ok_or("fail to extract balance")?);
             let nonce = u64::from_be_bytes(output.get(32..40).ok_or("fail to extract nonce")?);
             let code_hash: B256 = output.get(40..72).ok_or("fail to extract code_hash")?;
             let code = Bytecode::default();
@@ -202,7 +206,7 @@ impl<'DB> Database for GoStorage<'DB> {
 
     fn basic(
         &mut self,
-        address: revm_primitives::Address
+        address: revm_primitives::Address,
     ) -> Result<Option<revm_primitives::AccountInfo>, Self::Error> {
         let output = self.get(EvmStoreKey::account_key(address));
         Ok(extract_account(output))
@@ -211,7 +215,7 @@ impl<'DB> Database for GoStorage<'DB> {
     fn storage(
         &mut self,
         address: revm_primitives::Address,
-        index: revm_primitives::U256
+        index: revm_primitives::U256,
     ) -> Result<revm_primitives::U256, Self::Error> {
         let output = self.get(EvmStoreKey::storage_key(address, index));
         Ok(output)
@@ -224,7 +228,7 @@ impl<'DB> Database for GoStorage<'DB> {
 
     fn code_by_hash(
         &mut self,
-        code_hash: revm_primitives::B256
+        code_hash: revm_primitives::B256,
     ) -> Result<revm_primitives::Bytecode, Self::Error> {
         let output = self.get(EvmStoreKey::code_key(code_hash));
         Ok(output);

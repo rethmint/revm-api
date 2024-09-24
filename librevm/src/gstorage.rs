@@ -151,55 +151,43 @@ impl EvmStoreKey for Address {
         &result
     }
 }
-fn extract_account(
-    output: Result<Option<Vec<u8>>, BackendError>,
-) -> Result<Option<revm_primitives::AccountInfo>, Self::Error> {
-    match output {
-        Ok(Some(vec)) => {
-            let balance =
-                U256::from_big_endian(output.get(0..32).ok_or("fail to extract balance")?);
-            let nonce = u64::from_be_bytes(output.get(32..40).ok_or("fail to extract nonce")?);
-            let code_hash: B256 = output.get(40..72).ok_or("fail to extract code_hash")?;
-            let code = Bytecode::default();
-            AccountInfo::new(balance, nonce, code_hash, code).without_code()
+
+impl ByteKey for AccountInfo {
+    fn extract(
+        output: Result<Option<Vec<u8>>, BackendError>,
+    ) -> Result<Option<Self>, BackendError> {
+        match output {
+            Ok(Some(vec)) => {
+                let balance =
+                    U256::from_big_endian(output.get(0..32).ok_or("fail to extract balance")?);
+                let nonce = u64::from_be_bytes(output.get(32..40).ok_or("fail to extract nonce")?);
+                let code_hash: B256 = output.get(40..72).ok_or("fail to extract code_hash")?;
+                let code = Bytecode::default();
+                AccountInfo::new(balance, nonce, code_hash, code).without_code()
+            }
+            Ok(None) => Err(BackendError::new("fail to extract")),
         }
-        Ok(None) => Err(BackendError::new("fail to extract")),
+    }
+
+    fn compress(&self) -> &[u8] {
+        let mut result = Vec::with_capacity(72);
+
+        // balance: U256 (32 bytes)
+        let mut balance_bytes = [0u8; 32];
+        self.balance.to_big_endian(&mut balance_bytes);
+        result.extend_from_slice(&balance_bytes);
+
+        // nonce: u64 (8 bytes)
+        let nonce_bytes = self.nonce.to_be_bytes();
+        result.extend_from_slice(&nonce_bytes);
+
+        // code_hash: B256 (32 bytes)
+        result.extend_from_slice(&self.code_hash);
+
+        &result
     }
 }
 
-fn extract_account(
-    output: Result<Option<Vec<u8>>, BackendError>,
-) -> Result<Option<revm_primitives::AccountInfo>, Self::Error> {
-    match output {
-        Ok(Some(vec)) => {
-            let balance =
-                U256::from_big_endian(output.get(0..32).ok_or("fail to extract balance")?);
-            let nonce = u64::from_be_bytes(output.get(32..40).ok_or("fail to extract nonce")?);
-            let code_hash: B256 = output.get(40..72).ok_or("fail to extract code_hash")?;
-            let code = Bytecode::default();
-            AccountInfo::new(balance, nonce, code_hash, code).without_code()
-        }
-        Ok(None) => Err(BackendError::new("fail to extract")),
-    }
-}
-
-fn compress_account_info(account: AccountInfo) -> &[u8] {
-    let mut result = Vec::with_capacity(64);
-
-    // balance: U256 (32 bytes)
-    let mut balance_bytes = [0u8; 32];
-    account.balance.to_big_endian(&mut balance_bytes);
-    result.extend_from_slice(&balance_bytes);
-
-    // nonce: u64 (8 bytes)
-    let nonce_bytes = account.nonce.to_be_bytes();
-    result.extend_from_slice(&nonce_bytes);
-
-    // code_hash: B256 (32 bytes)
-    result.extend_from_slice(&account.code_hash);
-
-    &result
-}
 // TODO: get with default value
 impl<'DB> Database for GoStorage<'DB> {
     type Error = BackendError;
@@ -209,7 +197,7 @@ impl<'DB> Database for GoStorage<'DB> {
         address: revm_primitives::Address,
     ) -> Result<Option<revm_primitives::AccountInfo>, Self::Error> {
         let output = self.get(EvmStoreKey::account_key(address));
-        Ok(extract_account(output))
+        Ok(extract(output))
     }
 
     fn storage(
@@ -246,7 +234,7 @@ impl<'a> DatabaseCommit for GoStorage<'a> {
             let is_newly_created = account.is_created();
             // account info update
             let account_key = EvmStoreKey::account_key(address);
-            self.set(account_key, compress_account_info(account.info));
+            self.set(account_key, account.info.compress());
 
             if !is_newly_created {
                 // storage cache commit on value changed

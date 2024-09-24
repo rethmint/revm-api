@@ -1,18 +1,10 @@
-use bytes::Bytes;
-use k256::elliptic_curve::rand_core::block;
-use k256::pkcs8::der::Encode;
 use revm::Database;
-use revm_precompile::bn128::add;
-use revm_primitives::B256;
-use storage::StateView;
-use types::{ AccessPath, BackendError };
+use revm_primitives::{ Address, B256 };
+use types::BackendError;
 
 use crate::db::Db;
 use crate::error::GoError;
 use crate::memory::{ U8SliceView, UnmanagedVector };
-
-use anyhow::anyhow;
-
 /// Access to the VM's backend storage, i.e. the chain
 pub trait Storage {
     #[allow(dead_code)]
@@ -48,29 +40,42 @@ impl<'r> GoStorage<'r> {
 // CODE_PREFIX(B1) + {code_hash(B32)} => vm bytecode
 // STORAGE_PREFIX(B1) + {address(B20)} + {index(B32)} => [32]byte(value)
 // BLOCK_PREFIX(B1) + block_num(B8) => block_hash
-const ACCOUNT_PREFIX: u8 = 1;
-const CODE_PREFIX: u8 = 2;
-const STORAGE_PREFIX: u8 = 3;
-const BLOCK_PREFIX: u8 = 4;
-impl EvmStoreKey {
+
+trait EvmStoreKey {
+    const ACCOUNT_PREFIX: u8 = 1;
+    const CODE_PREFIX: u8 = 2;
+    const STORAGE_PREFIX: u8 = 3;
+    const BLOCK_PREFIX: u8 = 4;
+
+    fn account_key(address: Address) -> Vec<u8>;
+    fn code_key(code_hash: B256) -> Vec<u8>;
+    fn storage_key(address: Address, index: revm_primitives::U256) -> Vec<u8>;
+    fn block_hash_key(block_num: u64) -> Vec<u8>;
+}
+
+impl EvmStoreKey for Address {
     fn account_key(address: revm_primitives::Address) -> Vec<u8> {
-        let mut result = vec![ACCOUNT_PREFIX];
-        return result.append(&mut address.to_vec());
+        let mut result = vec![EvmStoreKey::ACCOUNT_PREFIX];
+        result.append(&mut address.to_vec());
+        result
     }
 
     fn code_key(code_hash: B256) -> Vec<u8> {
-        let mut result = vec![CODE_PREFIX];
-        return result.append(&mut code_hash);
+        let mut result = vec![EvmStoreKey::CODE_PREFIX];
+        result.append(&mut code_hash.to_vec());
+        result
     }
 
     fn storage_key(address: revm_primitives::Address, index: revm_primitives::U256) -> Vec<u8> {
-        let mut result = vec![ACCOUNT_PREFIX];
-        return result.append(&mut address.to_vec());
+        let mut result = vec![EvmStoreKey::STORAGE_PREFIX];
+        result.append(&mut address.to_vec());
+        result
     }
 
     fn block_hash_key(block_num: u64) -> Vec<u8> {
-        let mut result = vec![block_num];
-        return result.append(block_num);
+        let mut result = vec![EvmStoreKey::BLOCK_PREFIX];
+        result.append(&mut block_num.to_be_bytes().to_vec());
+        result
     }
 }
 impl<'DB> Database for GoStorage<'DB> {

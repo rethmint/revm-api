@@ -50,10 +50,6 @@ enum GoError {
 };
 typedef int32_t GoError;
 
-typedef struct {
-
-} evm_t;
-
 /**
  * An optional Vector type that requires explicit creation and destruction
  * and can be sent via FFI.
@@ -100,6 +96,10 @@ typedef struct {
 } UnmanagedVector;
 
 typedef struct {
+
+} evm_t;
+
+typedef struct {
   uint8_t _private[0];
 } db_t;
 
@@ -143,8 +143,6 @@ typedef struct {
   const uint8_t *ptr;
   size_t len;
 } ByteSliceView;
-
-evm_t *allocate_vm(size_t module_cache_capacity, size_t script_cache_capacity);
 
 void destroy_unmanaged_vector(UnmanagedVector v);
 

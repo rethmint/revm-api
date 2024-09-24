@@ -1,12 +1,5 @@
 use revm::{ Context, Evm, EvmHandler, State };
-use revm_primitives::{
-    EVMResultGeneric,
-    EthereumWiring,
-    EvmWiring,
-    ExecutionResult,
-    HaltReason,
-    SpecId,
-};
+use revm_primitives::{ EthereumWiring, SpecId };
 
 use crate::{ gstorage::GoStorage, BlockData, ByteSliceView, Db, TransactionData, UnmanagedVector };
 // byte slice view: golang data type
@@ -17,11 +10,13 @@ pub const TRANSACTION: &str = "transaction";
 #[repr(C)]
 pub struct evm_t {}
 
-pub fn to_evm(ptr: *mut evm_t) -> Option<&'static mut Evm<EthereumWiring<&'static mut State, ()>>> {
+pub fn to_evm<'a>(
+    ptr: *mut evm_t
+) -> Option<&'a mut Evm<EthereumWiring<&'a mut State<GoStorage>, ()>>> {
     if ptr.is_null() {
         None
     } else {
-        let c = unsafe { &mut *(ptr as *mut Evm<EthereumWiring<&mut State, ()>>) };
+        let c = unsafe { &mut *(ptr as *mut Evm<EthereumWiring<&'a mut State<GoStorage>, ()>>) };
         Some(c)
     }
 }
@@ -46,15 +41,6 @@ pub extern "C" fn release_vm(vm: *mut evm_t) {
         // this will free cache when it goes out of scope
         let _ = unsafe { Box::from_raw(vm as *mut Evm) };
     }
-}
-
-#[no_mangle]
-pub extern "C" fn allocate_vm(
-    module_cache_capacity: usize,
-    script_cache_capacity: usize
-) -> *mut evm_t {
-    let vm = Box::into_raw(Box::new(MoveVM::new(module_cache_capacity, script_cache_capacity)));
-    vm as *mut evm_t
 }
 
 // VM initializer
@@ -91,14 +77,11 @@ pub extern "C" fn execute_evm(
     );
 
     let mut db = GoStorage::new(&db);
-    // @winterjihwan
-    // TODO: cast storage to database with trait Database in evm
-
     evm.context = Context::new_with_db(db);
     evm.context.evm.inner.env.block = block;
     evm.context.evm.inner.env.tx = tx;
 
-    let result: EVMResultGeneric<ExecutionResult<HaltReason>, EvmWiring> = evm.transact_commit();
+    let result = evm.transact_commit();
 
     match result {
         Ok(res) => {

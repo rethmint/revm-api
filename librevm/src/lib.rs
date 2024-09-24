@@ -7,8 +7,6 @@ mod memory;
 mod state;
 mod tests;
 mod tx;
-mod gstorage;
-mod tests;
 
 pub use block::*;
 pub use db::*;
@@ -16,6 +14,4 @@ pub use error::*;
 pub use gstorage::*;
 pub use interface::*;
 pub use memory::*;
-pub use state::*;
 pub use tx::*;
-pub use vm::*;

@@ -1,6 +1,5 @@
 use revm_primitives::{ Address, BlobExcessGasAndPrice, Block, B256, U256 };
 
-use std::str::FromStr;
 //#[derive(Serialize, Deserialize, Debug)]
 pub struct BlockData {
     pub number: U256,

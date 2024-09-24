@@ -36,7 +36,7 @@ impl<'r> GoStorage<'r> {
 }
 // KVStore
 // TODO: key padding to query
-// ACCOUNT_PREFIX(B1) + {address(B20)} => ACCOUNT INFO {balance(B256)(0) | nonce(B256)(1) | code_hash(B256)(2)}
+// ACCOUNT_PREFIX(B1) + {address(B20)} => ACCOUNT INFO {balance(B64)(0) | nonce(B256)(1) | code_hash(B256)(2)}
 // CODE_PREFIX(B1) + {code_hash(B32)} => vm bytecode
 // STORAGE_PREFIX(B1) + {address(B20)} + {index(B32)} => [32]byte(value)
 // BLOCK_PREFIX(B1) + block_num(B8) => block_hash
@@ -88,20 +88,20 @@ impl<'DB> Database for GoStorage<'DB> {
         let mut output = UnmanagedVector::default();
         let mut error_msg = UnmanagedVector::default();
 
-        let read_db = self.db.vtable.read_db.expect("vtable function 'read_db' not set");
-
-        let go_error: GoError = read_db(
-            self.db.state,
-            U8SliceView::new(EvmStoreKey::account_key(address)),
-            &mut output as *mut UnmanagedVector,
-            &mut error_msg as *mut UnmanagedVector
-        ).into();
+        let go_error: GoError = self.db.vtable
+            .read_db(
+                self.db.state,
+                U8SliceView::new(EvmStoreKey::account_key(address)),
+                &mut output as *mut UnmanagedVector,
+                &mut error_msg as *mut UnmanagedVector
+            )
+            .into();
 
         let output = output.consume();
         let default = || {
             format!("Failed to read an address in the db: {}", String::from_utf8_lossy(address))
         };
-
+        // TODO: parsing
         Ok(output.into())
     }
 
@@ -113,14 +113,14 @@ impl<'DB> Database for GoStorage<'DB> {
         let mut output = UnmanagedVector::default();
         let mut error_msg = UnmanagedVector::default();
 
-        let read_db = self.db.vtable.read_db.expect("vtable function 'read_db' not set");
-
-        let go_error: GoError = read_db(
-            self.db.state,
-            U8SliceView::new(EvmStoreKey::storage_key(address, index)),
-            &mut output as *mut UnmanagedVector,
-            &mut error_msg as *mut UnmanagedVector
-        ).into();
+        let go_error: GoError = self.db.vtable
+            .read_db(
+                self.db.state,
+                U8SliceView::new(EvmStoreKey::storage_key(address, index)),
+                &mut output as *mut UnmanagedVector,
+                &mut error_msg as *mut UnmanagedVector
+            )
+            .into();
 
         let output = output.consume();
 
@@ -131,14 +131,14 @@ impl<'DB> Database for GoStorage<'DB> {
         let mut output = UnmanagedVector::default();
         let mut error_msg = UnmanagedVector::default();
 
-        let read_db = self.db.vtable.read_db.expect("vtable function 'read_db' not set");
-
-        let go_error: GoError = read_db(
-            self.db.state,
-            U8SliceView::new(EvmStoreKey::block_hash_key(number)),
-            &mut output as *mut UnmanagedVector,
-            &mut error_msg as *mut UnmanagedVector
-        ).into();
+        let go_error: GoError = self.db.vtable
+            .read_db(
+                self.db.state,
+                U8SliceView::new(EvmStoreKey::block_hash_key(number)),
+                &mut output as *mut UnmanagedVector,
+                &mut error_msg as *mut UnmanagedVector
+            )
+            .into();
 
         let output = output.consume();
 
@@ -151,16 +151,15 @@ impl<'DB> Database for GoStorage<'DB> {
     ) -> Result<revm_primitives::Bytecode, Self::Error> {
         let mut output = UnmanagedVector::default();
         let mut error_msg = UnmanagedVector::default();
-        let mut used_gas = 0_u64;
 
-        let read_db = self.db.vtable.read_db.expect("vtable function 'read_db' not set");
-
-        let go_error: GoError = read_db(
-            self.db.state,
-            U8SliceView::new(EvmStoreKey::code_key(code_hash)),
-            &mut output as *mut UnmanagedVector,
-            &mut error_msg as *mut UnmanagedVector
-        ).into();
+        let go_error: GoError = self.db.vtable
+            .read_db(
+                self.db.state,
+                U8SliceView::new(EvmStoreKey::code_key(code_hash)),
+                &mut output as *mut UnmanagedVector,
+                &mut error_msg as *mut UnmanagedVector
+            )
+            .into();
 
         let output = output.consume();
 

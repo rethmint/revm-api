@@ -1,4 +1,4 @@
-use crate::{U8SliceView, UnmanagedVector};
+use crate::{ U8SliceView, UnmanagedVector };
 
 //use crate::{ iterator::GoIter, memory::{ U8SliceView, UnmanagedVector } };
 //
@@ -16,18 +16,18 @@ pub struct Db_vtable {
         *mut db_t,
         U8SliceView,
         *mut UnmanagedVector, // result output
-        *mut UnmanagedVector, // error message output
+        *mut UnmanagedVector // error message output
     ) -> i32,
     pub write_db: extern "C" fn(
         *mut db_t,
         U8SliceView,
         U8SliceView,
-        *mut UnmanagedVector, // error message output
+        *mut UnmanagedVector // error message output
     ) -> i32,
     pub remove_db: extern "C" fn(
         *mut db_t,
         U8SliceView,
-        *mut UnmanagedVector, // error message output
+        *mut UnmanagedVector // error message output
     ) -> i32,
 }
 

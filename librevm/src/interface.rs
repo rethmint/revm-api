@@ -1,7 +1,7 @@
-use revm::{ Context, Evm, EvmHandler, State };
-use revm_primitives::{ EthereumWiring, SpecId };
+use revm::{Context, Evm, EvmHandler, State};
+use revm_primitives::{EthereumWiring, SpecId};
 
-use crate::{ gstorage::GoStorage, BlockData, ByteSliceView, Db, TransactionData, UnmanagedVector };
+use crate::{gstorage::GoStorage, BlockData, ByteSliceView, Db, TransactionData, UnmanagedVector};
 // byte slice view: golang data type
 // unamangedvector: ffi safe vector data type compliants with rust's ownership and data types, for returning optional error value
 pub const BLOCK: &str = "block";
@@ -11,7 +11,7 @@ pub const TRANSACTION: &str = "transaction";
 pub struct evm_t {}
 
 pub fn to_evm<'a>(
-    ptr: *mut evm_t
+    ptr: *mut evm_t,
 ) -> Option<&'a mut Evm<EthereumWiring<&'a mut State<GoStorage>, ()>>> {
     if ptr.is_null() {
         None
@@ -23,8 +23,7 @@ pub fn to_evm<'a>(
 
 // initialize vm instance with handler
 #[no_mangle]
-pub extern "C" fn init_vm(
-    // pre_execution: Option<&PreExecutionHandler>,
+pub extern "C" fn init_vm(// pre_execution: Option<&PreExecutionHandler>,
     // post_execution: Option<&PostExecutionHandler>
 ) -> *mut evm_t {
     let context = Context::default();
@@ -47,9 +46,9 @@ pub extern "C" fn release_vm(vm: *mut evm_t) {
 #[no_mangle]
 pub extern "C" fn execute_evm(
     vm_ptr: *mut evm_t,
-    db: Db, // -> Block Cache State from KVStore
+    db: Db,               // -> Block Cache State from KVStore
     block: ByteSliceView, // -> block JSON Data
-    tx: ByteSliceView // -> tx JSON Data
+    tx: ByteSliceView,    // -> tx JSON Data
 ) -> UnmanagedVector {
     let mut evm = match to_evm(vm_ptr) {
         Some(vm) => vm,
@@ -57,24 +56,19 @@ pub extern "C" fn execute_evm(
             panic!("Failed to get VM");
         }
     };
-    let block = BlockData::from_json(
-        &String::from_utf8(
-            block
-                .read()
-                .unwrap()
-                //.ok_or_else(|| Error::unset_arg(BLOCK))?
-                .to_vec()
-        )?
-    );
-    let tx = TransactionData::from_json(
-        &String::from_utf8(
-            tx
-                .read()
-                .unwrap()
-                //.ok_or_else(|| Error::unset_arg(TRANSACTION))?
-                .to_vec()
-        )?
-    );
+    let block = BlockData::from_json(&String::from_utf8(
+        block
+            .read()
+            .unwrap()
+            //.ok_or_else(|| Error::unset_arg(BLOCK))?
+            .to_vec(),
+    )?);
+    let tx = TransactionData::from_json(&String::from_utf8(
+        tx.read()
+            .unwrap()
+            //.ok_or_else(|| Error::unset_arg(TRANSACTION))?
+            .to_vec(),
+    )?);
 
     let mut db = GoStorage::new(&db);
     evm.context = Context::new_with_db(db);

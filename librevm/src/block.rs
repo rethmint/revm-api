@@ -1,4 +1,4 @@
-use revm_primitives::{ Address, BlobExcessGasAndPrice, Block, B256, U256 };
+use revm_primitives::{Address, BlobExcessGasAndPrice, Block, B256, U256};
 
 //#[derive(Serialize, Deserialize, Debug)]
 pub struct BlockData {

@@ -3,6 +3,10 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::slice;
 
+use serde::de::DeserializeOwned;
+use serde::Deserialize;
+use serde::Serialize;
+
 /// A view into an externally owned byte slice (Go `[]byte`).
 /// Use this for the current call only. A view cannot be copied for safety reasons.
 /// If you need a copy, use [`ByteSliceView::to_owned`].
@@ -152,10 +156,10 @@ pub struct UnmanagedVector {
     cap: usize,
 }
 
-impl<HaltReasonT: serde::Serialize> ExecutionResultExt<HaltReasonT>
-    for ExecutionResult<HaltReasonT>
-{
-}
+//impl<HaltReasonT: serde::Serialize> ExecutionResultExt<HaltReasonT>
+//    for ExecutionResult<HaltReasonT>
+//{
+//}
 
 impl UnmanagedVector {
     /// Consumes this optional vector for manual management.
@@ -185,7 +189,10 @@ impl UnmanagedVector {
         }
     }
 
-    pub fn from_data<T>(data: &T) -> UnmanagedVector {
+    pub fn from_data<T>(data: &T) -> UnmanagedVector
+    where
+        T: Serialize,
+    {
         let data = match serde_json::to_vec(data) {
             Ok(vec) => Some(vec),
             Err(_) => None,

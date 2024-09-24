@@ -1,10 +1,10 @@
-use revm::Database;
-use revm_primitives::{ Address, B256 };
+use revm::{Database, DatabaseCommit};
+use revm_primitives::{Address, B256};
 use types::BackendError;
 
 use crate::db::Db;
 use crate::error::GoError;
-use crate::memory::{ U8SliceView, UnmanagedVector };
+use crate::memory::{U8SliceView, UnmanagedVector};
 /// Access to the VM's backend storage, i.e. the chain
 pub trait Storage {
     #[allow(dead_code)]
@@ -83,23 +83,28 @@ impl<'DB> Database for GoStorage<'DB> {
 
     fn basic(
         &mut self,
-        address: revm_primitives::Address
+        address: revm_primitives::Address,
     ) -> Result<Option<revm_primitives::AccountInfo>, Self::Error> {
         let mut output = UnmanagedVector::default();
         let mut error_msg = UnmanagedVector::default();
 
-        let go_error: GoError = self.db.vtable
+        let go_error: GoError = self
+            .db
+            .vtable
             .read_db(
                 self.db.state,
                 U8SliceView::new(EvmStoreKey::account_key(address)),
                 &mut output as *mut UnmanagedVector,
-                &mut error_msg as *mut UnmanagedVector
+                &mut error_msg as *mut UnmanagedVector,
             )
             .into();
 
         let output = output.consume();
         let default = || {
-            format!("Failed to read an address in the db: {}", String::from_utf8_lossy(address))
+            format!(
+                "Failed to read an address in the db: {}",
+                String::from_utf8_lossy(address)
+            )
         };
         // TODO: parsing
         Ok(output.into())
@@ -108,17 +113,19 @@ impl<'DB> Database for GoStorage<'DB> {
     fn storage(
         &mut self,
         address: revm_primitives::Address,
-        index: revm_primitives::U256
+        index: revm_primitives::U256,
     ) -> Result<revm_primitives::U256, Self::Error> {
         let mut output = UnmanagedVector::default();
         let mut error_msg = UnmanagedVector::default();
 
-        let go_error: GoError = self.db.vtable
+        let go_error: GoError = self
+            .db
+            .vtable
             .read_db(
                 self.db.state,
                 U8SliceView::new(EvmStoreKey::storage_key(address, index)),
                 &mut output as *mut UnmanagedVector,
-                &mut error_msg as *mut UnmanagedVector
+                &mut error_msg as *mut UnmanagedVector,
             )
             .into();
 
@@ -131,12 +138,14 @@ impl<'DB> Database for GoStorage<'DB> {
         let mut output = UnmanagedVector::default();
         let mut error_msg = UnmanagedVector::default();
 
-        let go_error: GoError = self.db.vtable
+        let go_error: GoError = self
+            .db
+            .vtable
             .read_db(
                 self.db.state,
                 U8SliceView::new(EvmStoreKey::block_hash_key(number)),
                 &mut output as *mut UnmanagedVector,
-                &mut error_msg as *mut UnmanagedVector
+                &mut error_msg as *mut UnmanagedVector,
             )
             .into();
 
@@ -147,22 +156,30 @@ impl<'DB> Database for GoStorage<'DB> {
 
     fn code_by_hash(
         &mut self,
-        code_hash: revm_primitives::B256
+        code_hash: revm_primitives::B256,
     ) -> Result<revm_primitives::Bytecode, Self::Error> {
         let mut output = UnmanagedVector::default();
         let mut error_msg = UnmanagedVector::default();
 
-        let go_error: GoError = self.db.vtable
+        let go_error: GoError = self
+            .db
+            .vtable
             .read_db(
                 self.db.state,
                 U8SliceView::new(EvmStoreKey::code_key(code_hash)),
                 &mut output as *mut UnmanagedVector,
-                &mut error_msg as *mut UnmanagedVector
+                &mut error_msg as *mut UnmanagedVector,
             )
             .into();
 
         let output = output.consume();
 
         Ok(output.into())
+    }
+}
+
+impl<'a> DatabaseCommit for GoStorage<'a> {
+    fn commit(&mut self, changes: std::collections::HashMap<Address, revm_primitives::Account>) {
+        todo!();
     }
 }

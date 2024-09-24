@@ -22,6 +22,7 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 default = []
+serde = []
 # This feature requires Rust nightly because it depends on the unstable backtrace feature.
 backtraces = []
 

@@ -56,7 +56,7 @@ hex = { version = "0.4", default-features = false }
 [features]
 default = ["std", "c-kzg", "portable"]
 std = [
-	"serde?/std",
+	"serde",
 	"alloy-eips/std",
 	"alloy-primitives/std",
 	"hex/std",

@@ -124,7 +124,7 @@ impl<'DB> Database for GoStorage<'DB> {
         let maybe_output = output.consume();
         let default = || format!("Failed to read an address in the db: {}", address);
         // TODO: parsing
-        Ok(maybe_output.map(|v| v.into()))
+        Ok(maybe_output.map(|v| parse_account_info(v)))
     }
 
     fn storage(
@@ -269,29 +269,50 @@ impl<'r> Storage for GoStorage<'r> {
     }
 }
 
-//trait ByteKey {
-//    fn compress(&self) -> &[u8];
-//}
-//
-//impl ByteKey for AccountInfo {
-//    fn compress(&self) -> &[u8] {
-//        let mut result = Vec::with_capacity(72);
-//
-//        // balance: U256 (32 bytes)
-//        let mut balance_bytes = [0u8; 32];
-//        self.balance.to_big_endian(&mut balance_bytes);
-//        result.extend_from_slice(&balance_bytes);
-//
-//        // nonce: u64 (8 bytes)
-//        let nonce_bytes = self.nonce.to_be_bytes();
-//        result.extend_from_slice(&nonce_bytes);
-//
-//        // code_hash: B256 (32 bytes)
-//        result.extend_from_slice(&self.code_hash);
-//
-//        &result
-//    }
-//}
+fn compress_account_info(info: AccountInfo) -> Vec<u8> {
+    let mut vec = Vec::with_capacity(72);
+
+    let balance_be_bytes = info.balance.to_be_bytes_vec();
+    vec.extend(&balance_be_bytes);
+
+    let nonce_be_bytes = info.nonce.to_be_bytes();
+    vec.extend_from_slice(&nonce_be_bytes);
+
+    vec.extend(info.code_hash.to_vec());
+
+    if let Some(Bytecode::LegacyRaw(bytes)) = info.code {
+        vec.extend(bytes.to_vec());
+    }
+
+    vec
+}
+
+fn parse_account_info(value: Vec<u8>) -> AccountInfo {
+    assert!(value.len() >= 72);
+
+    let balance_bytes: [u8; 32] = value[0..32].try_into().unwrap();
+    // TODO: might be le bytes
+    let balance = U256::from_be_slice(&balance_bytes);
+
+    let nonce_bytes: [u8; 8] = value[32..40].try_into().unwrap();
+    let nonce = u64::from_be_bytes(nonce_bytes);
+
+    let code_hash_bytes: [u8; 32] = value[40..72].try_into().unwrap();
+    let code_hash = B256::from(code_hash_bytes);
+
+    let code = if value.len() > 72 {
+        Some(Bytecode::LegacyRaw(Bytes::from(value[72..].to_vec())))
+    } else {
+        None
+    };
+
+    AccountInfo {
+        balance,
+        nonce,
+        code_hash,
+        code,
+    }
+}
 
 impl<'a> DatabaseCommit for GoStorage<'a> {
     fn commit(&mut self, changes: std::collections::HashMap<Address, revm_primitives::Account>) {
@@ -305,7 +326,7 @@ impl<'a> DatabaseCommit for GoStorage<'a> {
             let account_key = EvmStoreKey::Account(*address).key();
             let account_key_slice = account_key.as_slice();
 
-            let account_info_vec: Vec<u8> = account.info.clone().into();
+            let account_info_vec: Vec<u8> = compress_account_info(account.info.clone());
             self.set(account_key_slice, &account_info_vec).unwrap();
 
             if !is_newly_created {

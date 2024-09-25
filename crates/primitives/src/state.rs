@@ -237,34 +237,6 @@ pub struct AccountInfo {
     pub code: Option<Bytecode>,
 }
 
-impl From<Vec<u8>> for AccountInfo {
-    fn from(value: Vec<u8>) -> Self {
-        assert!(value.len() >= 72);
-
-        let balance_bytes: [u8; 32] = value[0..32].try_into().unwrap();
-        let balance = U256::from_be_slice(&balance_bytes);
-
-        let nonce_bytes: [u8; 8] = value[32..40].try_into().unwrap();
-        let nonce = u64::from_be_bytes(nonce_bytes);
-
-        let code_hash_bytes: [u8; 32] = value[40..72].try_into().unwrap();
-        let code_hash = B256::from(code_hash_bytes);
-
-        let code = if value.len() > 72 {
-            Some(Bytecode::LegacyRaw(Bytes::from(value[72..].to_vec())))
-        } else {
-            None
-        };
-
-        Self {
-            balance,
-            nonce,
-            code_hash,
-            code,
-        }
-    }
-}
-
 impl Default for AccountInfo {
     fn default() -> Self {
         Self {

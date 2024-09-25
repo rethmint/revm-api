@@ -100,30 +100,37 @@ impl EvmStoreKey {
     }
 }
 
-impl<'DB> Database for GoStorage<'DB> {
-    type Error = BackendError;
-
-    fn basic(
-        &mut self,
-        address: revm_primitives::Address,
-    ) -> Result<Option<revm_primitives::AccountInfo>, Self::Error> {
+impl<'DB> GoStorage<'DB> {
+    fn extract_account(&mut self, key: &[u8]) -> Result<Option<Vec<u8>>, BackendError> {
         let mut output = UnmanagedVector::default();
         let mut error_msg = UnmanagedVector::default();
 
-        let account_key = EvmStoreKey::Account(address).key();
-        let account_key_slice = account_key.as_slice();
-
         let _go_error: GoError = (self.db.vtable.read_db)(
             self.db.state,
-            U8SliceView::new(Some(account_key_slice)),
+            U8SliceView::new(Some(key)),
             &mut output as *mut UnmanagedVector,
             &mut error_msg as *mut UnmanagedVector,
         )
         .into();
 
         let maybe_output = output.consume();
+        Ok(maybe_output)
+    }
+}
+
+impl<'DB> Database for GoStorage<'DB> {
+    type Error = BackendError;
+
+    fn basic(
+        &mut self,
+        address: revm_primitives::Address,
+    ) -> Result<Option<AccountInfo>, Self::Error> {
+        let account_key = EvmStoreKey::Account(address).key();
+        let account_key_slice = account_key.as_slice();
+
+        let maybe_output = self.extract_account(account_key_slice)?;
         let default = || format!("Failed to read an address in the db: {}", address);
-        // TODO: parsing
+
         Ok(maybe_output.map(|v| parse_account_info(v)))
     }
 
@@ -132,42 +139,20 @@ impl<'DB> Database for GoStorage<'DB> {
         address: revm_primitives::Address,
         index: revm_primitives::U256,
     ) -> Result<revm_primitives::U256, Self::Error> {
-        let mut output = UnmanagedVector::default();
-        let mut error_msg = UnmanagedVector::default();
-
         let storage_key = EvmStoreKey::Storage(address, index).key();
         let storage_key_slice = storage_key.as_slice();
 
-        let _go_error: GoError = (self.db.vtable.read_db)(
-            self.db.state,
-            U8SliceView::new(Some(storage_key_slice)),
-            &mut output as *mut UnmanagedVector,
-            &mut error_msg as *mut UnmanagedVector,
-        )
-        .into();
-
-        let maybe_output = output.consume();
+        let maybe_output = self.extract_account(storage_key_slice)?;
         let output = maybe_output.unwrap();
 
         Ok(Uint::from_be_slice(&output))
     }
 
     fn block_hash(&mut self, number: u64) -> Result<revm_primitives::B256, Self::Error> {
-        let mut output = UnmanagedVector::default();
-        let mut error_msg = UnmanagedVector::default();
-
         let block_key = EvmStoreKey::Block(number).key();
         let block_key_slice = block_key.as_slice();
 
-        let _go_error: GoError = (self.db.vtable.read_db)(
-            self.db.state,
-            U8SliceView::new(Some(block_key_slice)),
-            &mut output as *mut UnmanagedVector,
-            &mut error_msg as *mut UnmanagedVector,
-        )
-        .into();
-
-        let maybe_output = output.consume();
+        let maybe_output = self.extract_account(block_key_slice)?;
         let output = maybe_output.unwrap();
 
         Ok(B256::from_slice(&output))
@@ -177,21 +162,10 @@ impl<'DB> Database for GoStorage<'DB> {
         &mut self,
         code_hash: revm_primitives::B256,
     ) -> Result<revm_primitives::Bytecode, Self::Error> {
-        let mut output = UnmanagedVector::default();
-        let mut error_msg = UnmanagedVector::default();
-
         let code_key = EvmStoreKey::Code(code_hash).key();
         let code_key_slice = code_key.as_slice();
 
-        let _go_error: GoError = (self.db.vtable.read_db)(
-            self.db.state,
-            U8SliceView::new(Some(code_key_slice)),
-            &mut output as *mut UnmanagedVector,
-            &mut error_msg as *mut UnmanagedVector,
-        )
-        .into();
-
-        let maybe_output = output.consume();
+        let maybe_output = self.extract_account(code_key_slice)?;
         let output = maybe_output.unwrap();
 
         Ok(Bytecode::LegacyRaw(Bytes::from(output)))

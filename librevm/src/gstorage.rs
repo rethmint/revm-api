@@ -102,19 +102,7 @@ impl EvmStoreKey {
 
 impl<'DB> GoStorage<'DB> {
     fn extract_account(&mut self, key: &[u8]) -> Result<Option<Vec<u8>>, BackendError> {
-        let mut output = UnmanagedVector::default();
-        let mut error_msg = UnmanagedVector::default();
-
-        let _go_error: GoError = (self.db.vtable.read_db)(
-            self.db.state,
-            U8SliceView::new(Some(key)),
-            &mut output as *mut UnmanagedVector,
-            &mut error_msg as *mut UnmanagedVector,
-        )
-        .into();
-
-        let maybe_output = output.consume();
-        Ok(maybe_output)
+        self.get(key)
     }
 }
 

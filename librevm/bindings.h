@@ -15,6 +15,42 @@
 
 
 /**
+ * This enum gives names to the status codes returned from Go callbacks to Rust.
+ * The Go code will return one of these variants when returning.
+ *
+ * 0 means no error, all the other cases are some sort of error.
+ *
+ */
+enum GoError {
+  GoError_None = 0,
+  /**
+   * Go panicked for an unexpected reason.
+   */
+  GoError_Panic = 1,
+  /**
+   * Go received a bad argument from Rust
+   */
+  GoError_BadArgument = 2,
+  /**
+   * Error while trying to serialize data in Go code (typically json.Marshal)
+   */
+  GoError_CannotSerialize = 3,
+  /**
+   * An error happened during normal operation of a Go callback, which should be fed back to the contract
+   */
+  GoError_User = 4,
+  /**
+   * Unimplemented
+   */
+  GoError_Unimplemented = 5,
+  /**
+   * An error type that should never be created by us. It only serves as a fallback for the i32 to GoError conversion.
+   */
+  GoError_Other = -1,
+};
+typedef int32_t GoError;
+
+/**
  * An optional Vector type that requires explicit creation and destruction
  * and can be sent via FFI.
  * It can be created from `Option<Vec<u8>>` and be converted into `Option<Vec<u8>>`.
@@ -59,9 +95,6 @@ typedef struct {
   size_t cap;
 } UnmanagedVector;
 
-/**
- *  * idea sep 17  * 1. Receive env from GoApi and initialize context  * 2. Use the context to initialize vm  * 3. Use the VM with the env to call 'call' and 'create'  *
- */
 typedef struct {
 
 } evm_t;
@@ -88,13 +121,6 @@ typedef struct {
   int32_t (*read_db)(db_t*, U8SliceView, UnmanagedVector*, UnmanagedVector*);
   int32_t (*write_db)(db_t*, U8SliceView, U8SliceView, UnmanagedVector*);
   int32_t (*remove_db)(db_t*, U8SliceView, UnmanagedVector*);
-  int32_t (*scan_db)(db_t*,
-                     U8SliceView,
-                     U8SliceView,
-                     U8SliceView,
-                     int32_t,
-                     GoIter*,
-                     UnmanagedVector*);
 } Db_vtable;
 
 typedef struct {
@@ -118,16 +144,14 @@ typedef struct {
   size_t len;
 } ByteSliceView;
 
-vm_t *allocate_vm(size_t module_cache_capacity, size_t script_cache_capacity);
-
 void destroy_unmanaged_vector(UnmanagedVector v);
 
-void execute_evm(evm_t *vm_ptr, Db db, uint64_t chain_id, ByteSliceView block, ByteSliceView tx);
+UnmanagedVector execute_evm(evm_t *vm_ptr, Db db, ByteSliceView block, ByteSliceView tx);
 
 evm_t *init_vm(void);
 
 UnmanagedVector new_unmanaged_vector(bool nil, const uint8_t *ptr, size_t length);
 
-void release_vm(vm_t *vm);
+void release_vm(evm_t *vm);
 
 #endif /* __LIBMOVEVM__ */

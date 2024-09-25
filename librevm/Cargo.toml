@@ -2,9 +2,8 @@
 name = "librevm"
 version = "0.1.0"
 publish = false
-description = "Initia Move VM Engine"
-homepage = "https://initia.xyz/"
-repository = "https://github.com/initia-labs/movevm"
+description = "Reth Revm Engine"
+repository = "https://github.com/rethermint/revm-api"
 exclude = [".gitignore"]
 
 edition = { workspace = true }
@@ -22,6 +21,7 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 default = []
+serde = []
 # This feature requires Rust nightly because it depends on the unstable backtrace feature.
 backtraces = []
 

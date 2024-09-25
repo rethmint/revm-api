@@ -10,8 +10,7 @@ use revm_primitives::Address;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    Accounts, CosmosMessage, CosmosMessages, EntryFunction, GasUsageSet, JsonEvent, JsonEvents,
-    StakingChangeSet, WriteSet,
+    Accounts, CosmosMessages, EntryFunction, GasUsageSet, JsonEvents, StakingChangeSet, WriteSet,
 };
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]

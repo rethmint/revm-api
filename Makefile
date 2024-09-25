@@ -1,6 +1,6 @@
 .PHONY: all build build-rust build-go test precompile
 
-# Builds the Rust library libmovevm
+# Builds the Rust library librevm
 BUILDERS_PREFIX := initia/go-ext-builder:0001
 # Contains a full Go dev environment in order to run Go tests on the built library
 ALPINE_TESTER := initia/go-ext-builder:0001-alpine
@@ -20,14 +20,14 @@ ifeq ($(OS),Windows_NT)
 else
 	UNAME_S := $(shell uname -s)
 	ifeq ($(UNAME_S),Linux)
-		SHARED_LIB_SRC = libmovevm.so
-		SHARED_LIB_DST = libmovevm.$(shell rustc --print cfg | grep target_arch | cut  -d '"' -f 2).so
+		SHARED_LIB_SRC = librevm.so
+		SHARED_LIB_DST = librevm.$(shell rustc --print cfg | grep target_arch | cut  -d '"' -f 2).so
 		COMPILER_SHARED_LIB_SRC = libcompiler.so
 		COMPILER_SHARED_LIB_DST = libcompiler.$(shell rustc --print cfg | grep target_arch | cut  -d '"' -f 2).so
 	endif
 	ifeq ($(UNAME_S),Darwin)
-		SHARED_LIB_SRC = libmovevm.dylib
-		SHARED_LIB_DST = libmovevm.dylib
+		SHARED_LIB_SRC = librevm.dylib
+		SHARED_LIB_DST = librevm.dylib
 		COMPILER_SHARED_LIB_SRC = libcompiler.dylib
 		COMPILER_SHARED_LIB_DST = libcompiler.dylib
 	endif
@@ -82,8 +82,7 @@ fmt:
 	cargo fmt
 
 update-bindings:
-	cp libmovevm/bindings.h api
-	cp libcompiler/bindings_compiler.h api
+	cp librevm/bindings.h api
 
 # Use debug build for quick testing.
 # In order to use "--features backtraces" here we need a Rust nightly toolchain, which we don't have by default
@@ -114,7 +113,7 @@ clean:
 	cargo clean
 	@-rm api/bindings.h 
 	@-rm api/bindings_compiler.h 
-	@-rm libmovevm/bindings.h
+	@-rm librevm/bindings.h
 	@-rm libcompiler/bindings_compiler.h
 	@-rm api/$(SHARED_LIB_DST)
 	@-rm api/$(COMPILER_SHARED_LIB_DST)
@@ -127,8 +126,8 @@ release-build-alpine:
 	docker run --rm -u $(USER_ID):$(USER_GROUP)  \
 		-v $(shell pwd):/code/ \
 		$(BUILDERS_PREFIX)-alpine
-	cp artifacts/libmovevm_muslc.x86_64.a api
-	cp artifacts/libmovevm_muslc.aarch64.a api
+	cp artifacts/librevm_muslc.x86_64.a api
+	cp artifacts/librevm_muslc.aarch64.a api
 	cp artifacts/libcompiler_muslc.x86_64.a api
 	cp artifacts/libcompiler_muslc.aarch64.a api
 	make update-bindings
@@ -143,8 +142,8 @@ release-build-linux:
 	docker run --rm -u $(USER_ID):$(USER_GROUP) \
 		-v $(shell pwd):/code/ \
 		$(BUILDERS_PREFIX)-centos7
-	cp artifacts/libmovevm.x86_64.so api
-	cp artifacts/libmovevm.aarch64.so api
+	cp artifacts/librevm.x86_64.so api
+	cp artifacts/librevm.aarch64.so api
 	cp artifacts/libcompiler.x86_64.so api
 	cp artifacts/libcompiler.aarch64.so api
 	make update-bindings
@@ -156,7 +155,7 @@ release-build-macos:
 	docker run --rm -u $(USER_ID):$(USER_GROUP) \
 		-v $(shell pwd):/code/ \
 		$(BUILDERS_PREFIX)-cross build_macos.sh
-	cp artifacts/libmovevm.dylib api
+	cp artifacts/librevm.dylib api
 	cp artifacts/libcompiler.dylib api
 	make update-bindings
 

@@ -3,7 +3,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::slice;
 
-// It is a copy of the one from cosmwasm/lib crate. We owe them a lot!
+use serde::Serialize;
 
 /// A view into an externally owned byte slice (Go `[]byte`).
 /// Use this for the current call only. A view cannot be copied for safety reasons.
@@ -154,6 +154,11 @@ pub struct UnmanagedVector {
     cap: usize,
 }
 
+//impl<HaltReasonT: serde::Serialize> ExecutionResultExt<HaltReasonT>
+//    for ExecutionResult<HaltReasonT>
+//{
+//}
+
 impl UnmanagedVector {
     /// Consumes this optional vector for manual management.
     /// This is a zero-copy operation.
@@ -180,6 +185,17 @@ impl UnmanagedVector {
                 cap: 0,
             },
         }
+    }
+
+    pub fn from_data<T>(data: &T) -> UnmanagedVector
+    where
+        T: Serialize,
+    {
+        let data = match serde_json::to_vec(data) {
+            Ok(vec) => Some(vec),
+            Err(_) => None,
+        };
+        UnmanagedVector::new(data)
     }
 
     /// Creates a non-none UnmanagedVector with the given data.
@@ -247,9 +263,9 @@ mod test {
 
     #[test]
     fn byte_slice_view_read_works() {
-        let data = vec![0xAA, 0xBB, 0xCC];
+        let data = vec![0xaa, 0xbb, 0xcc];
         let view = ByteSliceView::new(&data);
-        assert_eq!(view.read().unwrap(), &[0xAA, 0xBB, 0xCC]);
+        assert_eq!(view.read().unwrap(), &[0xaa, 0xbb, 0xcc]);
 
         let data = vec![];
         let view = ByteSliceView::new(&data);
@@ -261,9 +277,9 @@ mod test {
 
     #[test]
     fn byte_slice_view_to_owned_works() {
-        let data = vec![0xAA, 0xBB, 0xCC];
+        let data = vec![0xaa, 0xbb, 0xcc];
         let view = ByteSliceView::new(&data);
-        assert_eq!(view.to_owned().unwrap(), vec![0xAA, 0xBB, 0xCC]);
+        assert_eq!(view.to_owned().unwrap(), vec![0xaa, 0xbb, 0xcc]);
 
         let data = vec![];
         let view = ByteSliceView::new(&data);

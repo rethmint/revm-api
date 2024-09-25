@@ -198,8 +198,135 @@ impl<'DB> Database for GoStorage<'DB> {
     }
 }
 
+impl<'r> Storage for GoStorage<'r> {
+    fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, BackendError> {
+        let mut output = UnmanagedVector::default();
+        let mut error_msg = UnmanagedVector::default();
+        let go_error: GoError = (self.db.vtable.read_db)(
+            self.db.state,
+            U8SliceView::new(Some(key)),
+            &mut output as *mut UnmanagedVector,
+            &mut error_msg as *mut UnmanagedVector,
+        )
+        .into();
+        // We destruct the UnmanagedVector here, no matter if we need the data.
+        let output = output.consume();
+
+        // return complete error message (reading from buffer for GoError::Other)
+        let default = || {
+            format!(
+                "Failed to read a key in the db: {}",
+                String::from_utf8_lossy(key)
+            )
+        };
+        unsafe {
+            go_error.into_result(error_msg, default)?;
+        }
+
+        Ok(output)
+    }
+
+    fn set(&mut self, key: &[u8], value: &[u8]) -> Result<(), BackendError> {
+        let mut error_msg = UnmanagedVector::default();
+        let go_error: GoError = (self.db.vtable.write_db)(
+            self.db.state,
+            U8SliceView::new(Some(key)),
+            U8SliceView::new(Some(value)),
+            &mut error_msg as *mut UnmanagedVector,
+        )
+        .into();
+        // return complete error message (reading from buffer for GoError::Other)
+        let default = || {
+            format!(
+                "Failed to set a key in the db: {}",
+                String::from_utf8_lossy(key)
+            )
+        };
+        unsafe {
+            go_error.into_result(error_msg, default)?;
+        }
+        Ok(())
+    }
+
+    fn remove(&mut self, key: &[u8]) -> Result<(), BackendError> {
+        let mut error_msg = UnmanagedVector::default();
+        let go_error: GoError = (self.db.vtable.remove_db)(
+            self.db.state,
+            U8SliceView::new(Some(key)),
+            &mut error_msg as *mut UnmanagedVector,
+        )
+        .into();
+        let default = || {
+            format!(
+                "Failed to delete a key in the db: {}",
+                String::from_utf8_lossy(key)
+            )
+        };
+        unsafe {
+            go_error.into_result(error_msg, default)?;
+        }
+        Ok(())
+    }
+}
+
+//trait ByteKey {
+//    fn compress(&self) -> &[u8];
+//}
+//
+//impl ByteKey for AccountInfo {
+//    fn compress(&self) -> &[u8] {
+//        let mut result = Vec::with_capacity(72);
+//
+//        // balance: U256 (32 bytes)
+//        let mut balance_bytes = [0u8; 32];
+//        self.balance.to_big_endian(&mut balance_bytes);
+//        result.extend_from_slice(&balance_bytes);
+//
+//        // nonce: u64 (8 bytes)
+//        let nonce_bytes = self.nonce.to_be_bytes();
+//        result.extend_from_slice(&nonce_bytes);
+//
+//        // code_hash: B256 (32 bytes)
+//        result.extend_from_slice(&self.code_hash);
+//
+//        &result
+//    }
+//}
+
 impl<'a> DatabaseCommit for GoStorage<'a> {
     fn commit(&mut self, changes: std::collections::HashMap<Address, revm_primitives::Account>) {
-        todo!();
+        for (address, account) in changes.iter() {
+            if !account.is_touched() {
+                // filter Loaded
+                continue;
+            }
+            let is_newly_created = account.is_created();
+            // account info update
+            let account_key = EvmStoreKey::Account(*address).key();
+            let account_key_slice = account_key.as_slice();
+
+            let account_info_vec: Vec<u8> = account.info.clone().into();
+            self.set(account_key_slice, &account_info_vec).unwrap();
+
+            if !is_newly_created {
+                // storage cache commit on value changed
+                let storage = account.storage.clone();
+                for (index, slot) in storage {
+                    if slot.present_value == slot.original_value {
+                        continue;
+                    }
+                    let storage_key = EvmStoreKey::Storage(*address, index).key();
+                    let storage_key_slice = storage_key.as_slice();
+
+                    //let balance = U256::from_be_slice(&slot.present_value);
+
+                    let mut vec = Vec::with_capacity(72);
+                    let slot_present_value_vec = slot.present_value.to_be_bytes_vec();
+                    vec.extend(&slot_present_value_vec);
+
+                    self.set(storage_key_slice, &vec).unwrap();
+                }
+            }
+        }
     }
 }

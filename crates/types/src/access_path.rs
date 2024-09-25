@@ -39,10 +39,6 @@ use anyhow::{anyhow, bail, Result};
 use revm_primitives::Address;
 use serde::{Deserialize, Serialize};
 
-use std::fmt;
-use std::str::FromStr;
-use std::{fmt::Write, num::ParseIntError};
-
 use ethers_core::types::{H160 as eH160, H256};
 
 #[derive(Clone, Eq, PartialEq, Hash, Ord, PartialOrd, Serialize, Deserialize)]

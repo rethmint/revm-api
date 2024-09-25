@@ -1,6 +1,3 @@
-#[cfg(test)]
-mod tests;
-
 mod db;
 mod error;
 mod gstorage;

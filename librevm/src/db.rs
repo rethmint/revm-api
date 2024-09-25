@@ -4,6 +4,7 @@ use crate::{U8SliceView, UnmanagedVector};
 //
 // this represents something passed in from the caller side of FFI
 #[repr(C)]
+#[allow(non_camel_case_types)]
 pub struct db_t {
     _private: [u8; 0],
 }
@@ -11,6 +12,7 @@ pub struct db_t {
 // These functions should return GoError but because we don't trust them here, we treat the return value as i32
 // and then check it when converting to GoError manually
 #[repr(C)]
+#[allow(non_camel_case_types)]
 pub struct Db_vtable {
     pub read_db: extern "C" fn(
         *mut db_t,

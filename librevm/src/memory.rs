@@ -3,8 +3,6 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::slice;
 
-use serde::de::DeserializeOwned;
-use serde::Deserialize;
 use serde::Serialize;
 
 /// A view into an externally owned byte slice (Go `[]byte`).

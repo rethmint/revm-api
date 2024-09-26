@@ -14,9 +14,41 @@
 #include <stdlib.h>
 
 
-typedef struct {
-
-} evm_t;
+/**
+ * This enum gives names to the status codes returned from Go callbacks to Rust.
+ * The Go code will return one of these variants when returning.
+ *
+ * 0 means no error, all the other cases are some sort of error.
+ *
+ */
+enum GoError {
+  GoError_None = 0,
+  /**
+   * Go panicked for an unexpected reason.
+   */
+  GoError_Panic = 1,
+  /**
+   * Go received a bad argument from Rust
+   */
+  GoError_BadArgument = 2,
+  /**
+   * Error while trying to serialize data in Go code (typically json.Marshal)
+   */
+  GoError_CannotSerialize = 3,
+  /**
+   * An error happened during normal operation of a Go callback, which should be fed back to the contract
+   */
+  GoError_User = 4,
+  /**
+   * Unimplemented
+   */
+  GoError_Unimplemented = 5,
+  /**
+   * An error type that should never be created by us. It only serves as a fallback for the i32 to GoError conversion.
+   */
+  GoError_Other = -1,
+};
+typedef int32_t GoError;
 
 /**
  * An optional Vector type that requires explicit creation and destruction
@@ -64,6 +96,10 @@ typedef struct {
 } UnmanagedVector;
 
 typedef struct {
+
+} evm_t;
+
+typedef struct {
   uint8_t _private[0];
 } db_t;
 
@@ -107,8 +143,6 @@ typedef struct {
   const uint8_t *ptr;
   size_t len;
 } ByteSliceView;
-
-evm_t *allocate_vm(size_t module_cache_capacity, size_t script_cache_capacity);
 
 void destroy_unmanaged_vector(UnmanagedVector v);
 

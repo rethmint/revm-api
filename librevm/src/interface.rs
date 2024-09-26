@@ -1,7 +1,7 @@
-use revm::{Context, Evm, EvmHandler};
-use revm_primitives::{BlockEnv, EthereumWiring, SpecId, TxEnv};
+use revm::{ Context, Evm, EvmHandler };
+use revm_primitives::{ BlockEnv, EthereumWiring, SpecId, TxEnv };
 
-use crate::{gstorage::GoStorage, ByteSliceView, Db, UnmanagedVector};
+use crate::{ gstorage::GoStorage, ByteSliceView, Db, UnmanagedVector };
 // byte slice view: golang data type
 // unamangedvector: ffi safe vector data type compliants with rust's ownership and data types, for returning optional error value
 pub const BLOCK: &str = "block";
@@ -21,7 +21,8 @@ pub fn to_evm<'a>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, EthereumWiring<GoSt
 
 // initialize vm instance with handler
 #[no_mangle]
-pub extern "C" fn init_vm(// pre_execution: Option<&PreExecutionHandler>,
+pub extern "C" fn init_vm(
+    // pre_execution: Option<&PreExecutionHandler>,
     // post_execution: Option<&PostExecutionHandler>
 ) -> *mut evm_t {
     let context = Context::default();
@@ -44,11 +45,12 @@ pub extern "C" fn release_vm(vm: *mut evm_t) {
 
 // VM initializer
 #[no_mangle]
-pub extern "C" fn execute_evm(
+pub extern "C" fn execute_tx(
     vm_ptr: *mut evm_t,
-    db: Db,               // -> Block Cache State from KVStore
+    db: Db, // -> Block Cache State from KVStore
     block: ByteSliceView, // -> block JSON Data
-    tx: ByteSliceView,    // -> tx JSON Data
+    tx: ByteSliceView // -> tx JSON Data
+    // &mut err: UnmanagedVector
 ) -> UnmanagedVector {
     let evm: &mut Evm<'_, EthereumWiring<GoStorage<'_>, ()>> = match to_evm(vm_ptr) {
         Some(vm) => vm,
@@ -56,28 +58,29 @@ pub extern "C" fn execute_evm(
             panic!("Failed to get VM");
         }
     };
-    let block: BlockEnv = serde_json::from_str(
-        &String::from_utf8(
-            block
-                .read()
-                .unwrap()
-                //.ok_or_else(|| Error::unset_arg(BLOCK))?
-                .to_vec(),
+    let block: BlockEnv = serde_json
+        ::from_str(
+            &String::from_utf8(
+                block
+                    .read()
+                    .unwrap()
+                    //.ok_or_else(|| Error::unset_arg(BLOCK))?
+                    .to_vec()
+            ).unwrap()
         )
-        .unwrap(),
-    )
-    .unwrap();
+        .unwrap();
 
-    let tx: TxEnv = serde_json::from_str(
-        &String::from_utf8(
-            tx.read()
-                .unwrap()
-                //.ok_or_else(|| Error::unset_arg(TRANSACTION))?
-                .to_vec(),
+    let tx: TxEnv = serde_json
+        ::from_str(
+            &String::from_utf8(
+                tx
+                    .read()
+                    .unwrap()
+                    //.ok_or_else(|| Error::unset_arg(TRANSACTION))?
+                    .to_vec()
+            ).unwrap()
         )
-        .unwrap(),
-    )
-    .unwrap();
+        .unwrap();
 
     let db = GoStorage::new(&db);
     evm.context = Context::new_with_db(db);
@@ -93,3 +96,5 @@ pub extern "C" fn execute_evm(
         Err(e) => panic!("EVM Execution Result Error: {}", e),
     }
 }
+
+// TODO: make static call

@@ -6,9 +6,9 @@ import (
 	"path"
 	"testing"
 
-	compiler "github.com/initia-labs/movevm/types/compiler"
-	buildtypes "github.com/initia-labs/movevm/types/compiler/build"
-	testtypes "github.com/initia-labs/movevm/types/compiler/test"
+	compiler "github.com/rethmint/revm-api/types/compiler"
+	buildtypes "github.com/rethmint/revm-api/types/compiler/build"
+	testtypes "github.com/rethmint/revm-api/types/compiler/test"
 	"github.com/stretchr/testify/require"
 )
 

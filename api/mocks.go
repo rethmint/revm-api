@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	dbm "github.com/cosmos/cosmos-db"
-	"github.com/initia-labs/movevm/types"
+	"github.com/rethmint/revm-api/types"
 )
 
 /*** Mock KVStore ****/

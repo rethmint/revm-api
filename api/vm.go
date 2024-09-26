@@ -9,9 +9,8 @@ import (
 	"syscall"
 )
 
-// FIX: make interface functions depend on revm
 type VM struct {
-	ptr *C.vm_t
+	ptr *C.evm_t
 }
 
 // ReleaseVM call ffi(`release_vm`) to release vm instance

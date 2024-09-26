@@ -3,7 +3,7 @@ name = "librevm"
 version = "0.1.0"
 publish = false
 description = "Reth Revm Engine"
-repository = "https://github.com/rethermint/revm-api"
+repository = "https://github.com/rethmint/revm-api"
 exclude = [".gitignore"]
 
 edition = { workspace = true }

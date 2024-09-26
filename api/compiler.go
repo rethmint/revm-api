@@ -8,11 +8,11 @@ import (
 	"runtime"
 	"syscall"
 
-	compiler "github.com/initia-labs/movevm/types/compiler"
-	coveragetypes "github.com/initia-labs/movevm/types/compiler/coverage"
-	docgentypes "github.com/initia-labs/movevm/types/compiler/docgen"
-	provetypes "github.com/initia-labs/movevm/types/compiler/prove"
-	testtypes "github.com/initia-labs/movevm/types/compiler/test"
+	compiler "github.com/rethmint/revm-api/types/compiler"
+	coveragetypes "github.com/rethmint/revm-api/types/compiler/coverage"
+	docgentypes "github.com/rethmint/revm-api/types/compiler/docgen"
+	provetypes "github.com/rethmint/revm-api/types/compiler/prove"
+	testtypes "github.com/rethmint/revm-api/types/compiler/test"
 )
 
 func BuildContract(arg compiler.CompilerArgument) ([]byte, error) {

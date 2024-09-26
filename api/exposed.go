@@ -12,7 +12,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/initia-labs/movevm/types"
+	"github.com/rethmint/revm-api/types"
 )
 
 // ConvertModuleName change module name from the precompiled module bytes

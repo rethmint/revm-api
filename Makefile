@@ -13,8 +13,8 @@ SHARED_LIB_DST = "" # File name of the shared library that we store
 COMPILER_SHARED_LIB_SRC = ""
 COMPILER_SHARED_LIB_DST = ""
 ifeq ($(OS),Windows_NT)
-	SHARED_LIB_SRC = movevm.dll
-	SHARED_LIB_DST = movevm.dll
+	SHARED_LIB_SRC = revm.dll
+	SHARED_LIB_DST = revm.dll
 	COMPILER_SHARED_LIB_SRC = compiler.dll
 	COMPILER_SHARED_LIB_DST = compiler.dll
 else
@@ -51,13 +51,13 @@ test-safety:
 	# Use package list mode to include all subdirectores. The -count=1 turns off caching.
 	GODEBUG=cgocheck=2 go test -race -v -count=1 -parallel=1 ./...
 
-test-rust: test-compiler test-lib test-e2e test-movevm
+test-rust: test-compiler test-lib test-e2e test-revm
 
 test-compiler:
 	cargo test -p initia-move-compiler
 
-test-movevm:
-	cargo test -p movevm
+test-revm:
+	cargo test -p revm
 
 test-lib:
 	cargo test -p initia-move-vm
@@ -87,7 +87,7 @@ update-bindings:
 # Use debug build for quick testing.
 # In order to use "--features backtraces" here we need a Rust nightly toolchain, which we don't have by default
 build-rust-debug:
-	cargo build -p movevm
+	cargo build -p revm
 	cargo build -p compiler
 
 	cp -fp target/debug/$(SHARED_LIB_SRC) api/$(SHARED_LIB_DST)
@@ -100,7 +100,7 @@ build-rust-debug:
 # See https://github.com/CosmWasm/wasmvm/issues/222#issuecomment-880616953 for two approaches to
 # enable stripping through cargo (if that is desired).
 build-rust-release:
-	cargo build -p movevm --release
+	cargo build -p revm --release
 	cargo build -p compiler --release
 	rm -f api/$(SHARED_LIB_DST)
 	rm -f api/$(COMPILER_SHARED_LIB_DST)

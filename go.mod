@@ -1,4 +1,4 @@
-module github.com/initia-labs/movevm
+module github.com/rethmint/revm-api
 
 go 1.22
 

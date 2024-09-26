@@ -1,4 +1,4 @@
-package movevm_test
+package revm_test
 
 import (
 	"encoding/base64"
@@ -11,12 +11,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/initia-labs/movevm/precompile"
 	"github.com/stretchr/testify/require"
 
-	vm "github.com/initia-labs/movevm"
-	"github.com/initia-labs/movevm/api"
-	"github.com/initia-labs/movevm/precompile"
-	"github.com/initia-labs/movevm/types"
+	vm "github.com/rethmint/revm-api"
+	"github.com/rethmint/revm-api/api"
+	"github.com/rethmint/revm-api/types"
 )
 
 func generateRandomHash() [32]uint8 {

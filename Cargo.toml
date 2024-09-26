@@ -2,19 +2,12 @@
 resolver = "2"
 
 members = [
-	# "libcompiler",
 	"librevm",
 	"crates/interpreter",
 	"crates/precompile",
 	"crates/primitives",
 	"crates/revm",
-	"crates/vm",
 	"crates/types", "crates/storage",
-	# "crates/types",
-	# "crates/storage",
-	# "crates/e2e-move-tests",
-	# "tools/generate-bcs-go",
-	# "tools/precompile",
 ]
 
 [profile.release]
@@ -48,13 +41,12 @@ edition = "2021"
 license = "BUSL-1.1"
 license-file = "LICENSE"
 homepage = "https://initia.xyz"
-repository = "https://github.com/initia-labs/movevm"
+repository = "https://github.com/rethmint/revm-api"
 rust-version = "1.77.1"
 
 [workspace.dependencies]
 # Internal crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.
-# initia-move-vm = { path = "crates/vm" }
 # initia-move-types = { path = "crates/types" }
 # initia-move-storage = { path = "crates/storage" }
 # initia-move-natives = { path = "crates/natives" }

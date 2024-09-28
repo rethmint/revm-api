@@ -6,6 +6,8 @@ import "C"
 
 import (
 	"runtime"
+
+	types "github.com/rethmint/revm-api/types"
 )
 
 type VM struct {
@@ -24,39 +26,53 @@ func InitVM() VM {
 	}
 }
 
-type Transaction struct{}
-type Block struct{}
-
 // ExecuteTx call ffi(`execute_tx`) to execute
 func ExecuteTx(
 	vm VM,
 	store KVStore,
-	tx Transaction,
-	block Block,
-) ([]byte, error) {
+	tx types.Transaction,
+	block types.Block,
+) (types.ExecutionResult, error) {
 	var err error
 
-	callID := startCall()
-	defer endCall(callID)
-
-	dbState := buildDBState(store, callID)
+	dbState := buildDBState(store)
 	db := buildDB(&dbState)
 	// tx -> byte -> ByteSliceView
 	// block -> byte -> ByteSliceView
-	e := makeView(env)
-	defer runtime.KeepAlive(e)
-	sendersView := makeView(senders)
-	defer runtime.KeepAlive(sendersView)
-	msg := makeView(message)
-	defer runtime.KeepAlive(msg)
-
-	errmsg := uninitializedUnmanagedVector()
-
-	res, err := C.execute_tx(vm.ptr, db, block, tx)
-	// TODO: handle the error
+	blockBytesSliceView := makeView(block.ToJsonStringBytes())
+	defer runtime.KeepAlive(blockBytesSliceView)
+	txByteSliceView := makeView(tx.ToJsonStringBytes())
+	defer runtime.KeepAlive(txByteSliceView)
+	// TODO: handle error msg
+	// errmsg := uninitializedUnmanagedVector()
+	res, err := C.execute_tx(vm.ptr, db, blockBytesSliceView, txByteSliceView)
 	// if err != nil && err.(syscall.Errno) != C.ErrnoValue_Success {
 	// 	return nil, errorWithMessage(err, errmsg)
 	// }
-	// TODO result marshal
+	return copyAndDestroyUnmanagedVector(res), err
+}
+
+func QueryTx(
+	vm VM,
+	store KVStore,
+	tx types.Transaction,
+	block types.Block,
+) (types.ExecutionResult, error) {
+	var err error
+
+	dbState := buildDBState(store)
+	db := buildDB(&dbState)
+	// tx -> byte -> ByteSliceView
+	// block -> byte -> ByteSliceView
+	blockBytesSliceView := makeView(block.ToJsonStringBytes())
+	defer runtime.KeepAlive(blockBytesSliceView)
+	txByteSliceView := makeView(tx.ToJsonStringBytes())
+	defer runtime.KeepAlive(txByteSliceView)
+	// TODO: handle error msg
+	// errmsg := uninitializedUnmanagedVector()
+	res, err := C.query_tx(vm.ptr, db, blockBytesSliceView, txByteSliceView)
+	// if err != nil && err.(syscall.Errno) != C.ErrnoValue_Success {
+	// 	return nil, errorWithMessage(err, errmsg)
+	// }
 	return copyAndDestroyUnmanagedVector(res), err
 }

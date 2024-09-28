@@ -12,18 +12,6 @@ rust-version.workspace = true
 anyhow = { workspace = true }
 bcs = { workspace = true }
 serde = { workspace = true }
-serde_bytes = { workspace = true }
-hex = { workspace = true }
 thiserror = { workspace = true }
-once_cell = { workspace = true }
-sha3 = { workspace = true }
-log = { workspace = true, features = [
-	"max_level_debug",
-	"release_max_level_warn",
-] }
 ethers-core = { version = "2.0" }
-
-revm-interpreter = { path = "../interpreter", version = "10.0.1", default-features = false }
 revm-primitives = { path = "../primitives", version = "9.0.1", default-features = false }
-revm = { path = "../revm", version = "14.0.1", default-features = false }
-revm-precompile = { path = "../precompile", version = "11.0.1", default-features = false }

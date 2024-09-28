@@ -1,11 +1,17 @@
 use revm::{ Context, Evm, EvmHandler };
-use revm_primitives::{ BlockEnv, EthereumWiring, SpecId, TxEnv };
+use revm_primitives::{ BlockEnv, EthereumWiring, ExecutionResult, SpecId, TxEnv };
 
 use crate::{ gstorage::GoStorage, ByteSliceView, Db, UnmanagedVector };
 // byte slice view: golang data type
 // unamangedvector: ffi safe vector data type compliants with rust's ownership and data types, for returning optional error value
 pub const BLOCK: &str = "block";
 pub const TRANSACTION: &str = "transaction";
+enum ResultId {
+    Success,
+    Revert,
+    Halt,
+    Error,
+}
 #[allow(non_camel_case_types)]
 #[repr(C)]
 pub struct evm_t {}
@@ -50,7 +56,7 @@ pub extern "C" fn execute_tx(
     db: Db, // -> Block Cache State from KVStore
     block: ByteSliceView, // -> block JSON Data
     tx: ByteSliceView // -> tx JSON Data
-    // &mut err: UnmanagedVector
+    // errmsg: Option<&mut UnmanagedVector>
 ) -> UnmanagedVector {
     let evm: &mut Evm<'_, EthereumWiring<GoStorage<'_>, ()>> = match to_evm(vm_ptr) {
         Some(vm) => vm,
@@ -89,12 +95,102 @@ pub extern "C" fn execute_tx(
 
     let result = evm.transact_commit();
 
-    match result {
+    let data = match result {
         Ok(res) => {
-            return UnmanagedVector::from_data(&res);
+            let mut id = match res {
+                ExecutionResult::Success {
+                    reason: _,
+                    gas_used: _,
+                    gas_refunded: _,
+                    logs: _,
+                    output: _,
+                } => vec![ResultId::Success as u8],
+                ExecutionResult::Revert { gas_used: _, output: _ } => vec![ResultId::Revert as u8],
+                ExecutionResult::Halt { reason: _, gas_used: _ } => vec![ResultId::Halt as u8],
+            };
+            let mut data = serde_json::to_vec(&res).unwrap();
+            id.append(&mut data);
+            id
         }
-        Err(e) => panic!("EVM Execution Result Error: {}", e),
-    }
+        Err(_err) => {
+            // let msg = err.to_string().into();
+            // set_error(err, errmsg);
+
+            vec![ResultId::Error as u8]
+        }
+    };
+    UnmanagedVector::new(Some(data))
 }
 
-// TODO: make static call
+#[no_mangle]
+pub extern "C" fn query_tx(
+    vm_ptr: *mut evm_t,
+    db: Db, // -> Block Cache State from KVStore
+    block: ByteSliceView, // -> block JSON Data
+    tx: ByteSliceView // -> tx JSON Data
+    // errmsg: Option<&mut UnmanagedVector>
+) -> UnmanagedVector {
+    let evm: &mut Evm<'_, EthereumWiring<GoStorage<'_>, ()>> = match to_evm(vm_ptr) {
+        Some(vm) => vm,
+        None => {
+            panic!("Failed to get VM");
+        }
+    };
+    let block: BlockEnv = serde_json
+        ::from_str(
+            &String::from_utf8(
+                block
+                    .read()
+                    .unwrap()
+                    //.ok_or_else(|| Error::unset_arg(BLOCK))?
+                    .to_vec()
+            ).unwrap()
+        )
+        .unwrap();
+
+    let tx: TxEnv = serde_json
+        ::from_str(
+            &String::from_utf8(
+                tx
+                    .read()
+                    .unwrap()
+                    //.ok_or_else(|| Error::unset_arg(TRANSACTION))?
+                    .to_vec()
+            ).unwrap()
+        )
+        .unwrap();
+
+    let db = GoStorage::new(&db);
+    evm.context = Context::new_with_db(db);
+    evm.context.evm.inner.env.block = block;
+    evm.context.evm.inner.env.tx = tx;
+
+    // transact without state commit
+    let result = evm.transact();
+
+    let data = match result {
+        Ok(res) => {
+            let mut id = match res.result {
+                ExecutionResult::Success {
+                    reason: _,
+                    gas_used: _,
+                    gas_refunded: _,
+                    logs: _,
+                    output: _,
+                } => vec![ResultId::Success as u8],
+                ExecutionResult::Revert { gas_used: _, output: _ } => vec![ResultId::Revert as u8],
+                ExecutionResult::Halt { reason: _, gas_used: _ } => vec![ResultId::Halt as u8],
+            };
+            let mut data = serde_json::to_vec(&res.result).unwrap();
+            id.append(&mut data);
+
+            id
+        }
+        Err(_err) => {
+            // let msg = err.to_string().into();
+            // set_error(err, errmsg);
+            vec![ResultId::Error as u8]
+        }
+    };
+    UnmanagedVector::new(Some(data))
+}

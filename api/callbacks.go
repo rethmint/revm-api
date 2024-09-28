@@ -71,7 +71,6 @@ var db_vtable = C.Db_vtable{
 	read_db:   (C.read_db_fn)(C.cGet_cgo),
 	write_db:  (C.write_db_fn)(C.cSet_cgo),
 	remove_db: (C.remove_db_fn)(C.cDelete_cgo),
-	scan_db:   (C.scan_db_fn)(C.cScan_cgo),
 }
 
 type DBState struct {
@@ -85,10 +84,9 @@ type DBState struct {
 //	state := buildDBState(kv, callID)
 //	db := buildDB(&state, &gasMeter)
 //	// then pass db into some FFI function
-func buildDBState(kv KVStore, callID uint64) DBState {
+func buildDBState(kv KVStore) DBState {
 	return DBState{
-		Store:  kv,
-		CallID: callID,
+		Store: kv,
 	}
 }
 

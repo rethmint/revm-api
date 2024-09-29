@@ -79,6 +79,8 @@ func Query(
 	return copyAndDestroyUnmanagedVector(res), err
 }
 
+// --- Test object definitions, will be cleaned soon
+
 type MockTx struct {
 	From  string `json:"from"`
 	To    string `json:"to"`

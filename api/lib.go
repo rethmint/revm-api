@@ -2,6 +2,7 @@ package api
 
 // #include <stdlib.h>
 // #include "bindings.h"
+// #cgo LDFLAGS: -Wl,-rpath,${SRCDIR} -L${SRCDIR} -llibrevm
 import "C"
 
 import (

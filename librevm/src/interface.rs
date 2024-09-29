@@ -20,6 +20,7 @@ pub fn to_evm<'a>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, EthereumWiring<GoSt
     if ptr.is_null() {
         None
     } else {
+        //let vm: *mut Evm<'_, EthereumWiring<EmptyDBTyped<Infallible>, ()>>
         let evm = unsafe { &mut *(ptr as *mut Evm<'a, EthereumWiring<GoStorage<'a>, ()>>) };
         Some(evm)
     }
@@ -30,7 +31,9 @@ pub fn to_evm<'a>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, EthereumWiring<GoSt
 pub extern "C" fn init_vm(// [] handler type -> validation / pre-execution / post-execution
     // GoApi -> api based on cosmos sdk
 ) -> *mut evm_t {
-    let context = Context::default();
+    let db = Db::default();
+    let gstorage = GoStorage::new(&db);
+    let context = Context::<EthereumWiring<GoStorage, ()>>::new_with_db(gstorage);
     let handler = EvmHandler::mainnet_with_spec(SpecId::CANCUN);
     // handler.post_execution = post_execution;
     // handler.pre_execution = pre_execution;
@@ -65,9 +68,12 @@ pub extern "C" fn execute_tx(
     };
     let db = GoStorage::new(&db);
     evm.context = Context::new_with_db(db);
+    println!("after new with db");
     set_evm_env(evm, block, tx);
+    println!("after set evm env");
 
     let result = evm.transact_commit();
+    println!("after transact commit");
 
     let data = match result {
         Ok(res) => handle_id(res),
@@ -161,6 +167,49 @@ fn set_evm_env(
     )
     .unwrap();
 
-    evm.context.evm.inner.env.block = block;
-    evm.context.evm.inner.env.tx = tx;
+    evm.context.evm.inner.env.block = block.into();
+    evm.context.evm.inner.env.tx = tx.into();
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct MockTx {
+    from: String,
+    to: String,
+    value: String,
+}
+
+fn deserialize_json<T>(bytes: ByteSliceView) -> Result<T, String>
+where
+    T: for<'de> Deserialize<'de>,
+{
+    // Convert ByteSliceView to Vec<u8>
+    let byte_data = bytes.read().unwrap().to_vec();
+
+    // Convert Vec<u8> to String
+    let json_str = match String::from_utf8(byte_data) {
+        Ok(s) => s,
+        Err(e) => return Err(format!("Failed to convert bytes to string: {}", e)),
+    };
+
+    // Deserialize the JSON string into the target type T
+    let deserialized_data: T = match serde_json::from_str(&json_str) {
+        Ok(data) => data,
+        Err(e) => return Err(format!("Failed to deserialize JSON: {}", e)),
+    };
+
+    Ok(deserialized_data)
+}
+
+#[no_mangle]
+pub extern "C" fn deserialize_unit_test(tx_view: ByteSliceView) {
+    let tx: MockTx = deserialize_json::<MockTx>(tx_view).unwrap();
+
+    println!("Mock tx: {:?}", tx);
+}
+
+#[no_mangle]
+pub extern "C" fn deserialize_block_env(tx_view: ByteSliceView) {
+    let tx: BlockEnvSansEip4844 = deserialize_json::<BlockEnvSansEip4844>(tx_view).unwrap();
+
+    println!("BlockEnvSansEip4844: {:?}", tx);
 }

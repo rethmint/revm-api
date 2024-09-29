@@ -87,12 +87,13 @@ update-bindings:
 # Use debug build for quick testing.
 # In order to use "--features backtraces" here we need a Rust nightly toolchain, which we don't have by default
 build-rust-debug:
-	cargo build -p revm
-	cargo build -p compiler
+	# cargo build -p revm
+	# cargo build -p compiler
+	cargo build
 
-	cp -fp target/debug/$(SHARED_LIB_SRC) api/$(SHARED_LIB_DST)
-	cp -fp target/debug/$(COMPILER_SHARED_LIB_SRC) api/$(COMPILER_SHARED_LIB_DST)
-
+	# cp -fp target/debug/$(SHARED_LIB_SRC) api/$(SHARED_LIB_DST)
+	# cp -fp target/debug/$(SHARED_LIB_SRC) api/$(SHARED_LIB_DST)
+	cp -fp target/debug/liblibrevm.dylib api
 	make update-bindings
 
 # use release build to actually ship - smaller and much faster

@@ -5,6 +5,8 @@ package api
 import "C"
 
 import (
+	"encoding/json"
+	"log"
 	"runtime"
 
 	types "github.com/rethmint/revm-api/types"
@@ -75,4 +77,23 @@ func Query(
 	// 	return nil, errorWithMessage(err, errmsg)
 	// }
 	return copyAndDestroyUnmanagedVector(res), err
+}
+
+type MockTx struct {
+	From  string `json:"from"`
+	To    string `json:"to"`
+	Value string `json:"value"`
+}
+
+func (mockTx MockTx) ToJsonStringBytes() []byte {
+	jsonData, err := json.Marshal(mockTx)
+	if err != nil {
+		log.Fatalf("Failed to marshal block: %v", err)
+	}
+	return jsonData
+}
+
+func Json_ffi(tx MockTx) {
+	txByteSliceView := makeView(tx.ToJsonStringBytes())
+	C.deserialize_unit_test(txByteSliceView)
 }

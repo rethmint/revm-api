@@ -17,6 +17,10 @@ func NewVM() VM {
 	return VM{inner}
 }
 
+func (vm *VM) Destroy() {
+	api.ReleaseVM(vm.inner)
+}
+
 // ExecuteTx execute transaction based on revm
 // for bootstrapping genesis
 func (vm *VM) ExecuteTx(

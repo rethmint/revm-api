@@ -52,7 +52,7 @@ func ExecuteTx(
 	return copyAndDestroyUnmanagedVector(res), err
 }
 
-func QueryTx(
+func Query(
 	vm VM,
 	store KVStore,
 	tx types.Transaction,
@@ -70,7 +70,7 @@ func QueryTx(
 	defer runtime.KeepAlive(txByteSliceView)
 	// TODO: handle error msg
 	// errmsg := uninitializedUnmanagedVector()
-	res, err := C.query_tx(vm.ptr, db, blockBytesSliceView, txByteSliceView)
+	res, err := C.query(vm.ptr, db, blockBytesSliceView, txByteSliceView)
 	// if err != nil && err.(syscall.Errno) != C.ErrnoValue_Success {
 	// 	return nil, errorWithMessage(err, errmsg)
 	// }

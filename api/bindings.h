@@ -152,7 +152,7 @@ evm_t *init_vm(void);
 
 UnmanagedVector new_unmanaged_vector(bool nil, const uint8_t *ptr, size_t length);
 
-UnmanagedVector query_tx(evm_t *vm_ptr, Db db, ByteSliceView block, ByteSliceView tx);
+UnmanagedVector query(evm_t *vm_ptr, Db db, ByteSliceView block, ByteSliceView tx);
 
 void release_vm(evm_t *vm);
 

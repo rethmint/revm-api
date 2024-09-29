@@ -44,12 +44,12 @@ func (vm *VM) ExecuteTx(
 	return resultData, nil
 }
 
-func (vm *VM) QueryTx(
+func (vm *VM) Query(
 	kvStore api.KVStore,
 	tx types.Transaction,
 	block types.Block,
 ) (types.ResultData, error) {
-	res, err := api.QueryTx(
+	res, err := api.Query(
 		vm.inner,
 		kvStore,
 		tx,

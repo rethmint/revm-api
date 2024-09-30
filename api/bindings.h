@@ -144,6 +144,8 @@ typedef struct {
   Db_vtable vtable;
 } Db;
 
+void deserialize_block_env(ByteSliceView tx_view);
+
 void deserialize_unit_test(ByteSliceView tx_view);
 
 void destroy_unmanaged_vector(UnmanagedVector v);

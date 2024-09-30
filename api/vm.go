@@ -99,3 +99,8 @@ func Json_ffi(tx MockTx) {
 	txByteSliceView := makeView(tx.ToJsonStringBytes())
 	C.deserialize_unit_test(txByteSliceView)
 }
+
+func Json_ffi_block(tx types.Block) {
+	txByteSliceView := makeView(tx.ToJsonStringBytes())
+	C.deserialize_block_env(txByteSliceView)
+}

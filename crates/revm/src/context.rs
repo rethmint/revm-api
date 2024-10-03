@@ -46,6 +46,7 @@ where
 {
     /// Creates new context with database.
     pub fn new_with_db(db: DB) -> Context<EvmWiringT> {
+        println!("During new with db");
         Context {
             evm: EvmContext::new_with_env(db, Box::default()),
             external: (),

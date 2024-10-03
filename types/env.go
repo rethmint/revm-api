@@ -3,18 +3,32 @@ package types
 import (
 	"encoding/json"
 	"log"
+	"math/big"
 )
+
+type AccountListItem struct {
+	address      AccountAddress
+	storage_keys [32]byte
+}
 
 type AccountAddress [20]uint8
 
-type U256 [32]uint8
+type U256 *big.Int
 
-type TxKind uint8
+type TxKind = [20]uint8
 
-const (
-	Create = 0
-	Call   = 1
-)
+// type TxKind interface {
+// 	IsTxKind()
+// }
+//
+// type Create struct{}
+//
+// type Call struct {
+// 	Address AccountAddress
+// }
+//
+// func (Create) IsTxKind() {}
+// func (Call) IsTxKind()   {}
 
 type Block struct {
 	/// The number of ancestor blocks of this block (block height).
@@ -65,7 +79,7 @@ type Transaction struct {
 	/// The value sent to `transact_to`.
 	Value U256 `json:"value"`
 	/// The data of the transaction.
-	Data []byte `json:"data"`
+	Data [32]byte `json:"data"`
 
 	/// The nonce of the transaction.
 	Nonce uint64 `json:"nonce"`

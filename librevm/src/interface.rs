@@ -1,5 +1,7 @@
 use revm::{Context, Evm, EvmHandler};
-use revm_primitives::{BlockEnv, EthereumWiring, ExecutionResult, HaltReason, SpecId, TxEnv};
+use revm_primitives::{EthereumWiring, ExecutionResult, HaltReason, SpecId};
+use serde::{Deserialize, Serialize};
+use types::{BlockEnvSansEip4844, TxEnvSansEip4844};
 
 use crate::{gstorage::GoStorage, ByteSliceView, Db, UnmanagedVector};
 // byte slice view: golang data type
@@ -68,12 +70,9 @@ pub extern "C" fn execute_tx(
     };
     let db = GoStorage::new(&db);
     evm.context = Context::new_with_db(db);
-    println!("after new with db");
     set_evm_env(evm, block, tx);
-    println!("after set evm env");
 
     let result = evm.transact_commit();
-    println!("after transact commit");
 
     let data = match result {
         Ok(res) => handle_id(res),
@@ -144,28 +143,33 @@ fn set_evm_env(
     block: ByteSliceView,
     tx: ByteSliceView,
 ) {
-    let block: BlockEnv = serde_json::from_str(
-        &String::from_utf8(
-            block
+    let block: BlockEnvSansEip4844 = serde_json::from_str(
+        &String::from_utf8({
+            let a = block
                 .read()
                 .unwrap()
                 //.ok_or_else(|| Error::unset_arg(BLOCK))?
-                .to_vec(),
-        )
-        .unwrap(),
+                .to_vec();
+            //println!("a: {a:#?}");
+            a
+        })
+        .expect("BlockEnvSansEip4844 parse: string from utf 8 failed"),
     )
-    .unwrap();
+    .expect("BlockEnvSansEip4844 parse: serde from str failed for");
 
-    let tx: TxEnv = serde_json::from_str(
-        &String::from_utf8(
-            tx.read()
+    let tx: TxEnvSansEip4844 = serde_json::from_str(
+        &String::from_utf8({
+            let b = tx
+                .read()
                 .unwrap()
-                //.ok_or_else(|| Error::unset_arg(TRANSACTION))?
-                .to_vec(),
-        )
-        .unwrap(),
+                //.ok_or_else(|| Error::unset_arg(BLOCK))?
+                .to_vec();
+            //println!("b: {b:#?}");
+            b
+        })
+        .expect("TxEnvSansEip4844 parse: string from utf 8 failed"),
     )
-    .unwrap();
+    .expect("TxEnvSansEip4844 parse: string from str failed");
 
     evm.context.evm.inner.env.block = block.into();
     evm.context.evm.inner.env.tx = tx.into();

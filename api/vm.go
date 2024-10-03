@@ -5,8 +5,6 @@ package api
 import "C"
 
 import (
-	"encoding/json"
-	"log"
 	"runtime"
 
 	types "github.com/rethmint/revm-api/types"
@@ -32,8 +30,9 @@ func InitVM() VM {
 func ExecuteTx(
 	vm VM,
 	store KVStore,
-	tx types.Transaction,
 	block types.Block,
+	tx types.Transaction,
+	data []byte,
 ) (types.ExecutionResult, error) {
 	var err error
 
@@ -45,9 +44,11 @@ func ExecuteTx(
 	defer runtime.KeepAlive(blockBytesSliceView)
 	txByteSliceView := makeView(tx.ToJsonStringBytes())
 	defer runtime.KeepAlive(txByteSliceView)
+	txDataByteSliceView := makeView(data)
+	defer runtime.KeepAlive(txDataByteSliceView)
 	// TODO: handle error msg
 	// errmsg := uninitializedUnmanagedVector()
-	res, err := C.execute_tx(vm.ptr, db, blockBytesSliceView, txByteSliceView)
+	res, err := C.execute_tx(vm.ptr, db, blockBytesSliceView, txByteSliceView, txDataByteSliceView)
 	// if err != nil && err.(syscall.Errno) != C.ErrnoValue_Success {
 	// 	return nil, errorWithMessage(err, errmsg)
 	// }
@@ -57,8 +58,9 @@ func ExecuteTx(
 func Query(
 	vm VM,
 	store KVStore,
-	tx types.Transaction,
 	block types.Block,
+	tx types.Transaction,
+	data []byte,
 ) (types.ExecutionResult, error) {
 	var err error
 
@@ -70,37 +72,13 @@ func Query(
 	defer runtime.KeepAlive(blockBytesSliceView)
 	txByteSliceView := makeView(tx.ToJsonStringBytes())
 	defer runtime.KeepAlive(txByteSliceView)
+	txDataByteSliceView := makeView(data)
+	defer runtime.KeepAlive(txDataByteSliceView)
 	// TODO: handle error msg
 	// errmsg := uninitializedUnmanagedVector()
-	res, err := C.query(vm.ptr, db, blockBytesSliceView, txByteSliceView)
+	res, err := C.query(vm.ptr, db, blockBytesSliceView, txByteSliceView, txDataByteSliceView)
 	// if err != nil && err.(syscall.Errno) != C.ErrnoValue_Success {
 	// 	return nil, errorWithMessage(err, errmsg)
 	// }
 	return copyAndDestroyUnmanagedVector(res), err
-}
-
-// --- Test object definitions, will be cleaned soon
-
-type MockTx struct {
-	From  string `json:"from"`
-	To    string `json:"to"`
-	Value string `json:"value"`
-}
-
-func (mockTx MockTx) ToJsonStringBytes() []byte {
-	jsonData, err := json.Marshal(mockTx)
-	if err != nil {
-		log.Fatalf("Failed to marshal block: %v", err)
-	}
-	return jsonData
-}
-
-func Json_ffi(tx MockTx) {
-	txByteSliceView := makeView(tx.ToJsonStringBytes())
-	C.deserialize_unit_test(txByteSliceView)
-}
-
-func Json_ffi_block(tx types.Block) {
-	txByteSliceView := makeView(tx.ToJsonStringBytes())
-	C.deserialize_block_env(txByteSliceView)
 }

@@ -51,22 +51,6 @@ enum GoError {
 typedef int32_t GoError;
 
 /**
- * A view into an externally owned byte slice (Go `[]byte`).
- * Use this for the current call only. A view cannot be copied for safety reasons.
- * If you need a copy, use [`ByteSliceView::to_owned`].
- *
- * Go's nil value is fully supported, such that we can differentiate between nil and an empty slice.
- */
-typedef struct {
-  /**
-   * True if and only if the byte slice is nil in Go. If this is true, the other fields must be ignored.
-   */
-  bool is_nil;
-  const uint8_t *ptr;
-  size_t len;
-} ByteSliceView;
-
-/**
  * An optional Vector type that requires explicit creation and destruction
  * and can be sent via FFI.
  * It can be created from `Option<Vec<u8>>` and be converted into `Option<Vec<u8>>`.
@@ -144,19 +128,39 @@ typedef struct {
   Db_vtable vtable;
 } Db;
 
-void deserialize_block_env(ByteSliceView tx_view);
-
-void deserialize_unit_test(ByteSliceView tx_view);
+/**
+ * A view into an externally owned byte slice (Go `[]byte`).
+ * Use this for the current call only. A view cannot be copied for safety reasons.
+ * If you need a copy, use [`ByteSliceView::to_owned`].
+ *
+ * Go's nil value is fully supported, such that we can differentiate between nil and an empty slice.
+ */
+typedef struct {
+  /**
+   * True if and only if the byte slice is nil in Go. If this is true, the other fields must be ignored.
+   */
+  bool is_nil;
+  const uint8_t *ptr;
+  size_t len;
+} ByteSliceView;
 
 void destroy_unmanaged_vector(UnmanagedVector v);
 
-UnmanagedVector execute_tx(evm_t *vm_ptr, Db db, ByteSliceView block, ByteSliceView tx);
+UnmanagedVector execute_tx(evm_t *vm_ptr,
+                           Db db,
+                           ByteSliceView block,
+                           ByteSliceView tx,
+                           ByteSliceView tx_data);
 
 evm_t *init_vm(void);
 
 UnmanagedVector new_unmanaged_vector(bool nil, const uint8_t *ptr, size_t length);
 
-UnmanagedVector query(evm_t *vm_ptr, Db db, ByteSliceView block, ByteSliceView tx);
+UnmanagedVector query(evm_t *vm_ptr,
+                      Db db,
+                      ByteSliceView block,
+                      ByteSliceView tx,
+                      ByteSliceView tx_data);
 
 void release_vm(evm_t *vm);
 

@@ -1,20 +1,50 @@
 package types
 
 import (
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"log"
+	"math/big"
+	"strings"
 )
 
 type AccountAddress [20]uint8
 
-type U256 [32]uint8
+func NewAccountAddress(s string) (AccountAddress, error) {
+	if !strings.HasPrefix(s, "0x") {
+		return AccountAddress{}, errors.New("address must start with 0x")
+	}
+	if len(s) != 42 { // 2 characters for "0x" and 40 characters for the address
+		return AccountAddress{}, errors.New("address must be 20 bytes long")
+	}
+	bytes, err := hex.DecodeString(s[2:])
+	if err != nil {
+		return AccountAddress{}, err
+	}
+	var address AccountAddress
+	copy(address[:], bytes)
+	return address, nil
+}
+func ZeroAddress() AccountAddress {
+	var zero AccountAddress
+	return zero
+}
 
-type TxKind uint8
+type U256 *big.Int
 
-const (
-	Create = 0
-	Call   = 1
-)
+// type TxKind interface {
+// 	IsTxKind()
+// }
+//
+// type Create struct{}
+//
+// type Call struct {
+// 	Address AccountAddress
+// }
+//
+// func (Create) IsTxKind() {}
+// func (Call) IsTxKind()   {}
 
 type Block struct {
 	/// The number of ancestor blocks of this block (block height).
@@ -61,12 +91,9 @@ type Transaction struct {
 	/// The gas price of the transaction.
 	GasPrice U256 `json:"gas_price"`
 	/// The destination of the transaction.
-	TransactTo TxKind `json:"transact_to"`
+	TransactTo AccountAddress `json:"transact_to"`
 	/// The value sent to `transact_to`.
 	Value U256 `json:"value"`
-	/// The data of the transaction.
-	Data []byte `json:"data"`
-
 	/// The nonce of the transaction.
 	Nonce uint64 `json:"nonce"`
 
@@ -115,6 +142,8 @@ type Transaction struct {
 	/// [EIP-Set EOA account code for one transaction](https://eips.ethereum.org/EIPS/eip-7702)
 	// authorization_list Option<AuthorizationList>
 }
+
+type TransactionData = []byte
 
 // To Json String Bytes
 func (tx Transaction) ToJsonStringBytes() []byte {

@@ -1,4 +1,4 @@
-use types::BackendError;
+use crate::BackendError;
 
 use crate::memory::UnmanagedVector;
 
@@ -59,10 +59,9 @@ impl GoError {
     pub unsafe fn into_result<F>(
         self,
         error_msg: UnmanagedVector,
-        default_error_msg: F,
+        default_error_msg: F
     ) -> Result<(), BackendError>
-    where
-        F: FnOnce() -> String,
+        where F: FnOnce() -> String
     {
         const MAX_ERROR_LEN: usize = 8 * 1024;
 

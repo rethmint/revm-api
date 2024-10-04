@@ -25,14 +25,16 @@ func (vm *VM) Destroy() {
 // for bootstrapping genesis
 func (vm *VM) ExecuteTx(
 	kvStore api.KVStore,
-	tx types.Transaction,
 	block types.Block,
+	tx types.Transaction,
+	data []byte,
 ) (types.ResultData, error) {
 	res, err := api.ExecuteTx(
 		vm.inner,
 		kvStore,
-		tx,
 		block,
+		tx,
+		data,
 	)
 	if err != nil {
 		return nil, err
@@ -48,12 +50,14 @@ func (vm *VM) Query(
 	kvStore api.KVStore,
 	tx types.Transaction,
 	block types.Block,
+	data []byte,
 ) (types.ResultData, error) {
 	res, err := api.Query(
 		vm.inner,
 		kvStore,
-		tx,
 		block,
+		tx,
+		data,
 	)
 	if err != nil {
 		return nil, err

@@ -2,5 +2,5 @@
 
 package api
 
-// #cgo LDFLAGS: -Wl,-rpath,${SRCDIR} -L${SRCDIR} -lmovevm -lcompiler
+// #cgo LDFLAGS: -Wl,-rpath,${SRCDIR} -L${SRCDIR} -llibrevm
 import "C"

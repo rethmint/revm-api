@@ -4,7 +4,7 @@
 BUILDERS_PREFIX := initia/go-ext-builder:0001
 # Contains a full Go dev environment in order to run Go tests on the built library
 ALPINE_TESTER := initia/go-ext-builder:0001-alpine
-
+CONTRACTS_DIR = ./contracts
 USER_ID := $(shell id -u)
 USER_GROUP = $(shell id -g)
 
@@ -159,3 +159,6 @@ release-build:
 	make release-build-alpine
 	make release-build-linux
 	make release-build-macos
+
+contracts-gen: $(CONTRACTS_DIR)/*
+	@bash ./scripts/contractsgen.sh

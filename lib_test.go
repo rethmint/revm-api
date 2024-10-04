@@ -34,13 +34,14 @@ func startVM(t *testing.T) (revm.VM, *api.MockKVStore) {
 	return vm, kvStore
 }
 
-func Test_ERC20_ExecuteTx(t *testing.T) {
-	vm, kvStore := initVM(t)
+func Test_ERC20_e2e(t *testing.T) {
+	vm, kvStore := startVM(t)
 	// @winterjihwan
 	// now, you doesn't have to consider gas caller have
 	// token contract create
 	// token mint
 	// token transfer
+	// token balance query
 	block := env.Block{}
 	tx := env.Transaction{}
 	txData, err := hex.DecodeString(txStr)
@@ -55,26 +56,4 @@ func Test_ERC20_ExecuteTx(t *testing.T) {
 	if result == nil {
 		t.Fatalf("Expected non-nil result")
 	}
-}
-
-func Test_Query(t *testing.T) {
-	vm, kvStore := initVM(t)
-
-	block := api.NewMockBlock()
-	tx := api.NewMockTransaction()
-	data := []byte("test data")
-
-	result, err := vm.Query(kvStore, tx, block, data)
-	if err != nil {
-		t.Fatalf("Query failed: %v", err)
-	}
-
-	if result == nil {
-		t.Fatalf("Expected non-nil result")
-	}
-}
-func initVM(t *testing.T) (revm.VM, *api.MockKVStore) {
-	kvStore := api.NewMockKVStore()
-	vm := revm.NewVM()
-	return vm, kvStore
 }

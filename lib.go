@@ -1,4 +1,4 @@
-package revm
+package revm_api
 
 import (
 	"github.com/rethmint/revm-api/api"

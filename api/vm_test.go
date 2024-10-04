@@ -12,7 +12,7 @@ import (
 
 // evm  suite test case for contract deployment
 func TestExecuteTx(t *testing.T) {
-	store := api.NewRevmKVStore()
+	store := api.NewMockKVStore()
 	vm := api.InitVM()
 
 	txStr := "60fe60005360016000f3"

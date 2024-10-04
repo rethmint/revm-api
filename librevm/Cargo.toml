@@ -1,5 +1,5 @@
 [package]
-name = "librevm"
+name = "revmapi"
 version = "0.1.0"
 publish = false
 description = "Reth Revm Engine"

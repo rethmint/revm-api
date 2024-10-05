@@ -231,23 +231,17 @@ fn compress_account_info(info: AccountInfo) -> Vec<u8> {
 }
 // return Account info with no code
 fn parse_account_info(value: Vec<u8>) -> AccountInfo {
+    println!("Value: {:#?}\n len value: {:#?}\n\n", value, value.len());
+
     let balance_bytes: [u8; 32] = value[0..32].try_into().unwrap();
     let balance = U256::from_be_slice(&balance_bytes);
 
-    println!(
-        "Balance: {:#?}, size: {:#?}",
-        balance,
-        mem::size_of_val(&balance_bytes)
-    );
+    println!("Balance: {:#?}, size: {:#?}", balance, balance_bytes.len());
 
     let nonce_bytes: [u8; 8] = value[32..40].try_into().unwrap();
     let nonce = u64::from_be_bytes(nonce_bytes);
 
-    println!(
-        "nonce: {:#?}, size: {:#?}",
-        balance,
-        mem::size_of_val(&nonce_bytes)
-    );
+    println!("nonce: {:#?}, size: {:#?}", nonce, nonce_bytes.len());
 
     let code_hash_bytes: [u8; 32] = value[40..72]
         .try_into()
@@ -256,8 +250,8 @@ fn parse_account_info(value: Vec<u8>) -> AccountInfo {
 
     println!(
         "code_hash: {:#?}, size: {:#?}",
-        balance,
-        mem::size_of_val(&code_hash_bytes)
+        code_hash,
+        code_hash_bytes.len()
     );
 
     AccountInfo::new(balance, nonce, code_hash, Bytecode::default()).without_code()

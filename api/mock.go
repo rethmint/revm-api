@@ -1,8 +1,14 @@
 package api
 
 import (
+	"encoding/hex"
+	"math/big"
+
 	dbm "github.com/cosmos/cosmos-db"
+	types "github.com/rethmint/revm-api/types"
 )
+
+const keccakEmpty = "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
 
 /*** Mock KVStore ****/
 
@@ -14,6 +20,25 @@ func NewMockKVStore() *MockKVStore {
 	return &MockKVStore{
 		db: dbm.NewMemDB(),
 	}
+}
+
+func (k *MockKVStore) CreateEOA(accountKey []byte) ([]byte, error) {
+	var codeHashBytes [32]byte
+	codeHash, err := hex.DecodeString(keccakEmpty)
+	if err != nil {
+		return []byte{}, err
+	}
+	copy(codeHashBytes[:], codeHash)
+
+	accountInfo := types.AccountInfo{
+		Balance:  big.NewInt(0),
+		Nonce:    0,
+		CodeHash: codeHashBytes,
+	}
+
+	k.Set(accountKey, accountInfo.ToBytes())
+
+	return accountInfo.ToBytes(), nil
 }
 
 // Get wraps the underlying DB's Get method panicing on error.

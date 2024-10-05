@@ -75,8 +75,12 @@ pub extern "C" fn execute_tx(
     let result = evm.transact_commit();
 
     let data = match result {
-        Ok(res) => handle_id(res),
+        Ok(res) => {
+            println!("Rust res: {res:#?}");
+            handle_id(res)
+        }
         Err(err) => {
+            println!("Rust err: {err:#?}");
             set_error(err, errmsg);
             vec![ResultId::Error as u8]
         }

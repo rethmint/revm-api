@@ -52,23 +52,26 @@ func AddressToAccountAddressKey(address types.AccountAddress) AccountAddressKey 
 	return result
 }
 
-func createEOA(t *testing.T, address types.AccountAddress) {
-
-}
-
-func faucet(t *testing.T, kvStore *api.MockKVStore, address types.AccountAddress, amount *big.Int) {
+func faucet(kvStore *api.MockKVStore, address types.AccountAddress, amount *big.Int) {
 	accountKey := AddressToAccountAddressKey(address)
-	balanceBytes := amount.Bytes()
 
-	kvStore.Set(accountKey, balanceBytes)
+	var accountInfoBytes []byte
+	if accountInfoBytes = kvStore.Get(accountKey); accountInfoBytes == nil {
+		accountInfoBytes, _ = kvStore.CreateEOA(accountKey)
+	}
+
+	accountInfo, _ := types.AccountInfoFromBytes(accountInfoBytes)
+	accountInfo.Balance = accountInfo.Balance.Add(accountInfo.Balance, amount)
+
+	kvStore.Set(accountKey, accountInfo.ToBytes())
 }
 
 func TestCallEOA(t *testing.T) {
 	vm, kvStore := startVM(t)
 	caller, _ := types.NewAccountAddress("0xe100713fc15400d1e94096a545879e7c647001e0")
 
-	faucet(t, kvStore, caller, big.NewInt(1000000000))
-
+	// faucet(kvStore, caller, big.NewInt(1000000000))
+	//
 	txStr := Call.CallBin
 
 	if txStr[:2] == "0x" {

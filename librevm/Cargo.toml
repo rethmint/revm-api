@@ -26,6 +26,7 @@ serde = []
 backtraces = []
 
 [dependencies]
+errno = { workspace = true }
 bytes = { workspace = true }
 serde = { workspace = true, features = ["derive", "alloc"] }
 serde_json = { workspace = true }

@@ -107,9 +107,7 @@ impl<'db> Database for GoStorage<'db> {
     ) -> Result<Option<AccountInfo>, Self::Error> {
         let account_key = EvmStoreKey::Account(address).key();
         let account_key_slice = account_key.as_slice();
-
         let maybe_output = self.get(account_key_slice)?;
-
         Ok(maybe_output.map(|v| parse_account_info(v)))
     }
 
@@ -120,9 +118,7 @@ impl<'db> Database for GoStorage<'db> {
     ) -> Result<revm_primitives::U256, Self::Error> {
         let storage_key = EvmStoreKey::Storage(address, index).key();
         let storage_key_slice = storage_key.as_slice();
-
-        let maybe_output = self.get(storage_key_slice)?;
-        let output = maybe_output.unwrap();
+        let output = self.get(storage_key_slice)?.unwrap();
 
         Ok(Uint::from_be_slice(&output))
     }
@@ -130,9 +126,7 @@ impl<'db> Database for GoStorage<'db> {
     fn block_hash(&mut self, number: u64) -> Result<revm_primitives::B256, Self::Error> {
         let block_key = EvmStoreKey::Block(number).key();
         let block_key_slice = block_key.as_slice();
-
-        let maybe_output = self.get(block_key_slice)?;
-        let output = maybe_output.unwrap();
+        let output = self.get(block_key_slice)?.unwrap();
 
         Ok(B256::from_slice(&output))
     }
@@ -143,9 +137,7 @@ impl<'db> Database for GoStorage<'db> {
     ) -> Result<revm_primitives::Bytecode, Self::Error> {
         let code_key = EvmStoreKey::Code(code_hash).key();
         let code_key_slice = code_key.as_slice();
-
-        let maybe_output = self.get(code_key_slice)?;
-        let output = maybe_output.unwrap();
+        let output = self.get(code_key_slice)?.unwrap();
 
         Ok(Bytecode::LegacyRaw(Bytes::from(output)))
     }

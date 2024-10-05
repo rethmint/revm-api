@@ -6,6 +6,7 @@ import "C"
 
 import (
 	"runtime"
+	"syscall"
 
 	types "github.com/rethmint/revm-api/types"
 )
@@ -46,12 +47,12 @@ func ExecuteTx(
 	defer runtime.KeepAlive(txByteSliceView)
 	txDataByteSliceView := makeView(data)
 	defer runtime.KeepAlive(txDataByteSliceView)
-	// TODO: handle error msg
-	// errmsg := uninitializedUnmanagedVector()
-	res, err := C.execute_tx(vm.ptr, db, blockBytesSliceView, txByteSliceView, txDataByteSliceView)
-	// if err != nil && err.(syscall.Errno) != C.ErrnoValue_Success {
-	// 	return nil, errorWithMessage(err, errmsg)
-	// }
+
+	errmsg := uninitializedUnmanagedVector()
+	res, err := C.execute_tx(vm.ptr, db, blockBytesSliceView, txByteSliceView, txDataByteSliceView, &errmsg)
+	if err != nil && err.(syscall.Errno) != C.Success {
+		return nil, errorWithMessage(err, errmsg)
+	}
 	return copyAndDestroyUnmanagedVector(res), err
 }
 
@@ -74,11 +75,10 @@ func Query(
 	defer runtime.KeepAlive(txByteSliceView)
 	txDataByteSliceView := makeView(data)
 	defer runtime.KeepAlive(txDataByteSliceView)
-	// TODO: handle error msg
-	// errmsg := uninitializedUnmanagedVector()
-	res, err := C.query(vm.ptr, db, blockBytesSliceView, txByteSliceView, txDataByteSliceView)
-	// if err != nil && err.(syscall.Errno) != C.ErrnoValue_Success {
-	// 	return nil, errorWithMessage(err, errmsg)
-	// }
+	errmsg := uninitializedUnmanagedVector()
+	res, err := C.query(vm.ptr, db, blockBytesSliceView, txByteSliceView, txDataByteSliceView, &errmsg)
+	if err != nil && err.(syscall.Errno) != C.Success {
+		return nil, errorWithMessage(err, errmsg)
+	}
 	return copyAndDestroyUnmanagedVector(res), err
 }

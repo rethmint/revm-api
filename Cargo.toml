@@ -46,6 +46,7 @@ rust-version = "1.77.1"
 [workspace.dependencies]
 bytes = "1.4.0"
 thiserror = "1.0.34"
+errno = "0.3.0"
 
 # External crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.
@@ -57,7 +58,6 @@ clap = { version = "4.3.9", features = ["derive", "env", "suggestions"] }
 codespan-reporting = "0.11.1"
 dialoguer = "0.10.2"
 ed25519-consensus = { version = "2.0.1", features = ["serde"] }
-errno = "0.3.0"
 hex = { version = "0.4.3", default-features = false }
 itertools = "0.10.3"
 libsecp256k1 = { version = "0.7.1" }

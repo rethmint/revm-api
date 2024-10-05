@@ -14,6 +14,12 @@
 #include <stdlib.h>
 
 
+enum ErrnoValue {
+  Success = 0,
+  Other = 1,
+};
+typedef int32_t ErrnoValue;
+
 /**
  * This enum gives names to the status codes returned from Go callbacks to Rust.
  * The Go code will return one of these variants when returning.
@@ -150,7 +156,8 @@ UnmanagedVector execute_tx(evm_t *vm_ptr,
                            Db db,
                            ByteSliceView block,
                            ByteSliceView tx,
-                           ByteSliceView tx_data);
+                           ByteSliceView tx_data,
+                           UnmanagedVector *errmsg);
 
 evm_t *init_vm(void);
 
@@ -160,7 +167,8 @@ UnmanagedVector query(evm_t *vm_ptr,
                       Db db,
                       ByteSliceView block,
                       ByteSliceView tx,
-                      ByteSliceView tx_data);
+                      ByteSliceView tx_data,
+                      UnmanagedVector *errmsg);
 
 void release_vm(evm_t *vm);
 

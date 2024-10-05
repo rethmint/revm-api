@@ -9,7 +9,7 @@ use revm_primitives::{
     TxEnv,
 };
 
-use crate::{ env::EnvDecoder, gstorage::GoStorage, ByteSliceView, Db, UnmanagedVector };
+use crate::{ env::EnvDecoder, gstorage::GoStorage, set_error, ByteSliceView, Db, UnmanagedVector };
 // byte slice view: golang data type
 // unamangedvector: ffi safe vector data type compliants with rust's ownership and data types, for returning optional error value
 pub const BLOCK: &str = "block";
@@ -66,8 +66,8 @@ pub extern "C" fn execute_tx(
     db: Db, // -> Block Cache State from KVStore
     block: ByteSliceView, // -> block JSON Data
     tx: ByteSliceView, // -> tx JSON Data
-    tx_data: ByteSliceView
-    // errmsg: Option<&mut UnmanagedVector>
+    tx_data: ByteSliceView,
+    errmsg: Option<&mut UnmanagedVector>
 ) -> UnmanagedVector {
     let evm = match to_evm(vm_ptr) {
         Some(vm) => vm,
@@ -83,9 +83,8 @@ pub extern "C" fn execute_tx(
 
     let data = match result {
         Ok(res) => handle_id(res),
-        Err(_err) => {
-            // let msg = err.to_string().into();
-            // set_error(err, errmsg);
+        Err(err) => {
+            set_error(err, errmsg);
             vec![ResultId::Error as u8]
         }
     };
@@ -98,8 +97,8 @@ pub extern "C" fn query(
     db: Db, // -> Block Cache State from KVStore
     block: ByteSliceView, // -> block JSON Data
     tx: ByteSliceView, // -> tx JSON Data
-    tx_data: ByteSliceView
-    // errmsg: Option<&mut UnmanagedVector>
+    tx_data: ByteSliceView,
+    errmsg: Option<&mut UnmanagedVector>
 ) -> UnmanagedVector {
     let evm = match to_evm(vm_ptr) {
         Some(vm) => vm,
@@ -114,9 +113,8 @@ pub extern "C" fn query(
     let result = evm.transact();
     let data = match result {
         Ok(res) => handle_id(res.result),
-        Err(_err) => {
-            // let msg = err.to_string().into();
-            // set_error(err, errmsg);
+        Err(err) => {
+            set_error(err, errmsg);
             vec![ResultId::Error as u8]
         }
     };

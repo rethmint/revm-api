@@ -2,5 +2,5 @@
 
 package api
 
-// #cgo LDFLAGS: -librevm
+// #cgo LDFLAGS: -revmapi
 import "C"

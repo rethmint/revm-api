@@ -1,15 +1,9 @@
-use revm::{ Context, Evm, EvmHandler };
+use revm::{Context, Evm, EvmHandler};
 use revm_primitives::{
-    BlockEnv,
-    Bytes,
-    EthereumWiring,
-    ExecutionResult,
-    HaltReason,
-    SpecId,
-    TxEnv,
+    BlockEnv, Bytes, EthereumWiring, ExecutionResult, HaltReason, SpecId, TxEnv,
 };
 
-use crate::{ env::EnvDecoder, gstorage::GoStorage, set_error, ByteSliceView, Db, UnmanagedVector };
+use crate::{env::EnvDecoder, gstorage::GoStorage, set_error, ByteSliceView, Db, UnmanagedVector};
 // byte slice view: golang data type
 // unamangedvector: ffi safe vector data type compliants with rust's ownership and data types, for returning optional error value
 pub const BLOCK: &str = "block";
@@ -35,8 +29,7 @@ pub fn to_evm<'a>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, EthereumWiring<GoSt
 }
 // initialize vm instance with handler
 #[no_mangle]
-pub extern "C" fn init_vm(
-    // [] handler type -> validation / pre-execution / post-execution
+pub extern "C" fn init_vm(// [] handler type -> validation / pre-execution / post-execution
     // GoApi -> api based on cosmos sdk
 ) -> *mut evm_t {
     let db = Db::default();
@@ -63,11 +56,11 @@ pub extern "C" fn release_vm(vm: *mut evm_t) {
 #[no_mangle]
 pub extern "C" fn execute_tx(
     vm_ptr: *mut evm_t,
-    db: Db, // -> Block Cache State from KVStore
+    db: Db,               // -> Block Cache State from KVStore
     block: ByteSliceView, // -> block JSON Data
-    tx: ByteSliceView, // -> tx JSON Data
+    tx: ByteSliceView,    // -> tx JSON Data
     tx_data: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>
+    errmsg: Option<&mut UnmanagedVector>,
 ) -> UnmanagedVector {
     let evm = match to_evm(vm_ptr) {
         Some(vm) => vm,
@@ -88,17 +81,18 @@ pub extern "C" fn execute_tx(
             vec![ResultId::Error as u8]
         }
     };
+
     UnmanagedVector::new(Some(data))
 }
 
 #[no_mangle]
 pub extern "C" fn query(
     vm_ptr: *mut evm_t,
-    db: Db, // -> Block Cache State from KVStore
+    db: Db,               // -> Block Cache State from KVStore
     block: ByteSliceView, // -> block JSON Data
-    tx: ByteSliceView, // -> tx JSON Data
+    tx: ByteSliceView,    // -> tx JSON Data
     tx_data: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>
+    errmsg: Option<&mut UnmanagedVector>,
 ) -> UnmanagedVector {
     let evm = match to_evm(vm_ptr) {
         Some(vm) => vm,
@@ -123,10 +117,21 @@ pub extern "C" fn query(
 
 fn handle_id(result: ExecutionResult<HaltReason>) -> Vec<u8> {
     let mut result = match result {
-        ExecutionResult::Success { reason: _, gas_used: _, gas_refunded: _, logs: _, output: _ } =>
-            vec![ResultId::Success as u8],
-        ExecutionResult::Revert { gas_used: _, output: _ } => vec![ResultId::Revert as u8],
-        ExecutionResult::Halt { reason: _, gas_used: _ } => vec![ResultId::Halt as u8],
+        ExecutionResult::Success {
+            reason: _,
+            gas_used: _,
+            gas_refunded: _,
+            logs: _,
+            output: _,
+        } => vec![ResultId::Success as u8],
+        ExecutionResult::Revert {
+            gas_used: _,
+            output: _,
+        } => vec![ResultId::Revert as u8],
+        ExecutionResult::Halt {
+            reason: _,
+            gas_used: _,
+        } => vec![ResultId::Halt as u8],
     };
     let mut data = serde_json::to_vec(&result).unwrap();
     result.append(&mut data);
@@ -137,7 +142,7 @@ fn set_evm_env(
     evm: &mut Evm<'_, EthereumWiring<GoStorage<'_>, ()>>,
     block: ByteSliceView,
     tx: ByteSliceView,
-    tx_data: ByteSliceView
+    tx_data: ByteSliceView,
 ) {
     let block: BlockEnv = EnvDecoder::decode(block);
     let mut tx: TxEnv = EnvDecoder::decode(tx);

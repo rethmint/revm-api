@@ -7,7 +7,7 @@ import (
 
 // VM struct is the core of initiavm.
 type VM struct {
-	inner api.VM
+	Inner api.VM
 }
 
 // NewVm return VM instance
@@ -18,7 +18,7 @@ func NewVM() VM {
 }
 
 func (vm *VM) Destroy() {
-	api.ReleaseVM(vm.inner)
+	api.ReleaseVM(vm.Inner)
 }
 
 // ExecuteTx execute transaction based on revm
@@ -30,7 +30,7 @@ func (vm *VM) ExecuteTx(
 	data []byte,
 ) (types.ResultData, error) {
 	res, err := api.ExecuteTx(
-		vm.inner,
+		vm.Inner,
 		kvStore,
 		block,
 		tx,
@@ -53,7 +53,7 @@ func (vm *VM) Query(
 	data []byte,
 ) (types.ResultData, error) {
 	res, err := api.Query(
-		vm.inner,
+		vm.Inner,
 		kvStore,
 		block,
 		tx,

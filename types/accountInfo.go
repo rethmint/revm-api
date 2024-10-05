@@ -16,7 +16,10 @@ type AccountInfo struct {
 func (accountInfo AccountInfo) ToBytes() []byte {
 	var result bytes.Buffer
 
-	result.Write(accountInfo.Balance.Bytes())
+	balanceBytes := accountInfo.Balance.Bytes()
+	paddedBalance := make([]byte, 32)
+	copy(paddedBalance[:], balanceBytes)
+	result.Write(paddedBalance)
 
 	nonceBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(nonceBytes, accountInfo.Nonce)

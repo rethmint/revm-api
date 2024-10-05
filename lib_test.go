@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"math/big"
 	"math/rand"
+	"strings"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	revm "github.com/rethmint/revm-api"
 	api "github.com/rethmint/revm-api/api"
 	"github.com/rethmint/revm-api/contracts/Call"
@@ -70,15 +72,15 @@ func TestCallEOA(t *testing.T) {
 	vm, kvStore := startVM(t)
 	caller, _ := types.NewAccountAddress("0xe100713fc15400d1e94096a545879e7c647001e0")
 
-	// faucet(kvStore, caller, big.NewInt(1000000000))
-	//
+	faucet(kvStore, caller, big.NewInt(1000000000))
+
 	txStr := Call.CallBin
 
 	if txStr[:2] == "0x" {
 		txStr = txStr[2:]
 	}
 
-	byteArray, err := hex.DecodeString(txStr)
+	txData, err := hex.DecodeString(txStr)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,8 +104,42 @@ func TestCallEOA(t *testing.T) {
 		Basefee:   big.NewInt(0),
 	}
 
-	res, _ := api.ExecuteTx(vm.Inner, kvStore, block, tx, byteArray)
+	res, _ := api.ExecuteTx(vm.Inner, kvStore, block, tx, txData)
 	fmt.Println("Res: \n", res)
+
+	deployedAddress, _ := types.NewAccountAddress("0xec30481c768e48d34ea8fc2bebcfeaddeba6bfa4")
+
+	parsedABI, err := abi.JSON(strings.NewReader(Call.CallABI))
+	if err != nil {
+		t.Fatalf("Failed to parse ABI: %v", err)
+	}
+
+	txData2, err := parsedABI.Pack("reflect")
+	if err != nil {
+		t.Fatalf("Failed to pack method call: %v", err)
+	}
+
+	tx2 := types.Transaction{
+		Caller:         caller,
+		GasLimit:       0xf4240,
+		GasPrice:       big.NewInt(1000),
+		TransactTo:     deployedAddress,
+		Value:          big.NewInt(0),
+		Nonce:          1,
+		ChainId:        1,
+		GasPriorityFee: big.NewInt(1000),
+	}
+
+	block2 := types.Block{
+		Number:    big.NewInt(1),
+		Coinbase:  types.ZeroAddress(),
+		Timestamp: big.NewInt(0),
+		GasLimit:  big.NewInt(10000000),
+		Basefee:   big.NewInt(0),
+	}
+
+	res2, _ := api.ExecuteTx(vm.Inner, kvStore, block2, tx2, txData2)
+	fmt.Println("Res2: \n", res2)
 
 }
 

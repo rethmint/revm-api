@@ -215,6 +215,7 @@ impl<'r> Storage for GoStorage<'r> {
         Ok(())
     }
 }
+
 // compress account info data with bigedien order, not included bytecode
 fn compress_account_info(info: AccountInfo) -> Vec<u8> {
     let mut vec = Vec::with_capacity(72);
@@ -271,6 +272,17 @@ impl<'a> DatabaseCommit for GoStorage<'a> {
 
             let account_info_vec: Vec<u8> = compress_account_info(account.info.clone());
             self.set(account_key_slice, &account_info_vec).unwrap();
+
+            if is_newly_created && !account.info.is_empty_code_hash() {
+                let code_hash_key = EvmStoreKey::Code(account.info.code_hash()).key();
+                let code_hash_key_slice = code_hash_key.as_slice();
+                let _ = self
+                    .set(
+                        code_hash_key_slice,
+                        account.info.clone().code.unwrap().bytes_slice(),
+                    )
+                    .expect("Code hash key slice should work");
+            }
 
             if !is_newly_created {
                 // storage cache commit on value changed

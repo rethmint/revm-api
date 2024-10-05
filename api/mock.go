@@ -28,6 +28,7 @@ func (k *MockKVStore) CreateEOA(accountKey []byte) ([]byte, error) {
 	if err != nil {
 		return []byte{}, err
 	}
+
 	copy(codeHashBytes[:], codeHash)
 
 	accountInfo := types.AccountInfo{

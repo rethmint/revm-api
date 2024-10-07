@@ -1,7 +1,8 @@
+use std::collections::HashMap;
+
 use alloy_primitives::{Bytes, Uint};
 use revm::{Database, DatabaseCommit};
-use revm_primitives::{AccountInfo, Address, Bytecode, B256, U256};
-use std::mem;
+use revm_primitives::{Account, AccountInfo, Address, Bytecode, B256, U256};
 
 use crate::db::Db;
 use crate::error::GoError;
@@ -76,7 +77,6 @@ impl EvmStoreKey {
         match self {
             Self::Account(addr) => {
                 let mut result: Vec<u8> = vec![EvmStoreKeyPrefix::AccountPrefix.into()];
-                println!("Prefix: {:#?}\n", result);
                 result.append(&mut addr.to_vec());
                 result
             }
@@ -170,6 +170,8 @@ impl<'r> Storage for GoStorage<'r> {
             go_error.into_result(error_msg, default)?;
         }
 
+        //println!("Returning gostorage get with res {output:#?}");
+
         Ok(output)
     }
 
@@ -232,34 +234,22 @@ fn compress_account_info(info: AccountInfo) -> Vec<u8> {
 }
 // return Account info with no code
 fn parse_account_info(value: Vec<u8>) -> AccountInfo {
-    println!("Value: {:#?}\n len value: {:#?}\n\n", value, value.len());
-
     let balance_bytes: [u8; 32] = value[0..32].try_into().unwrap();
     let balance = U256::from_be_slice(&balance_bytes);
 
-    println!("Balance: {:#?}, size: {:#?}", balance, balance_bytes.len());
-
     let nonce_bytes: [u8; 8] = value[32..40].try_into().unwrap();
     let nonce = u64::from_be_bytes(nonce_bytes);
-
-    println!("nonce: {:#?}, size: {:#?}", nonce, nonce_bytes.len());
 
     let code_hash_bytes: [u8; 32] = value[40..72]
         .try_into()
         .expect("Code hash is not long enough size of code hash");
     let code_hash = B256::from(code_hash_bytes);
 
-    println!(
-        "code_hash: {:#?}, size: {:#?}",
-        code_hash,
-        code_hash_bytes.len()
-    );
-
     AccountInfo::new(balance, nonce, code_hash, Bytecode::default()).without_code()
 }
 // COMM: cold , selfdestructed , LoadedAsNotExisting are not supported
 impl<'a> DatabaseCommit for GoStorage<'a> {
-    fn commit(&mut self, changes: std::collections::HashMap<Address, revm_primitives::Account>) {
+    fn commit(&mut self, changes: HashMap<Address, Account>) {
         for (address, account) in changes.iter() {
             if !account.is_touched() {
                 // filter Loaded
@@ -284,24 +274,22 @@ impl<'a> DatabaseCommit for GoStorage<'a> {
                     .expect("Code hash key slice should work");
             }
 
-            if !is_newly_created {
-                // storage cache commit on value changed
-                let storage = account.storage.clone();
-                for (index, slot) in storage {
-                    if slot.present_value == slot.original_value {
-                        continue;
-                    }
-                    let storage_key = EvmStoreKey::Storage(*address, index).key();
-                    let storage_key_slice = storage_key.as_slice();
+            // storage cache commit on value changed
+            let storage = account.storage.clone();
+            for (index, slot) in storage {
+                // TODO: Debug why this is true in the case of contract initialization
+                //if slot.present_value == slot.original_value {
+                //    continue;
+                //}
+                let storage_key = EvmStoreKey::Storage(*address, index).key();
+                let storage_key_slice = storage_key.as_slice();
 
-                    //let balance = U256::from_be_slice(&slot.present_value);
+                //let balance = U256::from_be_slice(&slot.present_value);
+                let mut vec = Vec::with_capacity(72);
+                let slot_present_value_vec = slot.present_value.to_le_bytes_vec();
+                vec.extend(&slot_present_value_vec);
 
-                    let mut vec = Vec::with_capacity(72);
-                    let slot_present_value_vec = slot.present_value.to_be_bytes_vec();
-                    vec.extend(&slot_present_value_vec);
-
-                    self.set(storage_key_slice, &vec).unwrap();
-                }
+                self.set(storage_key_slice, &vec).unwrap();
             }
         }
     }

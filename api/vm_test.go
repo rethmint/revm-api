@@ -42,6 +42,6 @@ func TestExecuteTx(t *testing.T) {
 		Basefee:   big.NewInt(0),
 	}
 
-	res, _ := api.ExecuteTx(vm, store, block, tx, txData)
+	res, _ := api.ExecuteTx(vm, store, tx, block, txData)
 	fmt.Println("Res: \n", res)
 }

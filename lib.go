@@ -32,8 +32,8 @@ func (vm *VM) ExecuteTx(
 	res, err := api.ExecuteTx(
 		vm.Inner,
 		kvStore,
-		block,
 		tx,
+		block,
 		data,
 	)
 	if err != nil {

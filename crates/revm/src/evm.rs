@@ -258,6 +258,7 @@ impl<EvmWiringT: EvmWiring> Evm<'_, EvmWiringT> {
 
         let output = self.transact_preverified_inner(initial_gas_spend);
         let output = self.handler.post_execution().end(&mut self.context, output);
+
         self.clear();
         output
     }

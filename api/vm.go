@@ -31,8 +31,8 @@ func InitVM() VM {
 func ExecuteTx(
 	vm VM,
 	store KVStore,
-	block types.Block,
 	tx types.Transaction,
+	block types.Block,
 	data []byte,
 ) (types.ExecutionResult, error) {
 	var err error

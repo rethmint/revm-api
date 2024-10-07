@@ -19,46 +19,32 @@ func setupTest(t *testing.T) (revm.VM, *api.MockKVStore, types.AccountAddress) {
 	return vm, kvStore, caller
 }
 
-func TestCall(t *testing.T) {
+func suiteTest(t *testing.T, binString string, abiString string, method []string) {
 	vm, kvStore, caller := setupTest(t)
 
-	txData := extractTxData(t, Call.CallBin)
+	txData := extractTxData(t, binString)
 	tx := defaultTx(caller, CreateTransactTo, 0)
 	block := defaultBlock()
 
 	res, _ := api.ExecuteTx(vm.Inner, kvStore, tx, block, txData)
-	t.Log("Res: \n", res)
+	t.Log("Deploy res: \n", res)
 
 	deployedAddr, _ := types.NewAccountAddress("0xec30481c768e48d34ea8fc2bebcfeaddeba6bfa4")
 
-	abi := parseABI(t, Call.CallABI)
-	callData := extractCallData(t, abi, "reflect")
+	abi := parseABI(t, abiString)
+	callData := extractCallData(t, abi, method[0])
 
 	tx2 := defaultTx(caller, deployedAddr, 1)
 	block2 := defaultBlock()
 
 	res2, _ := api.ExecuteTx(vm.Inner, kvStore, tx2, block2, callData)
-	t.Log("Res2: \n", res2)
+	t.Log("Call res: \n", res2)
 }
 
-func TestCreate(t *testing.T) {
-	vm, kvStore, caller := setupTest(t)
+func TestCall(t *testing.T) {
+	suiteTest(t, Call.CallBin, Call.CallABI, []string{"reflect"})
+}
 
-	txData := extractTxData(t, Counter.CounterBin)
-	tx := defaultTx(caller, CreateTransactTo, 0)
-	block := defaultBlock()
-
-	res, _ := api.ExecuteTx(vm.Inner, kvStore, tx, block, txData)
-	t.Log("Res: \n", res)
-
-	deployedAddr, _ := types.NewAccountAddress("0xec30481c768e48d34ea8fc2bebcfeaddeba6bfa4")
-
-	abi := parseABI(t, Counter.CounterABI)
-	callData := extractCallData(t, abi, "increase")
-
-	tx2 := defaultTx(caller, deployedAddr, 1)
-	block2 := defaultBlock()
-
-	res2, _ := api.ExecuteTx(vm.Inner, kvStore, tx2, block2, callData)
-	t.Log("Res2: \n", res2)
+func TestCounter(t *testing.T) {
+	suiteTest(t, Counter.CounterBin, Counter.CounterABI, []string{"increase"})
 }

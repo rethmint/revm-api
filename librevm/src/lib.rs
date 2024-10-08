@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod tests;
-mod env;
 mod db;
 mod error;
 mod gstorage;

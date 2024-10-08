@@ -48,6 +48,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
 	github.com/google/btree v1.1.2 // indirect
+	github.com/google/flatbuffers v24.3.25+incompatible // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/holiman/uint256 v1.3.1 // indirect

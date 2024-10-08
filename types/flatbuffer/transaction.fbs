@@ -1,0 +1,20 @@
+
+namespace transaction;
+
+table Transaction {
+    caller: [ubyte];
+    gas_limit: uint64;
+    gas_price: [ubyte];
+    transact_to: [ubyte];
+    value: [ubyte];
+    data: [ubyte];
+    nonce: uint64;
+    chain_id: uint64;
+    gas_priority_fee: [ubyte];
+    // access_list: Vec<AccessListItem>;            
+    // blob_hashes: Vec<B256>;                      
+    // max_fee_per_blob_gas: Option<[byte]>;          
+    // authorization_list: Option<AuthorizationList>
+}
+
+root_type Transaction;

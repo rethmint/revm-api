@@ -3,10 +3,11 @@ resolver = "2"
 
 members = [
 	"librevm",
+	"types/rust",
 	"crates/interpreter",
 	"crates/precompile",
 	"crates/primitives",
-	"crates/revm",
+	"crates/revm", "types/rust",
 ]
 
 [profile.release]
@@ -36,7 +37,7 @@ incremental = false
 codegen-units = 16
 
 [workspace.package]
-version = "0.1.0"
+version = "0.0.1"
 edition = "2021"
 license = "BUSL-1.1"
 license-file = "LICENSE"
@@ -47,6 +48,7 @@ rust-version = "1.77.1"
 bytes = "1.4.0"
 thiserror = "1.0.34"
 errno = "0.3.0"
+flatbuffers = "24.3.25"
 
 # External crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.

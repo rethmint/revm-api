@@ -1,0 +1,99 @@
+
+namespace result;
+union ExResult {
+    Success,
+    Revert,
+    Halt,
+    Error,
+}
+
+union Output {
+    Call,
+    Create
+}
+table Create {
+    output: [ubyte];
+    address: [ubyte];
+}
+table Call {
+    output: [ubyte];
+}
+enum HaltReasonEnum: uint8 {
+    OutOfGasBasic,
+    OutOfGasMemoryLimit,
+    OutOfGasMemory,
+    OutOfGasPrecompile,
+    OutOfGasInvalidOperand,
+    OpcodeNotFound,
+    InvalidFEOpcode,
+    InvalidJump,
+    NotActivated,
+    StackUnderflow,
+    StackOverflow,
+    OutOfOffset,
+    CreateCollision,
+    PrecompileError,
+    NonceOverflow,
+    CreateContractSizeLimit,
+    CreateContractStartingWithEF,
+    CreateInitCodeSizeLimit,
+    OverflowPayment,
+    StateChangeDuringStaticCall,
+    CallNotAllowedInsideStatic,
+    OutOfFunds,
+    CallTooDeep,
+    EOFFunctionStackOverflow,
+    InvalidEXTCALLTarget,
+    EofAuxDataOverflow,
+    EofAuxDataTooSmall
+}
+
+enum SuccessReasonEnum: uint8 {
+    Stop,
+    Return,
+    SelfDestruct,
+    EofReturnContract
+}
+
+table Topic {
+    value: [ubyte];
+}
+
+table LogData {
+    topics: [Topic];
+    data: [ubyte];  
+}
+
+table Log {
+    address: [ubyte];
+    data: LogData;
+}
+
+table Success {
+    reason: SuccessReasonEnum;
+    gas_used: uint64;
+    gas_refunded: uint64;
+    logs: [Log];
+    output: Output;
+}
+
+table Revert {
+    gas_used: uint64;
+    output: [ubyte];
+}
+
+table Halt {
+    reason: HaltReasonEnum;
+    gas_used: uint64;
+}
+
+table Error {
+    message: string;
+}
+
+
+table EvmResult {
+    result: ExResult;
+}
+
+root_type EvmResult;

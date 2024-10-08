@@ -5,7 +5,7 @@ import (
 	"math/big"
 
 	dbm "github.com/cosmos/cosmos-db"
-	types "github.com/rethmint/revm-api/types"
+	types "github.com/rethmint/revm-api/types/go"
 )
 
 const keccakEmpty = "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"

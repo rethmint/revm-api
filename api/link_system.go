@@ -1,4 +1,4 @@
-//go:build sys_movevm
+//go:build sys_revm
 
 package api
 

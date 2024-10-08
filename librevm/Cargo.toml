@@ -11,10 +11,6 @@ rust-version = { workspace = true }
 
 # the example is to allow us to compile a muslc static lib with the same codebase as we compile the
 # normal dynamic libs (best workaround I could find to override crate-type on the command line)
-[[example]]
-name = "movevmstatic"
-path = "src/examples/movevmstatic.rs"
-crate-type = ["staticlib"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -26,6 +22,8 @@ serde = []
 backtraces = []
 
 [dependencies]
+flatbuffer_types = { path = "../types/rust" }
+flatbuffers = { workspace = true }
 errno = { workspace = true }
 bytes = { workspace = true }
 serde = { workspace = true, features = ["derive", "alloc"] }

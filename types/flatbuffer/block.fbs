@@ -1,0 +1,15 @@
+
+namespace block;
+
+table Block {
+    number: [ubyte];
+    coinbase: [ubyte];
+    timestamp: [ubyte];
+    gas_limit: [ubyte];
+    basefee: [ubyte];
+    // difficulty: [ubyte];  
+    // prevrandao: Option<B256>; 
+    // blob_excess_gas_and_price: Option<BlobExcessGasAndPrice>;
+}
+
+root_type Block;

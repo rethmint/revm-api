@@ -162,3 +162,9 @@ release-build:
 
 contracts-gen: $(CONTRACTS_DIR)/*
 	@bash ./scripts/contractsgen.sh
+
+
+flatbuffer-gen:
+	@bash ./scripts/flatbuffer-gen.sh
+	
+

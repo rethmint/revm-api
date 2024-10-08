@@ -13,10 +13,7 @@ import (
 	revm "github.com/rethmint/revm-api"
 	api "github.com/rethmint/revm-api/api"
 	"github.com/rethmint/revm-api/contracts/Call"
-
-	// call "github.com/rethmint/revm-api/contracts/call"
-	// env "github.com/rethmint/revm-api/types"
-	types "github.com/rethmint/revm-api/types"
+	types "github.com/rethmint/revm-api/types/go"
 )
 
 func generateRandomHash() [32]byte {
@@ -91,6 +88,7 @@ func TestCallEOA(t *testing.T) {
 		GasPrice:       big.NewInt(1000),
 		TransactTo:     [20]uint8{0},
 		Value:          big.NewInt(0),
+		Data:           txData,
 		Nonce:          0,
 		ChainId:        1,
 		GasPriorityFee: big.NewInt(1000),
@@ -104,7 +102,7 @@ func TestCallEOA(t *testing.T) {
 		Basefee:   big.NewInt(0),
 	}
 
-	res, _ := api.ExecuteTx(vm.Inner, kvStore, block, tx, txData)
+	res, _ := vm.ExecuteTx(kvStore, block, tx)
 	fmt.Println("Res: \n", res)
 
 	deployedAddress, _ := types.NewAccountAddress("0xec30481c768e48d34ea8fc2bebcfeaddeba6bfa4")
@@ -114,23 +112,24 @@ func TestCallEOA(t *testing.T) {
 		t.Fatalf("Failed to parse ABI: %v", err)
 	}
 
-	txData2, err := parsedABI.Pack("reflect")
+	txData, err = parsedABI.Pack("reflect")
 	if err != nil {
 		t.Fatalf("Failed to pack method call: %v", err)
 	}
 
-	tx2 := types.Transaction{
+	tx = types.Transaction{
 		Caller:         caller,
 		GasLimit:       0xf4240,
 		GasPrice:       big.NewInt(1000),
 		TransactTo:     deployedAddress,
 		Value:          big.NewInt(0),
+		Data:           txData,
 		Nonce:          1,
 		ChainId:        1,
 		GasPriorityFee: big.NewInt(1000),
 	}
 
-	block2 := types.Block{
+	block = types.Block{
 		Number:    big.NewInt(1),
 		Coinbase:  types.ZeroAddress(),
 		Timestamp: big.NewInt(0),
@@ -138,7 +137,7 @@ func TestCallEOA(t *testing.T) {
 		Basefee:   big.NewInt(0),
 	}
 
-	res2, _ := api.ExecuteTx(vm.Inner, kvStore, block2, tx2, txData2)
+	res2, _ := vm.ExecuteTx(kvStore, block, tx)
 	fmt.Println("Res2: \n", res2)
 
 }

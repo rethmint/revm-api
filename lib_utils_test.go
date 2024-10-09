@@ -88,13 +88,13 @@ func extractCallData(t *testing.T, abi abi.ABI, method string) []byte {
 func defaultTx(caller types.AccountAddress, transactTo [20]byte, nonce uint64) types.Transaction {
 	return types.Transaction{
 		Caller:         caller,
-		GasLimit:       0xf4240,
-		GasPrice:       big.NewInt(1000),
+		GasLimit:       0x100000000,
+		GasPrice:       big.NewInt(10),
 		TransactTo:     transactTo,
 		Value:          big.NewInt(0),
 		Nonce:          nonce,
 		ChainId:        1,
-		GasPriorityFee: big.NewInt(1000),
+		GasPriorityFee: big.NewInt(10),
 	}
 }
 
@@ -103,7 +103,7 @@ func defaultBlock() types.Block {
 		Number:    big.NewInt(1),
 		Coinbase:  types.ZeroAddress(),
 		Timestamp: big.NewInt(0),
-		GasLimit:  big.NewInt(10000000),
+		GasLimit:  big.NewInt(10000000000),
 		Basefee:   big.NewInt(0),
 	}
 

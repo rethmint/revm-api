@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"math/big"
 	"strings"
 )
 
@@ -30,7 +31,13 @@ func ZeroAddress() AccountAddress {
 	return zero
 }
 
-type U256 [32]byte
+type U256 *big.Int
+
+func BytesToU256(b []byte) U256 {
+	u256 := new(big.Int)
+	u256.SetBytes(b)
+	return u256
+}
 
 // type TxKind interface {
 // 	IsTxKind()

@@ -79,7 +79,7 @@ func processExecutionResult(res types.ExecutionResult) (types.Result, error) {
 			topics := make([]types.U256, topicsLen)
 			for j := 0; j < topicsLen; j++ {
 				logData.Topics(&topic, j)
-				topics[j] = types.U256(topic.ValueBytes())
+				topics[j] = types.BytesToU256(topic.ValueBytes())
 			}
 			logs[i] = types.Log{
 				Address: types.AccountAddress(log.AddressBytes()),

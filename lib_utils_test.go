@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	revm "github.com/rethmint/revm-api"
 	api "github.com/rethmint/revm-api/api"
-	types "github.com/rethmint/revm-api/types"
+	types "github.com/rethmint/revm-api/types/go"
 )
 
 func generateRandomHash() [32]byte {

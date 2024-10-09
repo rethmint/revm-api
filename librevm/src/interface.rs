@@ -2,10 +2,6 @@ use flatbuffer_types::{
     block::Block,
     result::{
         finish_evm_result_buffer,
-        Call,
-        CallArgs,
-        Create,
-        CreateArgs,
         EvmResult,
         EvmResultArgs,
         ExResult,
@@ -16,7 +12,6 @@ use flatbuffer_types::{
         LogArgs,
         LogData,
         LogDataArgs,
-        Output,
         Revert,
         RevertArgs,
         Success,
@@ -115,6 +110,17 @@ pub extern "C" fn execute_tx(
             Vec::new()
         }
     };
+    // FIX: for debug
+    {
+        // PROBLEM: gas used and other value were deserialized fail
+        let ex_result = flatbuffers::root::<Success>(&data).unwrap();
+        println!("{:?}", ex_result.reason().variant_name());
+        println!("{:}", ex_result.gas_used());
+        println!("{:}", ex_result.gas_refunded());
+        println!("{:?}", ex_result.logs());
+        println!("{:?}", ex_result.output());
+        println!("{:?}", ex_result.deployed_address());
+    }
 
     UnmanagedVector::new(Some(data))
 }
@@ -145,11 +151,12 @@ pub extern "C" fn query(
             Vec::new()
         }
     };
+
     UnmanagedVector::new(Some(data))
 }
 
 fn build_flat_buffer(result: ExecutionResult<HaltReason>) -> Vec<u8> {
-    let mut builder = flatbuffers::FlatBufferBuilder::new();
+    let mut builder = flatbuffers::FlatBufferBuilder::with_capacity(300);
     let args = match result {
         ExecutionResult::Success { reason, gas_used, gas_refunded, logs, output } => {
             let reason = match reason {
@@ -158,6 +165,7 @@ fn build_flat_buffer(result: ExecutionResult<HaltReason>) -> Vec<u8> {
                 SuccessReason::SelfDestruct => SuccessReasonEnum::SelfDestruct,
                 SuccessReason::EofReturnContract => SuccessReasonEnum::EofReturnContract,
             };
+            println!("Rust Gas Used{}", gas_used);
             let mut logs_buffer = Vec::new();
             for log in logs.iter() {
                 let mut topics_buffer = Vec::new();
@@ -183,44 +191,26 @@ fn build_flat_buffer(result: ExecutionResult<HaltReason>) -> Vec<u8> {
                     )
                 );
             }
-            let success_args = SuccessArgs {
-                reason,
-                gas_refunded,
-                gas_used,
-                logs: Some(builder.create_vector(&logs_buffer)),
-                output_type: match output {
-                    revm_primitives::Output::Call(_) => Output::Call,
-                    revm_primitives::Output::Create(_, _) => Output::Create,
-                },
-                output: match output {
-                    revm_primitives::Output::Call(bytes) => {
-                        let output = Some(builder.create_vector(&bytes.clone()));
-                        Some(
-                            Call::create(
-                                &mut builder,
-                                &(CallArgs {
-                                    output,
-                                })
-                            ).as_union_value()
-                        )
-                    }
-                    revm_primitives::Output::Create(bytes, address) => {
-                        let output = Some(builder.create_vector(&bytes));
-                        let address = Some(builder.create_vector(&address.unwrap().to_vec()));
-                        Some(
-                            Create::create(
-                                &mut builder,
-                                &(CreateArgs {
-                                    output,
-                                    address,
-                                })
-                            ).as_union_value()
-                        )
-                    }
-                },
-            };
+            println!("Args {}, {} , {:?}", gas_used, gas_refunded, logs);
+            let logs = Some(builder.create_vector(&logs_buffer));
+            let deployed_address = output
+                .address()
+                .unwrap_or_else(|| &Address::ZERO)
+                .to_vec();
+            let deployed_address_vec = Some(builder.create_vector(&deployed_address));
+            let output_data_vec = Some(builder.create_vector(output.data()));
 
-            let success_offset = Success::create(&mut builder, &success_args);
+            let success_offset = Success::create(
+                &mut builder,
+                &(SuccessArgs {
+                    reason,
+                    gas_used,
+                    gas_refunded,
+                    logs,
+                    deployed_address: deployed_address_vec,
+                    output: output_data_vec,
+                })
+            );
 
             EvmResult::create(
                 &mut builder,
@@ -318,19 +308,19 @@ fn set_evm_env(
     let block_bytes = block.read().unwrap();
     let block = flatbuffers::root::<Block>(block_bytes).unwrap();
     let mut block_env = BlockEnv::default();
-    block_env.number = U256::from_le_slice(
+    block_env.number = U256::from_be_slice(
         block.number().unwrap().bytes().try_into().expect("error: block env number ")
     );
     block_env.coinbase = Address::from_slice(
         block.coinbase().unwrap().bytes().try_into().expect("error: block env coinbase")
     );
-    block_env.timestamp = U256::from_le_slice(
+    block_env.timestamp = U256::from_be_slice(
         block.timestamp().unwrap().bytes().try_into().expect("error: block env timestamp")
     );
-    block_env.gas_limit = U256::from_le_slice(
+    block_env.gas_limit = U256::from_be_slice(
         block.gas_limit().unwrap().bytes().try_into().expect("error: block env gas limit")
     );
-    block_env.basefee = U256::from_le_slice(
+    block_env.basefee = U256::from_be_slice(
         block.basefee().unwrap().bytes().try_into().expect("error: block env basefee")
     );
     let tx_bytes = tx.read().unwrap();
@@ -339,18 +329,18 @@ fn set_evm_env(
     tx_env.caller = Address::from_slice(
         tx.caller().unwrap().bytes().try_into().expect("error: transaction env caller")
     );
-    tx_env.gas_price = U256::from_le_slice(
+    tx_env.gas_price = U256::from_be_slice(
         tx.gas_price().unwrap().bytes().try_into().expect("error: transaction env gas price")
     );
     tx_env.gas_limit = tx.gas_limit();
-    tx_env.value = U256::from_le_slice(
+    tx_env.value = U256::from_be_slice(
         tx.value().unwrap().bytes().try_into().expect("error: transaction env value")
     );
     tx_env.data = Bytes::from(tx.data().unwrap().bytes().to_vec());
     tx_env.nonce = tx.nonce();
     tx_env.chain_id = Some(tx.chain_id());
     tx_env.gas_priority_fee = Some(
-        U256::from_le_slice(
+        U256::from_be_slice(
             tx
                 .gas_priority_fee()
                 .unwrap()

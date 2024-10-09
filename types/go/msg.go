@@ -89,7 +89,3 @@ type Halt struct {
 }
 
 type ExecutionResult []byte
-
-func (result ExecutionResult) ResultId() ResultId {
-	return ResultId(result[0])
-}

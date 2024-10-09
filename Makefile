@@ -166,5 +166,6 @@ contracts-gen: $(CONTRACTS_DIR)/*
 
 flatbuffer-gen:
 	@bash ./scripts/flatbuffer-gen.sh
+	cargo fix --allow-dirty
 	
 

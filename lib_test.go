@@ -1,15 +1,15 @@
 package revm_api_test
 
 import (
+	"fmt"
 	"math/big"
 	"testing"
 
 	revm "github.com/rethmint/revm-api"
 	api "github.com/rethmint/revm-api/api"
 	"github.com/rethmint/revm-api/contracts/Call"
-	types "github.com/rethmint/revm-api/types/go"
 	"github.com/rethmint/revm-api/contracts/Counter"
-	types "github.com/rethmint/revm-api/types"
+	types "github.com/rethmint/revm-api/types/go"
 )
 
 func setupTest(t *testing.T) (revm.VM, *api.MockKVStore, types.AccountAddress) {
@@ -23,30 +23,6 @@ func setupTest(t *testing.T) (revm.VM, *api.MockKVStore, types.AccountAddress) {
 		txStr = txStr[2:]
 	}
 
-	txData, err := hex.DecodeString(txStr)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	tx := types.Transaction{
-		Caller:         caller,
-		GasLimit:       0xf4240,
-		GasPrice:       big.NewInt(1000),
-		TransactTo:     [20]uint8{0},
-		Value:          big.NewInt(0),
-		Data:           txData,
-		Nonce:          0,
-		ChainId:        1,
-		GasPriorityFee: big.NewInt(1000),
-	}
-
-	block := types.Block{
-		Number:    big.NewInt(1),
-		Coinbase:  types.ZeroAddress(),
-		Timestamp: big.NewInt(0),
-		GasLimit:  big.NewInt(10000000),
-		Basefee:   big.NewInt(0),
-	}
 	return vm, kvStore, caller
 }
 
@@ -54,23 +30,20 @@ func suiteTest(t *testing.T, binString string, abiString string, method []string
 	vm, kvStore, caller := setupTest(t)
 
 	txData := extractTxData(t, binString)
-	tx := defaultTx(caller, CreateTransactTo, 0)
+	tx := defaultTx(caller, CreateTransactTo, txData, 0)
 	block := defaultBlock()
-
 	res, _ := vm.ExecuteTx(kvStore, block, tx)
 	fmt.Println("Res: \n", res)
-	res, _ := api.ExecuteTx(vm.Inner, kvStore, tx, block, txData)
-	t.Log("Deploy res: \n", res)
 
 	deployedAddr, _ := types.NewAccountAddress("0xec30481c768e48d34ea8fc2bebcfeaddeba6bfa4")
 
 	abi := parseABI(t, abiString)
 	callData := extractCallData(t, abi, method[0])
 
-	tx2 := defaultTx(caller, deployedAddr, 1)
+	tx2 := defaultTx(caller, deployedAddr, callData, 1)
 	block2 := defaultBlock()
 
-	res2, _ := api.ExecuteTx(vm.Inner, kvStore, tx2, block2, callData)
+	res2, _ := vm.ExecuteTx(kvStore, block2, tx2)
 	t.Log("Call res: \n", res2)
 }
 

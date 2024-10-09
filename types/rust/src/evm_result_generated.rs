@@ -3,11 +3,8 @@
 
 // @generated
 
-use core::mem;
-use core::cmp::Ordering;
 
 extern crate flatbuffers;
-use self::flatbuffers::{EndianScalar, Follow};
 
 #[allow(unused_imports, dead_code)]
 pub mod result {
@@ -116,97 +113,6 @@ impl<'a> flatbuffers::Verifiable for ExResult {
 
 impl flatbuffers::SimpleToVerifyInSlice for ExResult {}
 pub struct ExResultUnionTableOffset {}
-
-#[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MIN_OUTPUT: u8 = 0;
-#[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MAX_OUTPUT: u8 = 2;
-#[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-#[allow(non_camel_case_types)]
-pub const ENUM_VALUES_OUTPUT: [Output; 3] = [
-  Output::NONE,
-  Output::Call,
-  Output::Create,
-];
-
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
-#[repr(transparent)]
-pub struct Output(pub u8);
-#[allow(non_upper_case_globals)]
-impl Output {
-  pub const NONE: Self = Self(0);
-  pub const Call: Self = Self(1);
-  pub const Create: Self = Self(2);
-
-  pub const ENUM_MIN: u8 = 0;
-  pub const ENUM_MAX: u8 = 2;
-  pub const ENUM_VALUES: &'static [Self] = &[
-    Self::NONE,
-    Self::Call,
-    Self::Create,
-  ];
-  /// Returns the variant's name or "" if unknown.
-  pub fn variant_name(self) -> Option<&'static str> {
-    match self {
-      Self::NONE => Some("NONE"),
-      Self::Call => Some("Call"),
-      Self::Create => Some("Create"),
-      _ => None,
-    }
-  }
-}
-impl core::fmt::Debug for Output {
-  fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-    if let Some(name) = self.variant_name() {
-      f.write_str(name)
-    } else {
-      f.write_fmt(format_args!("<UNKNOWN {:?}>", self.0))
-    }
-  }
-}
-impl<'a> flatbuffers::Follow<'a> for Output {
-  type Inner = Self;
-  #[inline]
-  unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    let b = flatbuffers::read_scalar_at::<u8>(buf, loc);
-    Self(b)
-  }
-}
-
-impl flatbuffers::Push for Output {
-    type Output = Output;
-    #[inline]
-    unsafe fn push(&self, dst: &mut [u8], _written_len: usize) {
-        flatbuffers::emplace_scalar::<u8>(dst, self.0);
-    }
-}
-
-impl flatbuffers::EndianScalar for Output {
-  type Scalar = u8;
-  #[inline]
-  fn to_little_endian(self) -> u8 {
-    self.0.to_le()
-  }
-  #[inline]
-  #[allow(clippy::wrong_self_convention)]
-  fn from_little_endian(v: u8) -> Self {
-    let b = u8::from_le(v);
-    Self(b)
-  }
-}
-
-impl<'a> flatbuffers::Verifiable for Output {
-  #[inline]
-  fn run_verifier(
-    v: &mut flatbuffers::Verifier, pos: usize
-  ) -> Result<(), flatbuffers::InvalidFlatbuffer> {
-    use self::flatbuffers::Verifiable;
-    u8::run_verifier(v, pos)
-  }
-}
-
-impl flatbuffers::SimpleToVerifyInSlice for Output {}
-pub struct OutputUnionTableOffset {}
 
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 pub const ENUM_MIN_HALT_REASON_ENUM: u8 = 0;
@@ -486,217 +392,6 @@ impl<'a> flatbuffers::Verifiable for SuccessReasonEnum {
 }
 
 impl flatbuffers::SimpleToVerifyInSlice for SuccessReasonEnum {}
-pub enum CreateOffset {}
-#[derive(Copy, Clone, PartialEq)]
-
-pub struct Create<'a> {
-  pub _tab: flatbuffers::Table<'a>,
-}
-
-impl<'a> flatbuffers::Follow<'a> for Create<'a> {
-  type Inner = Create<'a>;
-  #[inline]
-  unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    Self { _tab: flatbuffers::Table::new(buf, loc) }
-  }
-}
-
-impl<'a> Create<'a> {
-  pub const VT_OUTPUT: flatbuffers::VOffsetT = 4;
-  pub const VT_ADDRESS: flatbuffers::VOffsetT = 6;
-
-  #[inline]
-  pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
-    Create { _tab: table }
-  }
-  #[allow(unused_mut)]
-  pub fn create<'bldr: 'args, 'args: 'mut_bldr, 'mut_bldr, A: flatbuffers::Allocator + 'bldr>(
-    _fbb: &'mut_bldr mut flatbuffers::FlatBufferBuilder<'bldr, A>,
-    args: &'args CreateArgs<'args>
-  ) -> flatbuffers::WIPOffset<Create<'bldr>> {
-    let mut builder = CreateBuilder::new(_fbb);
-    if let Some(x) = args.address { builder.add_address(x); }
-    if let Some(x) = args.output { builder.add_output(x); }
-    builder.finish()
-  }
-
-
-  #[inline]
-  pub fn output(&self) -> Option<flatbuffers::Vector<'a, u8>> {
-    // Safety:
-    // Created from valid Table for this object
-    // which contains a valid value in this slot
-    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, u8>>>(Create::VT_OUTPUT, None)}
-  }
-  #[inline]
-  pub fn address(&self) -> Option<flatbuffers::Vector<'a, u8>> {
-    // Safety:
-    // Created from valid Table for this object
-    // which contains a valid value in this slot
-    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, u8>>>(Create::VT_ADDRESS, None)}
-  }
-}
-
-impl flatbuffers::Verifiable for Create<'_> {
-  #[inline]
-  fn run_verifier(
-    v: &mut flatbuffers::Verifier, pos: usize
-  ) -> Result<(), flatbuffers::InvalidFlatbuffer> {
-    use self::flatbuffers::Verifiable;
-    v.visit_table(pos)?
-     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, u8>>>("output", Self::VT_OUTPUT, false)?
-     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, u8>>>("address", Self::VT_ADDRESS, false)?
-     .finish();
-    Ok(())
-  }
-}
-pub struct CreateArgs<'a> {
-    pub output: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, u8>>>,
-    pub address: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, u8>>>,
-}
-impl<'a> Default for CreateArgs<'a> {
-  #[inline]
-  fn default() -> Self {
-    CreateArgs {
-      output: None,
-      address: None,
-    }
-  }
-}
-
-pub struct CreateBuilder<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> {
-  fbb_: &'b mut flatbuffers::FlatBufferBuilder<'a, A>,
-  start_: flatbuffers::WIPOffset<flatbuffers::TableUnfinishedWIPOffset>,
-}
-impl<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> CreateBuilder<'a, 'b, A> {
-  #[inline]
-  pub fn add_output(&mut self, output: flatbuffers::WIPOffset<flatbuffers::Vector<'b , u8>>) {
-    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Create::VT_OUTPUT, output);
-  }
-  #[inline]
-  pub fn add_address(&mut self, address: flatbuffers::WIPOffset<flatbuffers::Vector<'b , u8>>) {
-    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Create::VT_ADDRESS, address);
-  }
-  #[inline]
-  pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a, A>) -> CreateBuilder<'a, 'b, A> {
-    let start = _fbb.start_table();
-    CreateBuilder {
-      fbb_: _fbb,
-      start_: start,
-    }
-  }
-  #[inline]
-  pub fn finish(self) -> flatbuffers::WIPOffset<Create<'a>> {
-    let o = self.fbb_.end_table(self.start_);
-    flatbuffers::WIPOffset::new(o.value())
-  }
-}
-
-impl core::fmt::Debug for Create<'_> {
-  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    let mut ds = f.debug_struct("Create");
-      ds.field("output", &self.output());
-      ds.field("address", &self.address());
-      ds.finish()
-  }
-}
-pub enum CallOffset {}
-#[derive(Copy, Clone, PartialEq)]
-
-pub struct Call<'a> {
-  pub _tab: flatbuffers::Table<'a>,
-}
-
-impl<'a> flatbuffers::Follow<'a> for Call<'a> {
-  type Inner = Call<'a>;
-  #[inline]
-  unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    Self { _tab: flatbuffers::Table::new(buf, loc) }
-  }
-}
-
-impl<'a> Call<'a> {
-  pub const VT_OUTPUT: flatbuffers::VOffsetT = 4;
-
-  #[inline]
-  pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
-    Call { _tab: table }
-  }
-  #[allow(unused_mut)]
-  pub fn create<'bldr: 'args, 'args: 'mut_bldr, 'mut_bldr, A: flatbuffers::Allocator + 'bldr>(
-    _fbb: &'mut_bldr mut flatbuffers::FlatBufferBuilder<'bldr, A>,
-    args: &'args CallArgs<'args>
-  ) -> flatbuffers::WIPOffset<Call<'bldr>> {
-    let mut builder = CallBuilder::new(_fbb);
-    if let Some(x) = args.output { builder.add_output(x); }
-    builder.finish()
-  }
-
-
-  #[inline]
-  pub fn output(&self) -> Option<flatbuffers::Vector<'a, u8>> {
-    // Safety:
-    // Created from valid Table for this object
-    // which contains a valid value in this slot
-    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, u8>>>(Call::VT_OUTPUT, None)}
-  }
-}
-
-impl flatbuffers::Verifiable for Call<'_> {
-  #[inline]
-  fn run_verifier(
-    v: &mut flatbuffers::Verifier, pos: usize
-  ) -> Result<(), flatbuffers::InvalidFlatbuffer> {
-    use self::flatbuffers::Verifiable;
-    v.visit_table(pos)?
-     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, u8>>>("output", Self::VT_OUTPUT, false)?
-     .finish();
-    Ok(())
-  }
-}
-pub struct CallArgs<'a> {
-    pub output: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, u8>>>,
-}
-impl<'a> Default for CallArgs<'a> {
-  #[inline]
-  fn default() -> Self {
-    CallArgs {
-      output: None,
-    }
-  }
-}
-
-pub struct CallBuilder<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> {
-  fbb_: &'b mut flatbuffers::FlatBufferBuilder<'a, A>,
-  start_: flatbuffers::WIPOffset<flatbuffers::TableUnfinishedWIPOffset>,
-}
-impl<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> CallBuilder<'a, 'b, A> {
-  #[inline]
-  pub fn add_output(&mut self, output: flatbuffers::WIPOffset<flatbuffers::Vector<'b , u8>>) {
-    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Call::VT_OUTPUT, output);
-  }
-  #[inline]
-  pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a, A>) -> CallBuilder<'a, 'b, A> {
-    let start = _fbb.start_table();
-    CallBuilder {
-      fbb_: _fbb,
-      start_: start,
-    }
-  }
-  #[inline]
-  pub fn finish(self) -> flatbuffers::WIPOffset<Call<'a>> {
-    let o = self.fbb_.end_table(self.start_);
-    flatbuffers::WIPOffset::new(o.value())
-  }
-}
-
-impl core::fmt::Debug for Call<'_> {
-  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-    let mut ds = f.debug_struct("Call");
-      ds.field("output", &self.output());
-      ds.finish()
-  }
-}
 pub enum TopicOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
@@ -1042,8 +737,8 @@ impl<'a> Success<'a> {
   pub const VT_GAS_USED: flatbuffers::VOffsetT = 6;
   pub const VT_GAS_REFUNDED: flatbuffers::VOffsetT = 8;
   pub const VT_LOGS: flatbuffers::VOffsetT = 10;
-  pub const VT_OUTPUT_TYPE: flatbuffers::VOffsetT = 12;
-  pub const VT_OUTPUT: flatbuffers::VOffsetT = 14;
+  pub const VT_OUTPUT: flatbuffers::VOffsetT = 12;
+  pub const VT_DEPLOYED_ADDRESS: flatbuffers::VOffsetT = 14;
 
   #[inline]
   pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
@@ -1057,9 +752,9 @@ impl<'a> Success<'a> {
     let mut builder = SuccessBuilder::new(_fbb);
     builder.add_gas_refunded(args.gas_refunded);
     builder.add_gas_used(args.gas_used);
+    if let Some(x) = args.deployed_address { builder.add_deployed_address(x); }
     if let Some(x) = args.output { builder.add_output(x); }
     if let Some(x) = args.logs { builder.add_logs(x); }
-    builder.add_output_type(args.output_type);
     builder.add_reason(args.reason);
     builder.finish()
   }
@@ -1094,49 +789,19 @@ impl<'a> Success<'a> {
     unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Log>>>>(Success::VT_LOGS, None)}
   }
   #[inline]
-  pub fn output_type(&self) -> Output {
+  pub fn output(&self) -> Option<flatbuffers::Vector<'a, u8>> {
     // Safety:
     // Created from valid Table for this object
     // which contains a valid value in this slot
-    unsafe { self._tab.get::<Output>(Success::VT_OUTPUT_TYPE, Some(Output::NONE)).unwrap()}
+    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, u8>>>(Success::VT_OUTPUT, None)}
   }
   #[inline]
-  pub fn output(&self) -> Option<flatbuffers::Table<'a>> {
+  pub fn deployed_address(&self) -> Option<flatbuffers::Vector<'a, u8>> {
     // Safety:
     // Created from valid Table for this object
     // which contains a valid value in this slot
-    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Table<'a>>>(Success::VT_OUTPUT, None)}
+    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, u8>>>(Success::VT_DEPLOYED_ADDRESS, None)}
   }
-  #[inline]
-  #[allow(non_snake_case)]
-  pub fn output_as_call(&self) -> Option<Call<'a>> {
-    if self.output_type() == Output::Call {
-      self.output().map(|t| {
-       // Safety:
-       // Created from a valid Table for this object
-       // Which contains a valid union in this slot
-       unsafe { Call::init_from_table(t) }
-     })
-    } else {
-      None
-    }
-  }
-
-  #[inline]
-  #[allow(non_snake_case)]
-  pub fn output_as_create(&self) -> Option<Create<'a>> {
-    if self.output_type() == Output::Create {
-      self.output().map(|t| {
-       // Safety:
-       // Created from a valid Table for this object
-       // Which contains a valid union in this slot
-       unsafe { Create::init_from_table(t) }
-     })
-    } else {
-      None
-    }
-  }
-
 }
 
 impl flatbuffers::Verifiable for Success<'_> {
@@ -1150,13 +815,8 @@ impl flatbuffers::Verifiable for Success<'_> {
      .visit_field::<u64>("gas_used", Self::VT_GAS_USED, false)?
      .visit_field::<u64>("gas_refunded", Self::VT_GAS_REFUNDED, false)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<Log>>>>("logs", Self::VT_LOGS, false)?
-     .visit_union::<Output, _>("output_type", Self::VT_OUTPUT_TYPE, "output", Self::VT_OUTPUT, false, |key, v, pos| {
-        match key {
-          Output::Call => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Call>>("Output::Call", pos),
-          Output::Create => v.verify_union_variant::<flatbuffers::ForwardsUOffset<Create>>("Output::Create", pos),
-          _ => Ok(()),
-        }
-     })?
+     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, u8>>>("output", Self::VT_OUTPUT, false)?
+     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, u8>>>("deployed_address", Self::VT_DEPLOYED_ADDRESS, false)?
      .finish();
     Ok(())
   }
@@ -1166,8 +826,8 @@ pub struct SuccessArgs<'a> {
     pub gas_used: u64,
     pub gas_refunded: u64,
     pub logs: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<Log<'a>>>>>,
-    pub output_type: Output,
-    pub output: Option<flatbuffers::WIPOffset<flatbuffers::UnionWIPOffset>>,
+    pub output: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, u8>>>,
+    pub deployed_address: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, u8>>>,
 }
 impl<'a> Default for SuccessArgs<'a> {
   #[inline]
@@ -1177,8 +837,8 @@ impl<'a> Default for SuccessArgs<'a> {
       gas_used: 0,
       gas_refunded: 0,
       logs: None,
-      output_type: Output::NONE,
       output: None,
+      deployed_address: None,
     }
   }
 }
@@ -1205,12 +865,12 @@ impl<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> SuccessBuilder<'a, 'b, A> {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Success::VT_LOGS, logs);
   }
   #[inline]
-  pub fn add_output_type(&mut self, output_type: Output) {
-    self.fbb_.push_slot::<Output>(Success::VT_OUTPUT_TYPE, output_type, Output::NONE);
+  pub fn add_output(&mut self, output: flatbuffers::WIPOffset<flatbuffers::Vector<'b , u8>>) {
+    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Success::VT_OUTPUT, output);
   }
   #[inline]
-  pub fn add_output(&mut self, output: flatbuffers::WIPOffset<flatbuffers::UnionWIPOffset>) {
-    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Success::VT_OUTPUT, output);
+  pub fn add_deployed_address(&mut self, deployed_address: flatbuffers::WIPOffset<flatbuffers::Vector<'b , u8>>) {
+    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Success::VT_DEPLOYED_ADDRESS, deployed_address);
   }
   #[inline]
   pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a, A>) -> SuccessBuilder<'a, 'b, A> {
@@ -1234,27 +894,8 @@ impl core::fmt::Debug for Success<'_> {
       ds.field("gas_used", &self.gas_used());
       ds.field("gas_refunded", &self.gas_refunded());
       ds.field("logs", &self.logs());
-      ds.field("output_type", &self.output_type());
-      match self.output_type() {
-        Output::Call => {
-          if let Some(x) = self.output_as_call() {
-            ds.field("output", &x)
-          } else {
-            ds.field("output", &"InvalidFlatbuffer: Union discriminant does not match value.")
-          }
-        },
-        Output::Create => {
-          if let Some(x) = self.output_as_create() {
-            ds.field("output", &x)
-          } else {
-            ds.field("output", &"InvalidFlatbuffer: Union discriminant does not match value.")
-          }
-        },
-        _ => {
-          let x: Option<()> = None;
-          ds.field("output", &x)
-        },
-      };
+      ds.field("output", &self.output());
+      ds.field("deployed_address", &self.deployed_address());
       ds.finish()
   }
 }

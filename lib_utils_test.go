@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	revm "github.com/rethmint/revm-api"
 	api "github.com/rethmint/revm-api/api"
-	types "github.com/rethmint/revm-api/types"
+	types "github.com/rethmint/revm-api/types/go"
 )
 
 func generateRandomHash() [32]byte {
@@ -85,26 +85,27 @@ func extractCallData(t *testing.T, abi abi.ABI, method string) []byte {
 	return callData
 }
 
-func defaultTx(caller types.AccountAddress, transactTo [20]byte, nonce uint64) types.Transaction {
+func defaultTx(caller types.AccountAddress, transactTo [20]byte, txData []byte, nonce uint64) types.Transaction {
 	return types.Transaction{
 		Caller:         caller,
 		GasLimit:       0xf4240,
-		GasPrice:       big.NewInt(1000),
+		GasPrice:       types.NewU256(big.NewInt(10000)),
 		TransactTo:     transactTo,
-		Value:          big.NewInt(0),
+		Value:          types.NewU256(big.NewInt(0)),
+		Data:           txData,
 		Nonce:          nonce,
 		ChainId:        1,
-		GasPriorityFee: big.NewInt(1000),
+		GasPriorityFee: types.NewU256(big.NewInt(0)),
 	}
 }
 
 func defaultBlock() types.Block {
 	return types.Block{
-		Number:    big.NewInt(1),
+		Number:    types.NewU256(big.NewInt(1)),
 		Coinbase:  types.ZeroAddress(),
-		Timestamp: big.NewInt(0),
-		GasLimit:  big.NewInt(10000000),
-		Basefee:   big.NewInt(0),
+		Timestamp: types.NewU256(big.NewInt(1000000)),
+		GasLimit:  types.NewU256(big.NewInt(10000000)),
+		Basefee:   types.NewU256(big.NewInt(0)),
 	}
 
 }

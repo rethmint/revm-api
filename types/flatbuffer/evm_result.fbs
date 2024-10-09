@@ -7,17 +7,6 @@ union ExResult {
     Error,
 }
 
-union Output {
-    Call,
-    Create
-}
-table Create {
-    output: [ubyte];
-    address: [ubyte];
-}
-table Call {
-    output: [ubyte];
-}
 enum HaltReasonEnum: uint8 {
     OutOfGasBasic,
     OutOfGasMemoryLimit,
@@ -74,7 +63,8 @@ table Success {
     gas_used: uint64;
     gas_refunded: uint64;
     logs: [Log];
-    output: Output;
+    output: [ubyte];
+    deployed_address: [ubyte];
 }
 
 table Revert {

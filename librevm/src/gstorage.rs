@@ -17,7 +17,7 @@ pub trait Storage {
     ///
     /// Note: Support for differentiating between a non-existent key and a key with empty value
     /// is not great yet and might not be possible in all backends. But we're trying to get there.
-    fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, BackendError>;
+    fn get(&self, key: &[u8], default: &[u8]) -> Result<Vec<u8>, BackendError>;
 
     fn set(&mut self, key: &[u8], value: &[u8]) -> Result<(), BackendError>;
 
@@ -109,9 +109,13 @@ impl<'db> Database for GoStorage<'db> {
         address: revm_primitives::Address
     ) -> Result<Option<AccountInfo>, Self::Error> {
         let account_key = EvmStoreKey::Account(address).key();
-        let account_key_slice = account_key.as_slice();
-        let maybe_output = self.get(account_key_slice)?;
-        Ok(maybe_output.map(|v| parse_account_info(v)))
+        let default = vec![0u8; 72];
+        let output = self.get(account_key.as_slice(), &default)?;
+        if output == default {
+            Ok(None)
+        } else {
+            Ok(Some(parse_account_info(output)))
+        }
     }
 
     fn storage(
@@ -121,7 +125,8 @@ impl<'db> Database for GoStorage<'db> {
     ) -> Result<revm_primitives::U256, Self::Error> {
         let storage_key = EvmStoreKey::Storage(address, index).key();
         let storage_key_slice = storage_key.as_slice();
-        let output = self.get(storage_key_slice)?.unwrap();
+        let default = vec![0u8; 32];
+        let output = self.get(storage_key_slice, &default)?;
 
         Ok(Uint::from_be_slice(&output))
     }
@@ -129,7 +134,8 @@ impl<'db> Database for GoStorage<'db> {
     fn block_hash(&mut self, number: u64) -> Result<revm_primitives::B256, Self::Error> {
         let block_key = EvmStoreKey::Block(number).key();
         let block_key_slice = block_key.as_slice();
-        let output = self.get(block_key_slice)?.unwrap();
+        let default = vec![0u8; 32];
+        let output = self.get(block_key_slice, &default)?;
 
         Ok(B256::from_slice(&output))
     }
@@ -140,14 +146,15 @@ impl<'db> Database for GoStorage<'db> {
     ) -> Result<revm_primitives::Bytecode, Self::Error> {
         let code_key = EvmStoreKey::Code(code_hash).key();
         let code_key_slice = code_key.as_slice();
-        let output = self.get(code_key_slice)?.unwrap();
+        let default = Vec::new();
+        let output = self.get(code_key_slice, &default)?;
 
         Ok(Bytecode::LegacyRaw(Bytes::from(output)))
     }
 }
 
 impl<'r> Storage for GoStorage<'r> {
-    fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, BackendError> {
+    fn get(&self, key: &[u8], default: &[u8]) -> Result<Vec<u8>, BackendError> {
         let mut output = UnmanagedVector::default();
         let mut error_msg = UnmanagedVector::default();
         let go_error: GoError = (self.db.vtable
@@ -158,19 +165,15 @@ impl<'r> Storage for GoStorage<'r> {
                 &mut error_msg as *mut UnmanagedVector
             )
             .into();
-        // We destruct the UnmanagedVector here, no matter if we need the data.
-        let output = output.consume();
 
-        // return complete error message (reading from buffer for GoError::Other)
+        let output = output.consume().unwrap_or_else(|| { default.to_vec() });
+
         let default = || {
             format!("Failed to read a key in the db: {}", String::from_utf8_lossy(key))
         };
         unsafe {
             go_error.into_result(error_msg, default)?;
         }
-
-        //println!("Returning gostorage get with res {output:#?}");
-
         Ok(output)
     }
 
@@ -269,14 +272,12 @@ impl<'a> DatabaseCommit for GoStorage<'a> {
             // storage cache commit on value changed
             let storage = account.storage.clone();
             for (index, slot) in storage {
-                // TODO: Debug why this is true in the case of contract initialization
-                //if slot.present_value == slot.original_value {
-                //    continue;
-                //}
+                if slot.present_value == slot.original_value {
+                    continue;
+                }
                 let storage_key = EvmStoreKey::Storage(*address, index).key();
                 let storage_key_slice = storage_key.as_slice();
 
-                //let balance = U256::from_be_slice(&slot.present_value);
                 let mut vec = Vec::with_capacity(72);
                 let slot_present_value_vec = slot.present_value.to_le_bytes_vec();
                 vec.extend(&slot_present_value_vec);

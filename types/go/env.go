@@ -2,9 +2,8 @@ package types
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"errors"
-	"log"
+	"math/big"
 	"strings"
 )
 
@@ -14,7 +13,7 @@ func NewAccountAddress(s string) (AccountAddress, error) {
 	if !strings.HasPrefix(s, "0x") {
 		return AccountAddress{}, errors.New("address must start with 0x")
 	}
-	if len(s) != 42 { // 2 characters for "0x" and 40 characters for the address
+	if len(s) != 42 {
 		return AccountAddress{}, errors.New("address must be 20 bytes long")
 	}
 	bytes, err := hex.DecodeString(s[2:])
@@ -32,35 +31,32 @@ func ZeroAddress() AccountAddress {
 
 type U256 [32]byte
 
-// type TxKind interface {
-// 	IsTxKind()
-// }
-//
-// type Create struct{}
-//
-// type Call struct {
-// 	Address AccountAddress
-// }
-//
-// func (Create) IsTxKind() {}
-// func (Call) IsTxKind()   {}
+func NewU256(b *big.Int) U256 {
+	var u U256
+	bytes := b.Bytes()
+	if len(bytes) > 32 {
+		panic("input exceeds 32 bytes")
+	}
+	copy(u[32-len(bytes):], bytes)
+	return u
+}
 
 type Block struct {
 	/// The number of ancestor blocks of this block (block height).
-	Number U256 `json:"number"`
+	Number U256
 	/// Coinbase or miner or address that created and signed the block.
 	///
 	/// This is the receiver address of all the gas spent in the block.
-	Coinbase AccountAddress `json:"coinbase"`
+	Coinbase AccountAddress
 
 	/// The timestamp of the block in seconds since the UNIX epoch.
-	Timestamp U256 `json:"timestamp"`
+	Timestamp U256
 	/// The gas limit of the block.
-	GasLimit U256 `json:"gas_limit"`
+	GasLimit U256
 	/// The base fee per gas added in the London upgrade with [EIP-1559].
 	///
 	/// [EIP-1559]: https://eips.ethereum.org/EIPS/eip-1559
-	Basefee U256 `json:"basefee"`
+	Basefee U256
 	/// The difficulty of the block.
 	///
 	/// Unused after the Paris (AKA the merge) upgrade and replaced by `prevrandao`.
@@ -84,26 +80,26 @@ type Block struct {
 }
 type Transaction struct {
 	/// Caller aka Author aka transaction signer.
-	Caller AccountAddress `json:"caller"`
+	Caller AccountAddress
 	/// The gas limit of the transaction.
-	GasLimit uint64 `json:"gas_limit"`
+	GasLimit uint64
 	/// The gas price of the transaction.
-	GasPrice U256 `json:"gas_price"`
+	GasPrice U256
 	/// The destination of the transaction.
-	TransactTo AccountAddress `json:"transact_to"`
+	TransactTo AccountAddress
 	/// The value sent to `transact_to`.
-	Value U256 `json:"value"`
+	Value U256
 
-	Data TransactionData `json:"data"`
+	Data []byte
 	/// The nonce of the transaction.
-	Nonce uint64 `json:"nonce"`
+	Nonce uint64
 
 	/// The chain ID of the transaction. If set to `None` no checks are performed.
 	///
 	/// Incorporated as part of the Spurious Dragon upgrade via [EIP-155].
 	///
 	/// [EIP-155] https://eips.ethereum.org/EIPS/eip-155
-	ChainId uint64 `json:"chain_id"`
+	ChainId uint64
 
 	/// A list of addresses and storage keys that the transaction plans to access.
 	///
@@ -118,7 +114,7 @@ type Transaction struct {
 	///
 	/// [EIP-1559] https://eips.ethereum.org/EIPS/eip-1559
 	// 	optinal
-	GasPriorityFee U256 `json:"gas_priority_fee"`
+	GasPriorityFee U256
 
 	/// The list of blob versioned hashes. Per EIP there should be at least
 	/// one blob present if [`Self::max_fee_per_blob_gas`] is `Some`.
@@ -142,44 +138,4 @@ type Transaction struct {
 	///
 	/// [EIP-Set EOA account code for one transaction](https://eips.ethereum.org/EIPS/eip-7702)
 	// authorization_list Option<AuthorizationList>
-}
-
-type TransactionData = []byte
-type txWithoutData struct {
-	Caller         AccountAddress `json:"caller"`
-	GasLimit       uint64         `json:"gas_limit"`
-	GasPrice       U256           `json:"gas_price"`
-	TransactTo     AccountAddress `json:"transact_to"`
-	Value          U256           `json:"value"`
-	Nonce          uint64         `json:"nonce"`
-	ChainId        uint64         `json:"chain_id"`
-	GasPriorityFee U256           `json:"gas_priority_fee"`
-}
-
-func (tx Transaction) Marshal() ([]byte, []byte) {
-	txWithoutData := txWithoutData{
-		Caller:         tx.Caller,
-		GasLimit:       tx.GasLimit,
-		GasPrice:       tx.GasPrice,
-		TransactTo:     tx.TransactTo,
-		Value:          tx.Value,
-		Nonce:          tx.Nonce,
-		ChainId:        tx.ChainId,
-		GasPriorityFee: tx.GasPriorityFee,
-	}
-
-	jsonDataWithoutData, err := json.Marshal(txWithoutData)
-	if err != nil {
-		log.Fatalf("Failed to marshal transaction without data: %v", err)
-	}
-
-	return jsonDataWithoutData, tx.Data
-}
-
-func (block Block) Marshal() []byte {
-	jsonData, err := json.Marshal(block)
-	if err != nil {
-		log.Fatalf("Failed to marshal block: %v", err)
-	}
-	return jsonData
 }

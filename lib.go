@@ -3,7 +3,7 @@ package revm_api
 import (
 	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/rethmint/revm-api/api"
-	"github.com/rethmint/revm-api/types/go"
+	types "github.com/rethmint/revm-api/types/go"
 	blockbuffer "github.com/rethmint/revm-api/types/go/block"
 	resulttype "github.com/rethmint/revm-api/types/go/result"
 	txbuffer "github.com/rethmint/revm-api/types/go/transaction"
@@ -29,15 +29,15 @@ func (vm *VM) Destroy() {
 // for bootstrapping genesis
 func (vm *VM) ExecuteTx(
 	kvStore api.KVStore,
-	block blockbuffer.Block,
-	tx txbuffer.Transaction,
+	block types.Block,
+	tx types.Transaction,
 ) (types.Result, error) {
 
 	res, err := api.ExecuteTx(
 		vm.Inner,
 		kvStore,
-		block.Table().Bytes,
-		tx.Table().Bytes,
+		serializeBlock(block),
+		serializeTransaction(tx),
 	)
 	if err != nil {
 		return nil, err
@@ -48,19 +48,63 @@ func (vm *VM) ExecuteTx(
 
 func (vm *VM) Query(
 	kvStore api.KVStore,
-	block blockbuffer.Block,
-	tx txbuffer.Transaction,
+	block types.Block,
+	tx types.Transaction,
 ) (types.Result, error) {
 	res, err := api.Query(
 		vm.Inner,
 		kvStore,
-		block.Table().Bytes,
-		tx.Table().Bytes,
+		serializeBlock(block),
+		serializeTransaction(tx),
 	)
 	if err != nil {
 		return nil, err
 	}
+
 	return processExecutionResult(res)
+}
+
+func serializeBlock(block types.Block) []byte {
+	builder := flatbuffers.NewBuilder(200)
+	number := builder.CreateByteVector(block.Number[:])
+	coinbase := builder.CreateByteVector(block.Coinbase[:])
+	timeStamp := builder.CreateByteVector(block.Timestamp[:])
+	gasLimit := builder.CreateByteVector(block.GasLimit[:])
+	baseFee := builder.CreateByteVector(block.Basefee[:])
+	blockbuffer.BlockStart(builder)
+	blockbuffer.BlockAddNumber(builder, number)       //32
+	blockbuffer.BlockAddCoinbase(builder, coinbase)   // 20
+	blockbuffer.BlockAddTimestamp(builder, timeStamp) // 32
+	blockbuffer.BlockAddGasLimit(builder, gasLimit)   // 32
+	blockbuffer.BlockAddBasefee(builder, baseFee)     //32
+	offset := blockbuffer.BlockEnd(builder)
+	builder.Finish(offset)
+	return builder.FinishedBytes()
+}
+
+func serializeTransaction(transaction types.Transaction) []byte {
+	builder := flatbuffers.NewBuilder(200)
+	caller := builder.CreateByteVector(transaction.Caller[:])
+	gasPrice := builder.CreateByteVector(transaction.GasPrice[:])
+	transactTo := builder.CreateByteVector(transaction.TransactTo[:])
+	value := builder.CreateByteVector(transaction.Value[:])
+	txData := builder.CreateByteVector(transaction.Data[:])
+	gasPriorityFee := builder.CreateByteVector(transaction.GasPriorityFee[:])
+
+	txbuffer.TransactionStart(builder)
+	txbuffer.TransactionAddCaller(builder, caller)
+	txbuffer.TransactionAddGasPrice(builder, gasPrice)
+	txbuffer.TransactionAddGasLimit(builder, transaction.GasLimit)
+	txbuffer.TransactionAddGasLimit(builder, transaction.GasLimit)
+	txbuffer.TransactionAddTransactTo(builder, transactTo)
+	txbuffer.TransactionAddValue(builder, value)
+	txbuffer.TransactionAddData(builder, txData)
+	txbuffer.TransactionAddNonce(builder, transaction.Nonce)
+	txbuffer.TransactionAddChainId(builder, transaction.ChainId)
+	txbuffer.TransactionAddGasPriorityFee(builder, gasPriorityFee)
+	offset := txbuffer.TransactionEnd(builder)
+	builder.Finish(offset)
+	return builder.FinishedBytes()
 }
 
 func processExecutionResult(res types.ExecutionResult) (types.Result, error) {
@@ -89,35 +133,20 @@ func processExecutionResult(res types.ExecutionResult) (types.Result, error) {
 				},
 			}
 		}
-		var output types.Output
-		outputTable := new(flatbuffers.Table)
-		successResult.Output(outputTable)
-		switch successResult.OutputType() {
-		case resulttype.OutputCall:
-			outputCall := new(resulttype.Call)
-			outputCall.Init(outputTable.Bytes, outputTable.Pos)
-			output = types.Output{
-				DeployedAddress: [20]byte{0},
-				Output:          outputCall.OutputBytes(),
-			}
-		case resulttype.OutputCreate:
-			outputCall := new(resulttype.Create)
-			outputCall.Init(outputTable.Bytes, outputTable.Pos)
-			output = types.Output{
-				DeployedAddress: [20]byte(outputCall.AddressBytes()),
-				Output:          outputCall.OutputBytes(),
-			}
-		default:
-			return nil, nil
-		}
 
+		deployedAddr := make([]byte, 20)
+		copy(deployedAddr, successResult.DeployedAddressBytes())
 		return types.Success{
 			Reason:      successResult.Reason().String(),
 			GasUsed:     successResult.GasUsed(),
 			GasRefunded: successResult.GasRefunded(),
 			Logs:        logs,
-			Output:      output,
+			Output: types.Output{
+				DeployedAddress: [20]byte(deployedAddr),
+				Output:          successResult.OutputBytes(),
+			},
 		}, nil
+
 	case resulttype.ExResultRevert:
 		revertResult := resulttype.GetRootAsRevert(evmResult.Table().Bytes, 0)
 		return types.Revert{

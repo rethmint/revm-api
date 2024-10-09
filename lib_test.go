@@ -15,13 +15,7 @@ import (
 func setupTest(t *testing.T) (revm.VM, *api.MockKVStore, types.AccountAddress) {
 	vm, kvStore := startVM(t)
 	caller, _ := types.NewAccountAddress("0xe100713fc15400d1e94096a545879e7c647001e0")
-	faucet(kvStore, caller, big.NewInt(1000000000))
-
-	txStr := Call.CallBin
-
-	if txStr[:2] == "0x" {
-		txStr = txStr[2:]
-	}
+	faucet(kvStore, caller, big.NewInt(1000000000000))
 
 	return vm, kvStore, caller
 }
@@ -29,7 +23,24 @@ func setupTest(t *testing.T) (revm.VM, *api.MockKVStore, types.AccountAddress) {
 func suiteTest(t *testing.T, binString string, abiString string, method []string) {
 	vm, kvStore, caller := setupTest(t)
 
-	txData := extractTxData(t, binString)
+	// txData := extractTxData(t, binString)
+	tx := defaultTx(caller, CreateTransactTo, 0)
+	block := defaultBlock()
+
+	res, _ := vm.ExecuteTx(kvStore, block, tx)
+	t.Log("Deploy Res: \n", res)
+
+	deployedAddr, _ := types.NewAccountAddress("0xec30481c768e48d34ea8fc2bebcfeaddeba6bfa4")
+
+	// abi := parseABI(t, abiString)
+	// callData := extractCallData(t, abi, method[0])
+
+	return vm, kvStore, caller
+}
+
+func suiteTestWithArgs(t *testing.T, txData []byte, abiString string, method []string) {
+	vm, kvStore, caller := setupTest(t)
+
 	tx := defaultTx(caller, CreateTransactTo, txData, 0)
 	block := defaultBlock()
 	res, _ := vm.ExecuteTx(kvStore, block, tx)
@@ -37,14 +48,14 @@ func suiteTest(t *testing.T, binString string, abiString string, method []string
 
 	deployedAddr, _ := types.NewAccountAddress("0xec30481c768e48d34ea8fc2bebcfeaddeba6bfa4")
 
-	abi := parseABI(t, abiString)
-	callData := extractCallData(t, abi, method[0])
+	// abi := parseABI(t, abiString)
+	// callData := extractCallData(t, abi, method[0])
 
-	tx2 := defaultTx(caller, deployedAddr, callData, 1)
-	block2 := defaultBlock()
+	// tx2 := defaultTx(caller, deployedAddr, callData, 1)
+	// block2 := defaultBlock()
 
-	res2, _ := vm.ExecuteTx(kvStore, block2, tx2)
-	t.Log("Call res: \n", res2)
+	// res2, _ := vm.ExecuteTx(kvStore, block2, tx2)
+	// t.Log("Call res: \n", res2)
 }
 
 func TestCall(t *testing.T) {

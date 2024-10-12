@@ -1,5 +1,5 @@
-use errno::{ set_errno, Errno };
-use revm_primitives::{ EVMError, InvalidTransaction };
+use errno::{set_errno, Errno};
+use revm_primitives::{EVMError, InvalidTransaction};
 
 use crate::memory::UnmanagedVector;
 
@@ -11,7 +11,7 @@ pub enum ErrnoValue {
 }
 pub fn set_error(
     err: EVMError<BackendError, InvalidTransaction>,
-    error_msg: Option<&mut UnmanagedVector>
+    error_msg: Option<&mut UnmanagedVector>,
 ) {
     if let Some(error_msg) = error_msg {
         let msg: Vec<u8> = err.to_string().into();

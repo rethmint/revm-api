@@ -22,12 +22,12 @@ use flatbuffer_types::{
     },
     transaction::Transaction,
 };
-use revm::{ Context, Evm, EvmHandler };
-use revm_primitives::{
+use revm::{ Context, Evm, wiring::{} };
+use revm::primitives::{
+    OutOfGasError,
     Address,
     BlockEnv,
     Bytes,
-    EthereumWiring,
     ExecutionResult,
     HaltReason,
     SpecId,
@@ -51,7 +51,6 @@ pub fn to_evm<'a>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, EthereumWiring<GoSt
     if ptr.is_null() {
         None
     } else {
-        //let vm: *mut Evm<'_, EthereumWiring<EmptyDBTyped<Infallible>, ()>>
         let evm = unsafe { &mut *(ptr as *mut Evm<'a, EthereumWiring<GoStorage<'a>, ()>>) };
         Some(evm)
     }
@@ -231,17 +230,11 @@ fn build_flat_buffer(result: ExecutionResult<HaltReason>) -> Vec<u8> {
             let halt_reason = match reason {
                 HaltReason::OutOfGas(out_of_gas_error) =>
                     match out_of_gas_error {
-                        revm_primitives::OutOfGasError::Basic => HaltReasonEnum::OutOfGasBasic,
-                        revm_primitives::OutOfGasError::MemoryLimit => {
-                            HaltReasonEnum::OutOfGasMemoryLimit
-                        }
-                        revm_primitives::OutOfGasError::Memory => HaltReasonEnum::OutOfGasMemory,
-                        revm_primitives::OutOfGasError::Precompile => {
-                            HaltReasonEnum::OutOfGasPrecompile
-                        }
-                        revm_primitives::OutOfGasError::InvalidOperand => {
-                            HaltReasonEnum::OutOfGasInvalidOperand
-                        }
+                        OutOfGasError::Basic => HaltReasonEnum::OutOfGasBasic,
+                        OutOfGasError::MemoryLimit => { HaltReasonEnum::OutOfGasMemoryLimit }
+                        OutOfGasError::Memory => HaltReasonEnum::OutOfGasMemory,
+                        OutOfGasError::Precompile => { HaltReasonEnum::OutOfGasPrecompile }
+                        OutOfGasError::InvalidOperand => { HaltReasonEnum::OutOfGasInvalidOperand }
                     }
                 HaltReason::OpcodeNotFound => HaltReasonEnum::OpcodeNotFound,
                 HaltReason::InvalidFEOpcode => HaltReasonEnum::InvalidFEOpcode,

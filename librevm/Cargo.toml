@@ -1,6 +1,6 @@
 [package]
 name = "revmapi"
-version = "0.1.0"
+version = "0.0.1"
 publish = false
 description = "Reth Revm Engine"
 repository = "https://github.com/rethmint/revm-api"
@@ -29,8 +29,7 @@ bytes = { workspace = true }
 serde = { workspace = true, features = ["derive", "alloc"] }
 serde_json = { workspace = true }
 thiserror= { workspace = true }
-revm-primitives = { path = "../crates/primitives", version = "9.0.1", default-features = false }
-revm = { path = "../crates/revm", version = "14.0.1", default-features = false }
+revm.workspace = true
 alloy-primitives = { version = "0.8.2", default-features = false, features = [
 	"rlp",
 ] }

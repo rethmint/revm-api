@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use revm::primitives::{ Account, AccountInfo, Address, Bytecode, Bytes, B256, U256 };
-use revm::{Database, DatabaseCommit};
+use revm::{ Database, DatabaseCommit };
 
 use crate::db::Db;
 use crate::error::GoError;
@@ -252,9 +252,10 @@ impl<'a> DatabaseCommit for GoStorage<'a> {
             if is_newly_created && !account.info.is_empty_code_hash() {
                 let code_hash_key = EvmStoreKey::Code(account.info.code_hash()).key();
                 let code_hash_key_slice = code_hash_key.as_slice();
-                let _ = self
-                    .set(code_hash_key_slice, account.info.clone().code.unwrap().bytes_slice())
-                    .expect("Code hash key slice should work");
+                let _ = self.set(
+                    code_hash_key_slice,
+                    account.info.clone().code.unwrap().bytes_slice()
+                );
             }
 
             // storage cache commit on value changed

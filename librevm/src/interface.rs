@@ -1,3 +1,4 @@
+use alloy_primitives::B256;
 use flatbuffer_types::{
     block::Block,
     result::{
@@ -22,19 +23,24 @@ use flatbuffer_types::{
     },
     transaction::Transaction,
 };
-use revm::{ Context, Evm, wiring::{} };
-use revm::primitives::{
-    OutOfGasError,
-    Address,
-    BlockEnv,
-    Bytes,
-    ExecutionResult,
-    HaltReason,
-    SpecId,
-    SuccessReason,
-    TxEnv,
-    TxKind,
-    U256,
+use revm::{
+    handler::register::EvmHandler,
+    primitives::{
+        Address,
+        BlobExcessGasAndPrice,
+        BlockEnv,
+        Bytes,
+        ExecutionResult,
+        HaltReason,
+        OutOfGasError,
+        SpecId,
+        SuccessReason,
+        TxEnv,
+        TxKind,
+        U256,
+    },
+    Context,
+    Evm,
 };
 
 use crate::{ gstorage::GoStorage, set_error, ByteSliceView, Db, UnmanagedVector };
@@ -47,11 +53,11 @@ pub const TRANSACTION: &str = "transaction";
 #[repr(C)]
 pub struct evm_t {}
 
-pub fn to_evm<'a>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, EthereumWiring<GoStorage<'a>, ()>>> {
+pub fn to_evm<'a>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, (), GoStorage<'a>>> {
     if ptr.is_null() {
         None
     } else {
-        let evm = unsafe { &mut *(ptr as *mut Evm<'a, EthereumWiring<GoStorage<'a>, ()>>) };
+        let evm = unsafe { &mut *(ptr as *mut Evm<'a, (), GoStorage<'a>>) };
         Some(evm)
     }
 }
@@ -63,7 +69,7 @@ pub extern "C" fn init_vm(
 ) -> *mut evm_t {
     let db = Db::default();
     let gstorage = GoStorage::new(&db);
-    let context = Context::<EthereumWiring<GoStorage, ()>>::new_with_db(gstorage);
+    let context = Context::<(), GoStorage>::new_with_db(gstorage);
     let handler = EvmHandler::mainnet_with_spec(SpecId::CANCUN);
     // handler.post_execution = post_execution;
     // handler.pre_execution = pre_execution;
@@ -75,9 +81,7 @@ pub extern "C" fn init_vm(
 pub extern "C" fn release_vm(vm: *mut evm_t) {
     if !vm.is_null() {
         // this will free cache when it goes out of scope
-        let _ = unsafe {
-            Box::from_raw(vm as *mut Evm<'static, EthereumWiring<GoStorage<'static>, ()>>)
-        };
+        let _ = unsafe { Box::from_raw(vm as *mut Evm<'static, (), GoStorage<'static>>) };
     }
 }
 
@@ -96,9 +100,8 @@ pub extern "C" fn execute_tx(
             panic!("Failed to get VM");
         }
     };
-
-    let db = GoStorage::new(&db);
-    evm.context = Context::new_with_db(db);
+    let go_storage = GoStorage::new(&db);
+    evm.context = Context::new_with_db(go_storage);
     set_evm_env(evm, block, tx);
 
     let result = evm.transact_commit();
@@ -144,7 +147,7 @@ pub extern "C" fn query(
     UnmanagedVector::new(Some(data))
 }
 
-fn build_flat_buffer(result: ExecutionResult<HaltReason>) -> Vec<u8> {
+fn build_flat_buffer(result: ExecutionResult) -> Vec<u8> {
     let mut builder = flatbuffers::FlatBufferBuilder::with_capacity(300);
     let args = match result {
         ExecutionResult::Success { reason, gas_used, gas_refunded, logs, output } => {
@@ -159,16 +162,16 @@ fn build_flat_buffer(result: ExecutionResult<HaltReason>) -> Vec<u8> {
                 let mut topics_buffer = Vec::new();
                 for topic in log.topics() {
                     let topic_args = TopicArgs {
-                        value: Some(builder.create_vector(&topic.to_vec())),
+                        value: Some(builder.create_vector(topic.as_ref())),
                     };
                     topics_buffer.push(Topic::create(&mut builder, &topic_args));
                 }
                 let log_data_args = LogDataArgs {
                     topics: Some(builder.create_vector(&topics_buffer)),
-                    data: Some(builder.create_vector(&log.data.data.to_vec())),
+                    data: Some(builder.create_vector(log.data.data.as_ref())),
                 };
                 let data = LogData::create(&mut builder, &log_data_args);
-                let address = builder.create_vector(&log.address.to_vec());
+                let address = builder.create_vector(log.address.as_ref());
                 logs_buffer.push(
                     Log::create(
                         &mut builder,
@@ -181,10 +184,7 @@ fn build_flat_buffer(result: ExecutionResult<HaltReason>) -> Vec<u8> {
             }
             let logs = Some(builder.create_vector(&logs_buffer));
 
-            let deployed_address = output
-                .address()
-                .unwrap_or_else(|| &Address::ZERO)
-                .to_vec();
+            let deployed_address = output.address().unwrap_or(&Address::ZERO).to_vec();
             let deployed_address_vec = Some(builder.create_vector(&deployed_address));
             let output_data_vec = Some(builder.create_vector(output.data()));
 
@@ -209,7 +209,7 @@ fn build_flat_buffer(result: ExecutionResult<HaltReason>) -> Vec<u8> {
             )
         }
         ExecutionResult::Revert { gas_used, output } => {
-            let output_offset = builder.create_vector(&output.to_vec());
+            let output_offset = builder.create_vector(output.as_ref());
             let revert_offset = Revert::create(
                 &mut builder,
                 &(RevertArgs {
@@ -288,35 +288,40 @@ fn build_flat_buffer(result: ExecutionResult<HaltReason>) -> Vec<u8> {
     res
 }
 
-fn set_evm_env(
-    evm: &mut Evm<'_, EthereumWiring<GoStorage<'_>, ()>>,
-    block: ByteSliceView,
-    tx: ByteSliceView
-) {
+fn set_evm_env(evm: &mut Evm<(), GoStorage>, block: ByteSliceView, tx: ByteSliceView) {
     let block_bytes = block.read().unwrap();
     let block = flatbuffers::root::<Block>(block_bytes).unwrap();
-    let mut block_env = BlockEnv::default();
-    block_env.number = U256::from_be_slice(block.number().unwrap().bytes());
-    block_env.coinbase = Address::from_slice(block.coinbase().unwrap().bytes());
-    block_env.timestamp = U256::from_be_slice(block.timestamp().unwrap().bytes());
-    block_env.gas_limit = U256::from_be_slice(block.gas_limit().unwrap().bytes());
-    block_env.basefee = U256::from_be_slice(block.basefee().unwrap().bytes());
-    let tx_bytes = tx.read().unwrap();
-    let tx = flatbuffers::root::<Transaction>(tx_bytes).unwrap();
-    let mut tx_env = TxEnv::default();
-    tx_env.caller = Address::from_slice(tx.caller().unwrap().bytes());
-    tx_env.gas_price = U256::from_be_slice(tx.gas_price().unwrap().bytes());
-    tx_env.gas_limit = tx.gas_limit();
-    tx_env.value = U256::from_be_slice(tx.value().unwrap().bytes());
-    tx_env.data = Bytes::from(tx.data().unwrap().bytes().to_vec());
-    tx_env.nonce = tx.nonce();
-    tx_env.chain_id = Some(tx.chain_id());
-    tx_env.gas_priority_fee = Some(U256::from_be_slice(tx.gas_priority_fee().unwrap().bytes()));
-    tx_env.transact_to = match Address::from_slice(tx.transact_to().unwrap().bytes()) {
-        Address::ZERO => TxKind::Create,
-        address => TxKind::Call(address),
+    let block_env = BlockEnv {
+        number: U256::from_be_slice(block.number().unwrap().bytes()),
+        coinbase: Address::from_slice(block.coinbase().unwrap().bytes()),
+        timestamp: U256::from_be_slice(block.timestamp().unwrap().bytes()),
+        gas_limit: U256::from_be_slice(block.gas_limit().unwrap().bytes()),
+        basefee: U256::from_be_slice(block.basefee().unwrap().bytes()),
+        difficulty: U256::ZERO,
+        prevrandao: Some(B256::ZERO),
+        blob_excess_gas_and_price: Some(BlobExcessGasAndPrice::new(0)),
     };
 
+    let tx_bytes = tx.read().unwrap();
+    let tx = flatbuffers::root::<Transaction>(tx_bytes).unwrap();
+    let tx_env = TxEnv {
+        caller: Address::from_slice(tx.caller().unwrap().bytes()),
+        gas_price: U256::from_be_slice(tx.gas_price().unwrap().bytes()),
+        gas_limit: tx.gas_limit(),
+        value: U256::from_be_slice(tx.value().unwrap().bytes()),
+        data: Bytes::from(tx.data().unwrap().bytes().to_vec()),
+        chain_id: None,
+        gas_priority_fee: Some(U256::from_be_slice(tx.gas_priority_fee().unwrap().bytes())),
+        transact_to: match Address::from_slice(tx.transact_to().unwrap().bytes()) {
+            Address::ZERO => TxKind::Create,
+            address => TxKind::Call(address),
+        },
+        nonce: None,
+        access_list: Vec::new(),
+        blob_hashes: Vec::new(),
+        max_fee_per_blob_gas: None,
+        authorization_list: None,
+    };
     evm.context.evm.inner.env.block = block_env;
     evm.context.evm.inner.env.tx = tx_env;
 }

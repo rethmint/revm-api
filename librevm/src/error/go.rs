@@ -56,13 +56,13 @@ impl GoError {
     /// to protect against long externally generated error messages.
     ///
     /// The `error_msg` is always consumed here and must not be used afterwards.
+    #[allow(clippy::missing_safety_doc)]
     pub unsafe fn into_result<F>(
         self,
         error_msg: UnmanagedVector,
-        default_error_msg: F,
+        default_error_msg: F
     ) -> Result<(), BackendError>
-    where
-        F: FnOnce() -> String,
+        where F: FnOnce() -> String
     {
         const MAX_ERROR_LEN: usize = 8 * 1024;
 

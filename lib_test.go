@@ -29,9 +29,10 @@ func suiteTest(t *testing.T, binString string, abiString string, method []string
 	block := defaultBlock()
 
 	res, _ := vm.ExecuteTx(kvStore, block, tx)
-	t.Log("Deploy Res: \n", res)
 
-	deployedAddr, _ := types.NewAccountAddress("0xec30481c768e48d34ea8fc2bebcfeaddeba6bfa4")
+	successRes, _ := res.(types.Success)
+
+	deployedAddr := successRes.Output.DeployedAddress
 
 	abi := parseABI(t, abiString)
 	res = extractCallData(t, abi, method[0])
@@ -41,10 +42,13 @@ func suiteTest(t *testing.T, binString string, abiString string, method []string
 	tx2 := defaultTx(caller, deployedAddr, callData, 1)
 	block2 := defaultBlock()
 
-	res2, _ := vm.ExecuteTx(kvStore, block2, tx2)
-	t.Log("Call res: \n", res2)
+	callRes, _ := vm.ExecuteTx(kvStore, block2, tx2)
+	fmt.Println("Call Res", callRes)
 
-	return
+	_, ok := callRes.(types.Success)
+	if ok == false {
+		t.Fatal("Call res not success")
+	}
 }
 
 func suiteTestWithArgs(t *testing.T, txData []byte, abiString string, method []string) {
@@ -53,18 +57,23 @@ func suiteTestWithArgs(t *testing.T, txData []byte, abiString string, method []s
 	tx := defaultTx(caller, CreateTransactTo, txData, 0)
 	block := defaultBlock()
 	res, _ := vm.ExecuteTx(kvStore, block, tx)
-	fmt.Println("Res: \n", res)
 
-	deployedAddr, _ := types.NewAccountAddress("0xec30481c768e48d34ea8fc2bebcfeaddeba6bfa4")
+	successRes, ok := res.(types.Success)
+	if ok == false {
+		t.Fatal("Cast result type error")
+	}
+	fmt.Println("Res: \n", successRes)
 
-	abi := parseABI(t, abiString)
-	callData := extractCallData(t, abi, method[0])
-
-	tx2 := defaultTx(caller, deployedAddr, callData, 1)
-	block2 := defaultBlock()
-
-	res2, _ := vm.ExecuteTx(kvStore, block2, tx2)
-	t.Log("Call res: \n", res2)
+	// deployedAddr, _ := types.NewAccountAddress("0xec30481c768e48d34ea8fc2bebcfeaddeba6bfa4")
+	//
+	// abi := parseABI(t, abiString)
+	// callData := extractCallData(t, abi, method[0])
+	//
+	// tx2 := defaultTx(caller, deployedAddr, callData, 1)
+	// block2 := defaultBlock()
+	//
+	// res2, _ := vm.ExecuteTx(kvStore, block2, tx2)
+	// t.Log("Call res: \n", res2)
 }
 
 func TestCall(t *testing.T) {

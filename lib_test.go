@@ -23,8 +23,9 @@ func setupTest(t *testing.T) (revm.VM, *api.MockKVStore, types.AccountAddress) {
 func suiteTest(t *testing.T, binString string, abiString string, method []string) {
 	vm, kvStore, caller := setupTest(t)
 
-	// txData := extractTxData(t, binString)
-	tx := defaultTx(caller, CreateTransactTo, 0)
+	txData := extractTxData(t, binString)
+
+	tx := defaultTx(caller, CreateTransactTo, txData, 0)
 	block := defaultBlock()
 
 	res, _ := vm.ExecuteTx(kvStore, block, tx)
@@ -32,10 +33,18 @@ func suiteTest(t *testing.T, binString string, abiString string, method []string
 
 	deployedAddr, _ := types.NewAccountAddress("0xec30481c768e48d34ea8fc2bebcfeaddeba6bfa4")
 
-	// abi := parseABI(t, abiString)
-	// callData := extractCallData(t, abi, method[0])
+	abi := parseABI(t, abiString)
+	res = extractCallData(t, abi, method[0])
 
-	return vm, kvStore, caller
+	callData := extractCallData(t, abi, method[0])
+
+	tx2 := defaultTx(caller, deployedAddr, callData, 1)
+	block2 := defaultBlock()
+
+	res2, _ := vm.ExecuteTx(kvStore, block2, tx2)
+	t.Log("Call res: \n", res2)
+
+	return
 }
 
 func suiteTestWithArgs(t *testing.T, txData []byte, abiString string, method []string) {
@@ -46,7 +55,7 @@ func suiteTestWithArgs(t *testing.T, txData []byte, abiString string, method []s
 	res, _ := vm.ExecuteTx(kvStore, block, tx)
 	fmt.Println("Res: \n", res)
 
-	deployedAddr, _ := types.NewAccountAddress("0xec30481c768e48d34ea8fc2bebcfeaddeba6bfa4")
+	// deployedAddr, _ := types.NewAccountAddress("0xec30481c768e48d34ea8fc2bebcfeaddeba6bfa4")
 
 	// abi := parseABI(t, abiString)
 	// callData := extractCallData(t, abi, method[0])

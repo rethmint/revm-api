@@ -4,7 +4,7 @@ package result
 
 import "strconv"
 
-type SuccessReasonEnum byte
+type SuccessReasonEnum int8
 
 const (
 	SuccessReasonEnumStop              SuccessReasonEnum = 0

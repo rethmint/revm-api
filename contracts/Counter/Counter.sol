@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 contract Counter {
-    uint256 public count = 0;
+    uint256 public count;
 
     event increased(uint256 oldCount, uint256 newCount);
 

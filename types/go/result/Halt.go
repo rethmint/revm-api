@@ -44,13 +44,13 @@ func (rcv *Halt) Table() flatbuffers.Table {
 func (rcv *Halt) Reason() HaltReasonEnum {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(4))
 	if o != 0 {
-		return HaltReasonEnum(rcv._tab.GetByte(o + rcv._tab.Pos))
+		return HaltReasonEnum(rcv._tab.GetInt8(o + rcv._tab.Pos))
 	}
 	return 0
 }
 
 func (rcv *Halt) MutateReason(n HaltReasonEnum) bool {
-	return rcv._tab.MutateByteSlot(4, byte(n))
+	return rcv._tab.MutateInt8Slot(4, int8(n))
 }
 
 func (rcv *Halt) GasUsed() uint64 {
@@ -69,7 +69,7 @@ func HaltStart(builder *flatbuffers.Builder) {
 	builder.StartObject(2)
 }
 func HaltAddReason(builder *flatbuffers.Builder, reason HaltReasonEnum) {
-	builder.PrependByteSlot(0, byte(reason), 0)
+	builder.PrependInt8Slot(0, int8(reason), 0)
 }
 func HaltAddGasUsed(builder *flatbuffers.Builder, gasUsed uint64) {
 	builder.PrependUint64Slot(1, gasUsed, 0)

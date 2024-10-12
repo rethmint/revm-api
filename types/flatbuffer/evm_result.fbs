@@ -7,7 +7,7 @@ union ExResult {
     Error,
 }
 
-enum HaltReasonEnum: uint8 {
+enum HaltReasonEnum: byte {
     OutOfGasBasic,
     OutOfGasMemoryLimit,
     OutOfGasMemory,
@@ -37,7 +37,7 @@ enum HaltReasonEnum: uint8 {
     EofAuxDataTooSmall
 }
 
-enum SuccessReasonEnum: uint8 {
+enum SuccessReasonEnum: byte {
     Stop,
     Return,
     SelfDestruct,

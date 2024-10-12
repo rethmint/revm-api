@@ -44,13 +44,13 @@ func (rcv *Success) Table() flatbuffers.Table {
 func (rcv *Success) Reason() SuccessReasonEnum {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(4))
 	if o != 0 {
-		return SuccessReasonEnum(rcv._tab.GetByte(o + rcv._tab.Pos))
+		return SuccessReasonEnum(rcv._tab.GetInt8(o + rcv._tab.Pos))
 	}
 	return 0
 }
 
 func (rcv *Success) MutateReason(n SuccessReasonEnum) bool {
-	return rcv._tab.MutateByteSlot(4, byte(n))
+	return rcv._tab.MutateInt8Slot(4, int8(n))
 }
 
 func (rcv *Success) GasUsed() uint64 {
@@ -169,7 +169,7 @@ func SuccessStart(builder *flatbuffers.Builder) {
 	builder.StartObject(6)
 }
 func SuccessAddReason(builder *flatbuffers.Builder, reason SuccessReasonEnum) {
-	builder.PrependByteSlot(0, byte(reason), 0)
+	builder.PrependInt8Slot(0, int8(reason), 0)
 }
 func SuccessAddGasUsed(builder *flatbuffers.Builder, gasUsed uint64) {
 	builder.PrependUint64Slot(1, gasUsed, 0)

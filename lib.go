@@ -109,21 +109,27 @@ func serializeTransaction(transaction types.Transaction) []byte {
 
 func processExecutionResult(res types.ExecutionResult) (types.Result, error) {
 	evmResult := resulttype.GetRootAsEvmResult(res, 0)
+	resultTable := new(flatbuffers.Table)
+	evmResult.Result(resultTable)
 	switch evmResult.ResultType() {
 	case resulttype.ExResultSuccess:
-		successResult := resulttype.GetRootAsSuccess(evmResult.Table().Bytes, 0)
-		logLen := successResult.LogsLength()
+		unionSuccess := new(resulttype.Success)
+		unionSuccess.Init(resultTable.Bytes, resultTable.Pos)
+
+		logLen := unionSuccess.LogsLength()
 		logs := make([]types.Log, logLen)
 		var log resulttype.Log
 		for i := 0; i < logLen; i++ {
-			successResult.Logs(&log, i)
+			unionSuccess.Logs(&log, i)
 			var logData resulttype.LogData
 			topicsLen := logData.TopicsLength()
 			var topic resulttype.Topic
 			topics := make([]types.U256, topicsLen)
 			for j := 0; j < topicsLen; j++ {
 				logData.Topics(&topic, j)
-				topics[j] = types.BytesToU256(topic.ValueBytes())
+				var topic32 [32]byte
+				copy(topic32[:], topic.ValueBytes())
+				topics[j] = topic32
 			}
 			logs[i] = types.Log{
 				Address: types.AccountAddress(log.AddressBytes()),
@@ -135,29 +141,33 @@ func processExecutionResult(res types.ExecutionResult) (types.Result, error) {
 		}
 
 		deployedAddr := make([]byte, 20)
-		copy(deployedAddr, successResult.DeployedAddressBytes())
+		copy(deployedAddr, unionSuccess.DeployedAddressBytes())
 		return types.Success{
-			Reason:      successResult.Reason().String(),
-			GasUsed:     successResult.GasUsed(),
-			GasRefunded: successResult.GasRefunded(),
+			Reason:      unionSuccess.Reason().String(),
+			GasUsed:     unionSuccess.GasUsed(),
+			GasRefunded: unionSuccess.GasRefunded(),
 			Logs:        logs,
 			Output: types.Output{
 				DeployedAddress: [20]byte(deployedAddr),
-				Output:          successResult.OutputBytes(),
+				Output:          unionSuccess.OutputBytes(),
 			},
 		}, nil
 
 	case resulttype.ExResultRevert:
-		revertResult := resulttype.GetRootAsRevert(evmResult.Table().Bytes, 0)
+		unionRevert := new(resulttype.Revert)
+		unionRevert.Init(resultTable.Bytes, resultTable.Pos)
+
 		return types.Revert{
-			GasUsed: revertResult.GasUsed(),
-			Output:  revertResult.OutputBytes(),
+			GasUsed: unionRevert.GasUsed(),
+			Output:  unionRevert.OutputBytes(),
 		}, nil
 	case resulttype.ExResultHalt:
-		haltResult := resulttype.GetRootAsHalt(evmResult.Table().Bytes, 0)
+		unionHalt := new(resulttype.Halt)
+		unionHalt.Init(resultTable.Bytes, resultTable.Pos)
+
 		return types.Halt{
-			Reason:  haltResult.Reason().String(),
-			GasUsed: haltResult.GasUsed(),
+			Reason:  unionHalt.Reason().String(),
+			GasUsed: unionHalt.GasUsed(),
 		}, nil
 	default:
 		return nil, nil

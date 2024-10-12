@@ -3,8 +3,11 @@
 
 // @generated
 
+use core::mem;
+use core::cmp::Ordering;
 
 extern crate flatbuffers;
+use self::flatbuffers::{EndianScalar, Follow};
 
 #[allow(unused_imports, dead_code)]
 pub mod result {
@@ -115,9 +118,9 @@ impl flatbuffers::SimpleToVerifyInSlice for ExResult {}
 pub struct ExResultUnionTableOffset {}
 
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MIN_HALT_REASON_ENUM: u8 = 0;
+pub const ENUM_MIN_HALT_REASON_ENUM: i8 = 0;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MAX_HALT_REASON_ENUM: u8 = 26;
+pub const ENUM_MAX_HALT_REASON_ENUM: i8 = 26;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 #[allow(non_camel_case_types)]
 pub const ENUM_VALUES_HALT_REASON_ENUM: [HaltReasonEnum; 27] = [
@@ -152,7 +155,7 @@ pub const ENUM_VALUES_HALT_REASON_ENUM: [HaltReasonEnum; 27] = [
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 #[repr(transparent)]
-pub struct HaltReasonEnum(pub u8);
+pub struct HaltReasonEnum(pub i8);
 #[allow(non_upper_case_globals)]
 impl HaltReasonEnum {
   pub const OutOfGasBasic: Self = Self(0);
@@ -183,8 +186,8 @@ impl HaltReasonEnum {
   pub const EofAuxDataOverflow: Self = Self(25);
   pub const EofAuxDataTooSmall: Self = Self(26);
 
-  pub const ENUM_MIN: u8 = 0;
-  pub const ENUM_MAX: u8 = 26;
+  pub const ENUM_MIN: i8 = 0;
+  pub const ENUM_MAX: i8 = 26;
   pub const ENUM_VALUES: &'static [Self] = &[
     Self::OutOfGasBasic,
     Self::OutOfGasMemoryLimit,
@@ -261,7 +264,7 @@ impl<'a> flatbuffers::Follow<'a> for HaltReasonEnum {
   type Inner = Self;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    let b = flatbuffers::read_scalar_at::<u8>(buf, loc);
+    let b = flatbuffers::read_scalar_at::<i8>(buf, loc);
     Self(b)
   }
 }
@@ -270,20 +273,20 @@ impl flatbuffers::Push for HaltReasonEnum {
     type Output = HaltReasonEnum;
     #[inline]
     unsafe fn push(&self, dst: &mut [u8], _written_len: usize) {
-        flatbuffers::emplace_scalar::<u8>(dst, self.0);
+        flatbuffers::emplace_scalar::<i8>(dst, self.0);
     }
 }
 
 impl flatbuffers::EndianScalar for HaltReasonEnum {
-  type Scalar = u8;
+  type Scalar = i8;
   #[inline]
-  fn to_little_endian(self) -> u8 {
+  fn to_little_endian(self) -> i8 {
     self.0.to_le()
   }
   #[inline]
   #[allow(clippy::wrong_self_convention)]
-  fn from_little_endian(v: u8) -> Self {
-    let b = u8::from_le(v);
+  fn from_little_endian(v: i8) -> Self {
+    let b = i8::from_le(v);
     Self(b)
   }
 }
@@ -294,15 +297,15 @@ impl<'a> flatbuffers::Verifiable for HaltReasonEnum {
     v: &mut flatbuffers::Verifier, pos: usize
   ) -> Result<(), flatbuffers::InvalidFlatbuffer> {
     use self::flatbuffers::Verifiable;
-    u8::run_verifier(v, pos)
+    i8::run_verifier(v, pos)
   }
 }
 
 impl flatbuffers::SimpleToVerifyInSlice for HaltReasonEnum {}
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MIN_SUCCESS_REASON_ENUM: u8 = 0;
+pub const ENUM_MIN_SUCCESS_REASON_ENUM: i8 = 0;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MAX_SUCCESS_REASON_ENUM: u8 = 3;
+pub const ENUM_MAX_SUCCESS_REASON_ENUM: i8 = 3;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 #[allow(non_camel_case_types)]
 pub const ENUM_VALUES_SUCCESS_REASON_ENUM: [SuccessReasonEnum; 4] = [
@@ -314,7 +317,7 @@ pub const ENUM_VALUES_SUCCESS_REASON_ENUM: [SuccessReasonEnum; 4] = [
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 #[repr(transparent)]
-pub struct SuccessReasonEnum(pub u8);
+pub struct SuccessReasonEnum(pub i8);
 #[allow(non_upper_case_globals)]
 impl SuccessReasonEnum {
   pub const Stop: Self = Self(0);
@@ -322,8 +325,8 @@ impl SuccessReasonEnum {
   pub const SelfDestruct: Self = Self(2);
   pub const EofReturnContract: Self = Self(3);
 
-  pub const ENUM_MIN: u8 = 0;
-  pub const ENUM_MAX: u8 = 3;
+  pub const ENUM_MIN: i8 = 0;
+  pub const ENUM_MAX: i8 = 3;
   pub const ENUM_VALUES: &'static [Self] = &[
     Self::Stop,
     Self::Return,
@@ -354,7 +357,7 @@ impl<'a> flatbuffers::Follow<'a> for SuccessReasonEnum {
   type Inner = Self;
   #[inline]
   unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    let b = flatbuffers::read_scalar_at::<u8>(buf, loc);
+    let b = flatbuffers::read_scalar_at::<i8>(buf, loc);
     Self(b)
   }
 }
@@ -363,20 +366,20 @@ impl flatbuffers::Push for SuccessReasonEnum {
     type Output = SuccessReasonEnum;
     #[inline]
     unsafe fn push(&self, dst: &mut [u8], _written_len: usize) {
-        flatbuffers::emplace_scalar::<u8>(dst, self.0);
+        flatbuffers::emplace_scalar::<i8>(dst, self.0);
     }
 }
 
 impl flatbuffers::EndianScalar for SuccessReasonEnum {
-  type Scalar = u8;
+  type Scalar = i8;
   #[inline]
-  fn to_little_endian(self) -> u8 {
+  fn to_little_endian(self) -> i8 {
     self.0.to_le()
   }
   #[inline]
   #[allow(clippy::wrong_self_convention)]
-  fn from_little_endian(v: u8) -> Self {
-    let b = u8::from_le(v);
+  fn from_little_endian(v: i8) -> Self {
+    let b = i8::from_le(v);
     Self(b)
   }
 }
@@ -387,7 +390,7 @@ impl<'a> flatbuffers::Verifiable for SuccessReasonEnum {
     v: &mut flatbuffers::Verifier, pos: usize
   ) -> Result<(), flatbuffers::InvalidFlatbuffer> {
     use self::flatbuffers::Verifiable;
-    u8::run_verifier(v, pos)
+    i8::run_verifier(v, pos)
   }
 }
 

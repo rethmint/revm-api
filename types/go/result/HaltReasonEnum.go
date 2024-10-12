@@ -4,7 +4,7 @@ package result
 
 import "strconv"
 
-type HaltReasonEnum byte
+type HaltReasonEnum int8
 
 const (
 	HaltReasonEnumOutOfGasBasic                HaltReasonEnum = 0

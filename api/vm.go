@@ -6,8 +6,9 @@ import "C"
 
 import (
 	"runtime"
+	"syscall"
 
-	types "github.com/rethmint/revm-api/types"
+	types "github.com/rethmint/revm-api/types/go"
 )
 
 type VM struct {
@@ -30,55 +31,47 @@ func InitVM() VM {
 func ExecuteTx(
 	vm VM,
 	store KVStore,
-	block types.Block,
-	tx types.Transaction,
-	data []byte,
+	block []byte,
+	tx []byte,
 ) (types.ExecutionResult, error) {
 	var err error
 
 	dbState := buildDBState(store)
 	db := buildDB(&dbState)
-	// tx -> byte -> ByteSliceView
-	// block -> byte -> ByteSliceView
-	blockBytesSliceView := makeView(block.ToJsonStringBytes())
+	blockBytesSliceView := makeView(block)
 	defer runtime.KeepAlive(blockBytesSliceView)
-	txByteSliceView := makeView(tx.ToJsonStringBytes())
+	txByteSliceView := makeView(tx)
 	defer runtime.KeepAlive(txByteSliceView)
-	txDataByteSliceView := makeView(data)
-	defer runtime.KeepAlive(txDataByteSliceView)
-	// TODO: handle error msg
-	// errmsg := uninitializedUnmanagedVector()
-	res, err := C.execute_tx(vm.ptr, db, blockBytesSliceView, txByteSliceView, txDataByteSliceView)
-	// if err != nil && err.(syscall.Errno) != C.ErrnoValue_Success {
-	// 	return nil, errorWithMessage(err, errmsg)
-	// }
+
+	errmsg := uninitializedUnmanagedVector()
+	res, err := C.execute_tx(vm.ptr, db, blockBytesSliceView, txByteSliceView, &errmsg)
+	if err != nil && err.(syscall.Errno) != C.Success {
+		return nil, errorWithMessage(err, errmsg)
+	}
+
 	return copyAndDestroyUnmanagedVector(res), err
 }
 
 func Query(
 	vm VM,
 	store KVStore,
-	block types.Block,
-	tx types.Transaction,
-	data []byte,
+	block []byte,
+	tx []byte,
 ) (types.ExecutionResult, error) {
 	var err error
 
 	dbState := buildDBState(store)
 	db := buildDB(&dbState)
-	// tx -> byte -> ByteSliceView
-	// block -> byte -> ByteSliceView
-	blockBytesSliceView := makeView(block.ToJsonStringBytes())
+	blockBytesSliceView := makeView(block)
 	defer runtime.KeepAlive(blockBytesSliceView)
-	txByteSliceView := makeView(tx.ToJsonStringBytes())
+	txByteSliceView := makeView(tx)
 	defer runtime.KeepAlive(txByteSliceView)
-	txDataByteSliceView := makeView(data)
-	defer runtime.KeepAlive(txDataByteSliceView)
-	// TODO: handle error msg
-	// errmsg := uninitializedUnmanagedVector()
-	res, err := C.query(vm.ptr, db, blockBytesSliceView, txByteSliceView, txDataByteSliceView)
-	// if err != nil && err.(syscall.Errno) != C.ErrnoValue_Success {
-	// 	return nil, errorWithMessage(err, errmsg)
-	// }
+
+	errmsg := uninitializedUnmanagedVector()
+	res, err := C.query(vm.ptr, db, blockBytesSliceView, txByteSliceView, &errmsg)
+	if err != nil && err.(syscall.Errno) != C.Success {
+		return nil, errorWithMessage(err, errmsg)
+	}
+
 	return copyAndDestroyUnmanagedVector(res), err
 }

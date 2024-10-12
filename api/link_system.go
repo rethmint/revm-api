@@ -1,6 +1,6 @@
-//go:build sys_movevm
+//go:build sys_revm
 
 package api
 
-// #cgo LDFLAGS: -librevm
+// #cgo LDFLAGS: -revmapi
 import "C"

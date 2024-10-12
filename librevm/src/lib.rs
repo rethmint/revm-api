@@ -1,11 +1,10 @@
-#[cfg(test)]
-mod tests;
-mod env;
 mod db;
 mod error;
 mod gstorage;
 mod interface;
 mod memory;
+#[cfg(test)]
+mod tests;
 
 pub use db::*;
 pub use error::*;

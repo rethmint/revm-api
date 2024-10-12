@@ -5,7 +5,9 @@ package api
 */
 import "C"
 
-import "unsafe"
+import (
+	"unsafe"
+)
 
 // makeView creates a view into the given byte slice what allows Rust code to read it.
 // The byte slice is managed by Go and will be garbage collected. Use runtime.KeepAlive

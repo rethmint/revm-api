@@ -4,7 +4,7 @@
 BUILDERS_PREFIX := initia/go-ext-builder:0001
 # Contains a full Go dev environment in order to run Go tests on the built library
 ALPINE_TESTER := initia/go-ext-builder:0001-alpine
-
+CONTRACTS_DIR = ./contracts
 USER_ID := $(shell id -u)
 USER_GROUP = $(shell id -g)
 
@@ -13,23 +13,17 @@ SHARED_LIB_DST = "" # File name of the shared library that we store
 COMPILER_SHARED_LIB_SRC = ""
 COMPILER_SHARED_LIB_DST = ""
 ifeq ($(OS),Windows_NT)
-	SHARED_LIB_SRC = revm.dll
-	SHARED_LIB_DST = revm.dll
-	COMPILER_SHARED_LIB_SRC = compiler.dll
-	COMPILER_SHARED_LIB_DST = compiler.dll
+	SHARED_LIB_SRC = librevmapi.dll
+	SHARED_LIB_DST = librevmapi.dll
 else
 	UNAME_S := $(shell uname -s)
 	ifeq ($(UNAME_S),Linux)
-		SHARED_LIB_SRC = librevm.so
-		SHARED_LIB_DST = librevm.$(shell rustc --print cfg | grep target_arch | cut  -d '"' -f 2).so
-		COMPILER_SHARED_LIB_SRC = libcompiler.so
-		COMPILER_SHARED_LIB_DST = libcompiler.$(shell rustc --print cfg | grep target_arch | cut  -d '"' -f 2).so
+		SHARED_LIB_SRC = librevmapi.so
+		SHARED_LIB_DST = librevmapi.$(shell rustc --print cfg | grep target_arch | cut  -d '"' -f 2).so
 	endif
 	ifeq ($(UNAME_S),Darwin)
-		SHARED_LIB_SRC = librevm.dylib
-		SHARED_LIB_DST = librevm.dylib
-		COMPILER_SHARED_LIB_SRC = libcompiler.dylib
-		COMPILER_SHARED_LIB_DST = libcompiler.dylib
+		SHARED_LIB_SRC = librevmapi.dylib
+		SHARED_LIB_DST = librevmapi.dylib
 	endif
 endif
 
@@ -92,8 +86,8 @@ build-rust-debug:
 	cargo build
 
 	# cp -fp target/debug/$(SHARED_LIB_SRC) api/$(SHARED_LIB_DST)
-	# cp -fp target/debug/$(SHARED_LIB_SRC) api/$(SHARED_LIB_DST)
-	cp -fp target/debug/liblibrevm.dylib api
+	cp -fp target/debug/$(SHARED_LIB_SRC) api/$(SHARED_LIB_DST)
+	# cp -fp target/debug/librevm.dylib api/librevm.dylib
 	make update-bindings
 
 # use release build to actually ship - smaller and much faster
@@ -165,3 +159,13 @@ release-build:
 	make release-build-alpine
 	make release-build-linux
 	make release-build-macos
+
+contracts-gen: $(CONTRACTS_DIR)/*
+	@bash ./scripts/contractsgen.sh
+
+
+flatbuffer-gen:
+	@bash ./scripts/flatbuffer-gen.sh
+	cargo fix --allow-dirty
+	
+

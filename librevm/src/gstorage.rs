@@ -44,19 +44,19 @@ impl<'r> GoStorage<'r> {
 // BLOCK_PREFIX(B1) + block_num(B8) => block_hash
 
 enum EvmStoreKeyPrefix {
-    AccountPrefix,
-    CodePrefix,
-    StoragePrefix,
-    BlockPrefix,
+    Account,
+    Code,
+    Storage,
+    Block,
 }
 
 impl From<EvmStoreKeyPrefix> for u8 {
     fn from(value: EvmStoreKeyPrefix) -> Self {
         match value {
-            EvmStoreKeyPrefix::AccountPrefix => 1,
-            EvmStoreKeyPrefix::CodePrefix => 2,
-            EvmStoreKeyPrefix::StoragePrefix => 3,
-            EvmStoreKeyPrefix::BlockPrefix => 4,
+            EvmStoreKeyPrefix::Account => 1,
+            EvmStoreKeyPrefix::Code => 2,
+            EvmStoreKeyPrefix::Storage => 3,
+            EvmStoreKeyPrefix::Block => 4,
         }
     }
 }
@@ -76,24 +76,24 @@ impl EvmStoreKey {
     fn key(self) -> Vec<u8> {
         match self {
             Self::Account(addr) => {
-                let mut result: Vec<u8> = vec![EvmStoreKeyPrefix::AccountPrefix.into()];
+                let mut result: Vec<u8> = vec![EvmStoreKeyPrefix::Account.into()];
 
                 result.append(&mut addr.to_vec());
                 result
             }
             Self::Code(addr) => {
-                let mut result = vec![EvmStoreKeyPrefix::CodePrefix.into()];
+                let mut result = vec![EvmStoreKeyPrefix::Code.into()];
                 result.append(&mut addr.to_vec());
                 result
             }
             Self::Storage(addr, idx) => {
-                let mut result = vec![EvmStoreKeyPrefix::StoragePrefix.into()];
+                let mut result = vec![EvmStoreKeyPrefix::Storage.into()];
                 result.append(&mut addr.to_vec());
                 result.append(&mut idx.to_be_bytes::<32>().to_vec());
                 result
             }
             Self::Block(block_num) => {
-                let mut result = vec![EvmStoreKeyPrefix::BlockPrefix.into()];
+                let mut result = vec![EvmStoreKeyPrefix::Block.into()];
                 result.append(&mut block_num.to_be_bytes().to_vec());
                 result
             }

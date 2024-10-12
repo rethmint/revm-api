@@ -10,8 +10,6 @@ USER_GROUP = $(shell id -g)
 
 SHARED_LIB_SRC = "" # File name of the shared library as created by the Rust build system
 SHARED_LIB_DST = "" # File name of the shared library that we store
-COMPILER_SHARED_LIB_SRC = ""
-COMPILER_SHARED_LIB_DST = ""
 ifeq ($(OS),Windows_NT)
 	SHARED_LIB_SRC = librevmapi.dll
 	SHARED_LIB_DST = librevmapi.dll
@@ -26,51 +24,6 @@ else
 		SHARED_LIB_DST = librevmapi.dylib
 	endif
 endif
-
-
-all: test-filenames build test
-
-test-filenames:
-	echo $(SHARED_LIB_DST)
-	echo $(SHARED_LIB_SRC)
-	echo $(COMPILER_SHARED_LIB_DST)
-	echo $(COMPILER_SHARED_LIB_SRC)
-
-test: precompile test-rust test-go
-
-test-go:
-	RUST_BACKTRACE=full go test -v -count=1 -parallel=1 ./...
-
-test-safety:
-	# Use package list mode to include all subdirectores. The -count=1 turns off caching.
-	GODEBUG=cgocheck=2 go test -race -v -count=1 -parallel=1 ./...
-
-test-rust: test-compiler test-lib test-e2e test-revm
-
-test-compiler:
-	cargo test -p initia-move-compiler
-
-test-revm:
-	cargo test -p revm
-
-test-lib:
-	cargo test -p initia-move-vm
-
-test-e2e: 
-	cargo test -p e2e-move-tests --features testing
-
-build: precompile build-rust build-go
-
-build-rust: build-rust-release
-
-precompile:
-	cargo run -p precompile
-
-prebuild-go:
-	cargo run -p generate-bcs-go
-
-build-go: prebuild-go
-	go build ./...
 
 fmt:
 	cargo fmt
@@ -106,12 +59,9 @@ build-rust-release:
 
 clean:
 	cargo clean
-	@-rm api/bindings.h 
-	@-rm api/bindings_compiler.h 
+	@-rm api/bindings.h
 	@-rm librevm/bindings.h
-	@-rm libcompiler/bindings_compiler.h
 	@-rm api/$(SHARED_LIB_DST)
-	@-rm api/$(COMPILER_SHARED_LIB_DST)
 	@echo cleaned.
 
 # Creates a release build in a containerized build environment of the static library for Alpine Linux (.a)
@@ -121,10 +71,8 @@ release-build-alpine:
 	docker run --rm -u $(USER_ID):$(USER_GROUP)  \
 		-v $(shell pwd):/code/ \
 		$(BUILDERS_PREFIX)-alpine
-	cp artifacts/librevm_muslc.x86_64.a api
-	cp artifacts/librevm_muslc.aarch64.a api
-	cp artifacts/libcompiler_muslc.x86_64.a api
-	cp artifacts/libcompiler_muslc.aarch64.a api
+	cp artifacts/librevmapi_muslc.x86_64.a api
+	cp artifacts/librevmapi_muslc.aarch64.a api
 	make update-bindings
 	# try running go tests using this lib with muslc
 	# docker run --rm -u $(USER_ID):$(USER_GROUP) -v $(shell pwd):/mnt/testrun -w /mnt/testrun $(ALPINE_TESTER) go build -tags muslc ./...
@@ -137,10 +85,8 @@ release-build-linux:
 	docker run --rm -u $(USER_ID):$(USER_GROUP) \
 		-v $(shell pwd):/code/ \
 		$(BUILDERS_PREFIX)-centos7
-	cp artifacts/librevm.x86_64.so api
-	cp artifacts/librevm.aarch64.so api
-	cp artifacts/libcompiler.x86_64.so api
-	cp artifacts/libcompiler.aarch64.so api
+	cp artifacts/librevmapi.x86_64.so api
+	cp artifacts/librevmapi.aarch64.so api
 	make update-bindings
 
 # Creates a release build in a containerized build environment of the shared library for macOS (.dylib)
@@ -150,8 +96,7 @@ release-build-macos:
 	docker run --rm -u $(USER_ID):$(USER_GROUP) \
 		-v $(shell pwd):/code/ \
 		$(BUILDERS_PREFIX)-cross build_macos.sh
-	cp artifacts/librevm.dylib api
-	cp artifacts/libcompiler.dylib api
+	cp artifacts/librevmapi.dylib api
 	make update-bindings
 
 release-build:
@@ -162,7 +107,6 @@ release-build:
 
 contracts-gen: $(CONTRACTS_DIR)/*
 	@bash ./scripts/contractsgen.sh
-
 
 flatbuffer-gen:
 	@bash ./scripts/flatbuffer-gen.sh

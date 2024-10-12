@@ -1,6 +1,6 @@
 [package]
 name = "flatbuffer_types"
-version = "0.1.0"
+version = "0.0.1"
 publish = false
 description = "Reth Revm Engine Api Type"
 repository = "https://github.com/rethmint/revm-api"

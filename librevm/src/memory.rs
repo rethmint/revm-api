@@ -44,11 +44,7 @@ impl ByteSliceView {
     /// Provides a reference to the included data to be parsed or copied elsewhere
     /// This is safe as long as the `ByteSliceView` is constructed correctly.
     pub fn read(&self) -> Option<&[u8]> {
-        if self.is_nil {
-            None
-        } else {
-            Some(unsafe { slice::from_raw_parts(self.ptr, self.len) })
-        }
+        if self.is_nil { None } else { Some(unsafe { slice::from_raw_parts(self.ptr, self.len) }) }
     }
 
     /// Creates an owned copy that can safely be stored and mutated.
@@ -78,8 +74,7 @@ impl From<ByteSliceView> for Option<Vec<String>> {
 
 impl From<ByteSliceView> for Option<PathBuf> {
     fn from(val: ByteSliceView) -> Self {
-        val.read()
-            .map(|s| Path::new(&String::from_utf8(s.to_vec()).unwrap()).to_path_buf())
+        val.read().map(|s| Path::new(&String::from_utf8(s.to_vec()).unwrap()).to_path_buf())
     }
 }
 
@@ -97,16 +92,18 @@ pub struct U8SliceView {
 impl U8SliceView {
     pub fn new(source: Option<&[u8]>) -> Self {
         match source {
-            Some(data) => Self {
-                is_none: false,
-                ptr: data.as_ptr(),
-                len: data.len(),
-            },
-            None => Self {
-                is_none: true,
-                ptr: std::ptr::null::<u8>(),
-                len: 0,
-            },
+            Some(data) =>
+                Self {
+                    is_none: false,
+                    ptr: data.as_ptr(),
+                    len: data.len(),
+                },
+            None =>
+                Self {
+                    is_none: true,
+                    ptr: std::ptr::null::<u8>(),
+                    len: 0,
+                },
         }
     }
 }
@@ -178,19 +175,17 @@ impl UnmanagedVector {
                     cap,
                 }
             }
-            None => Self {
-                is_none: true,
-                ptr: std::ptr::null_mut::<u8>(),
-                len: 0,
-                cap: 0,
-            },
+            None =>
+                Self {
+                    is_none: true,
+                    ptr: std::ptr::null_mut::<u8>(),
+                    len: 0,
+                    cap: 0,
+                },
         }
     }
 
-    pub fn from_data<T>(data: &T) -> UnmanagedVector
-    where
-        T: Serialize,
-    {
+    pub fn from_data<T>(data: &T) -> UnmanagedVector where T: Serialize {
         let data = match serde_json::to_vec(data) {
             Ok(vec) => Some(vec),
             Err(_) => None,
@@ -232,12 +227,12 @@ impl Default for UnmanagedVector {
         Self::none()
     }
 }
-
+#[allow(clippy::missing_safety_doc)]
 #[no_mangle]
-pub extern "C" fn new_unmanaged_vector(
+pub unsafe extern "C" fn new_unmanaged_vector(
     nil: bool,
     ptr: *const u8,
-    length: usize,
+    length: usize
 ) -> UnmanagedVector {
     if nil {
         UnmanagedVector::new(None)

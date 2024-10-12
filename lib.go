@@ -1,6 +1,8 @@
 package revm_api
 
 import (
+	"fmt"
+
 	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/rethmint/revm-api/api"
 	types "github.com/rethmint/revm-api/types/go"
@@ -65,14 +67,14 @@ func (vm *VM) Query(
 }
 
 func serializeBlock(block types.Block) []byte {
-	builder := flatbuffers.NewBuilder(200)
+	builder := flatbuffers.NewBuilder(164)
 	number := builder.CreateByteVector(block.Number[:])
 	coinbase := builder.CreateByteVector(block.Coinbase[:])
 	timeStamp := builder.CreateByteVector(block.Timestamp[:])
 	gasLimit := builder.CreateByteVector(block.GasLimit[:])
 	baseFee := builder.CreateByteVector(block.Basefee[:])
 	blockbuffer.BlockStart(builder)
-	blockbuffer.BlockAddNumber(builder, number)       //32
+	blockbuffer.BlockAddNumber(builder, number)       // 32
 	blockbuffer.BlockAddCoinbase(builder, coinbase)   // 20
 	blockbuffer.BlockAddTimestamp(builder, timeStamp) // 32
 	blockbuffer.BlockAddGasLimit(builder, gasLimit)   // 32
@@ -83,7 +85,7 @@ func serializeBlock(block types.Block) []byte {
 }
 
 func serializeTransaction(transaction types.Transaction) []byte {
-	builder := flatbuffers.NewBuilder(200)
+	builder := flatbuffers.NewBuilder(244)
 	caller := builder.CreateByteVector(transaction.Caller[:])
 	gasPrice := builder.CreateByteVector(transaction.GasPrice[:])
 	transactTo := builder.CreateByteVector(transaction.TransactTo[:])
@@ -92,16 +94,13 @@ func serializeTransaction(transaction types.Transaction) []byte {
 	gasPriorityFee := builder.CreateByteVector(transaction.GasPriorityFee[:])
 
 	txbuffer.TransactionStart(builder)
-	txbuffer.TransactionAddCaller(builder, caller)
-	txbuffer.TransactionAddGasPrice(builder, gasPrice)
-	txbuffer.TransactionAddGasLimit(builder, transaction.GasLimit)
-	txbuffer.TransactionAddGasLimit(builder, transaction.GasLimit)
-	txbuffer.TransactionAddTransactTo(builder, transactTo)
-	txbuffer.TransactionAddValue(builder, value)
-	txbuffer.TransactionAddData(builder, txData)
-	txbuffer.TransactionAddNonce(builder, transaction.Nonce)
-	txbuffer.TransactionAddChainId(builder, transaction.ChainId)
-	txbuffer.TransactionAddGasPriorityFee(builder, gasPriorityFee)
+	txbuffer.TransactionAddCaller(builder, caller)                 // 20
+	txbuffer.TransactionAddGasLimit(builder, transaction.GasLimit) // 32
+	txbuffer.TransactionAddGasPrice(builder, gasPrice)             // 8
+	txbuffer.TransactionAddTransactTo(builder, transactTo)         // 20
+	txbuffer.TransactionAddValue(builder, value)                   // 32
+	txbuffer.TransactionAddData(builder, txData)                   // estimate: 100 byte -> variable
+	txbuffer.TransactionAddGasPriorityFee(builder, gasPriorityFee) // 32
 	offset := txbuffer.TransactionEnd(builder)
 	builder.Finish(offset)
 	return builder.FinishedBytes()
@@ -110,7 +109,9 @@ func serializeTransaction(transaction types.Transaction) []byte {
 func processExecutionResult(res types.ExecutionResult) (types.Result, error) {
 	evmResult := resulttype.GetRootAsEvmResult(res, 0)
 	resultTable := new(flatbuffers.Table)
-	evmResult.Result(resultTable)
+	if !evmResult.Result(resultTable) {
+		return nil, fmt.Errorf("failed to get result from evmResult")
+	}
 	switch evmResult.ResultType() {
 	case resulttype.ExResultSuccess:
 		unionSuccess := new(resulttype.Success)
@@ -120,13 +121,17 @@ func processExecutionResult(res types.ExecutionResult) (types.Result, error) {
 		logs := make([]types.Log, logLen)
 		var log resulttype.Log
 		for i := 0; i < logLen; i++ {
-			unionSuccess.Logs(&log, i)
+			if !unionSuccess.Logs(&log, i) {
+				return nil, fmt.Errorf("failed to get log at index %d", i)
+			}
 			var logData resulttype.LogData
 			topicsLen := logData.TopicsLength()
 			var topic resulttype.Topic
 			topics := make([]types.U256, topicsLen)
 			for j := 0; j < topicsLen; j++ {
-				logData.Topics(&topic, j)
+				if !logData.Topics(&topic, j) {
+					return nil, fmt.Errorf("failed to get log data topic at index %d", j)
+				}
 				var topic32 [32]byte
 				copy(topic32[:], topic.ValueBytes())
 				topics[j] = topic32
@@ -170,6 +175,6 @@ func processExecutionResult(res types.ExecutionResult) (types.Result, error) {
 			GasUsed: unionHalt.GasUsed(),
 		}, nil
 	default:
-		return nil, nil
+		return nil, fmt.Errorf("unknown result type: %d", evmResult.ResultType())
 	}
 }

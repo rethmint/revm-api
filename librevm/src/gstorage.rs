@@ -1,12 +1,10 @@
 use std::collections::HashMap;
-
-use alloy_primitives::{Bytes, Uint};
-use revm::{Database, DatabaseCommit};
-use revm_primitives::{Account, AccountInfo, Address, Bytecode, B256, U256};
+use revm::primitives::{ Account, AccountInfo, Address, Bytecode, Bytes, B256, U256 };
+use revm::{ Database, DatabaseCommit };
 
 use crate::db::Db;
 use crate::error::GoError;
-use crate::memory::{U8SliceView, UnmanagedVector};
+use crate::memory::{ U8SliceView, UnmanagedVector };
 use crate::BackendError;
 /// Access to the VM's backend storage, i.e. the chain
 pub trait Storage {
@@ -44,19 +42,19 @@ impl<'r> GoStorage<'r> {
 // BLOCK_PREFIX(B1) + block_num(B8) => block_hash
 
 enum EvmStoreKeyPrefix {
-    AccountPrefix,
-    CodePrefix,
-    StoragePrefix,
-    BlockPrefix,
+    Account,
+    Code,
+    Storage,
+    Block,
 }
 
 impl From<EvmStoreKeyPrefix> for u8 {
     fn from(value: EvmStoreKeyPrefix) -> Self {
         match value {
-            EvmStoreKeyPrefix::AccountPrefix => 1,
-            EvmStoreKeyPrefix::CodePrefix => 2,
-            EvmStoreKeyPrefix::StoragePrefix => 3,
-            EvmStoreKeyPrefix::BlockPrefix => 4,
+            EvmStoreKeyPrefix::Account => 1,
+            EvmStoreKeyPrefix::Code => 2,
+            EvmStoreKeyPrefix::Storage => 3,
+            EvmStoreKeyPrefix::Block => 4,
         }
     }
 }
@@ -76,24 +74,24 @@ impl EvmStoreKey {
     fn key(self) -> Vec<u8> {
         match self {
             Self::Account(addr) => {
-                let mut result: Vec<u8> = vec![EvmStoreKeyPrefix::AccountPrefix.into()];
+                let mut result: Vec<u8> = vec![EvmStoreKeyPrefix::Account.into()];
 
                 result.append(&mut addr.to_vec());
                 result
             }
             Self::Code(addr) => {
-                let mut result = vec![EvmStoreKeyPrefix::CodePrefix.into()];
+                let mut result = vec![EvmStoreKeyPrefix::Code.into()];
                 result.append(&mut addr.to_vec());
                 result
             }
             Self::Storage(addr, idx) => {
-                let mut result = vec![EvmStoreKeyPrefix::StoragePrefix.into()];
+                let mut result = vec![EvmStoreKeyPrefix::Storage.into()];
                 result.append(&mut addr.to_vec());
                 result.append(&mut idx.to_be_bytes::<32>().to_vec());
                 result
             }
             Self::Block(block_num) => {
-                let mut result = vec![EvmStoreKeyPrefix::BlockPrefix.into()];
+                let mut result = vec![EvmStoreKeyPrefix::Block.into()];
                 result.append(&mut block_num.to_be_bytes().to_vec());
                 result
             }
@@ -104,10 +102,7 @@ impl EvmStoreKey {
 impl<'db> Database for GoStorage<'db> {
     type Error = BackendError;
 
-    fn basic(
-        &mut self,
-        address: revm_primitives::Address,
-    ) -> Result<Option<AccountInfo>, Self::Error> {
+    fn basic(&mut self, address: Address) -> Result<Option<AccountInfo>, Self::Error> {
         let account_key = EvmStoreKey::Account(address).key();
         let default = vec![0u8; 72];
         let output = self.get(account_key.as_slice(), &default)?;
@@ -118,20 +113,16 @@ impl<'db> Database for GoStorage<'db> {
         }
     }
 
-    fn storage(
-        &mut self,
-        address: revm_primitives::Address,
-        index: revm_primitives::U256,
-    ) -> Result<revm_primitives::U256, Self::Error> {
+    fn storage(&mut self, address: Address, index: U256) -> Result<U256, Self::Error> {
         let storage_key = EvmStoreKey::Storage(address, index).key();
         let storage_key_slice = storage_key.as_slice();
         let default = vec![0u8; 32];
         let output = self.get(storage_key_slice, &default)?;
 
-        Ok(Uint::from_be_slice(&output))
+        Ok(U256::from_be_slice(&output))
     }
 
-    fn block_hash(&mut self, number: u64) -> Result<revm_primitives::B256, Self::Error> {
+    fn block_hash(&mut self, number: u64) -> Result<B256, Self::Error> {
         let block_key = EvmStoreKey::Block(number).key();
         let block_key_slice = block_key.as_slice();
         let default = vec![0u8; 32];
@@ -140,10 +131,7 @@ impl<'db> Database for GoStorage<'db> {
         Ok(B256::from_slice(&output))
     }
 
-    fn code_by_hash(
-        &mut self,
-        code_hash: revm_primitives::B256,
-    ) -> Result<revm_primitives::Bytecode, Self::Error> {
+    fn code_by_hash(&mut self, code_hash: B256) -> Result<Bytecode, Self::Error> {
         let code_key = EvmStoreKey::Code(code_hash).key();
         let code_key_slice = code_key.as_slice();
         let default = Vec::new();
@@ -157,21 +145,19 @@ impl<'r> Storage for GoStorage<'r> {
     fn get(&self, key: &[u8], default: &[u8]) -> Result<Vec<u8>, BackendError> {
         let mut output = UnmanagedVector::default();
         let mut error_msg = UnmanagedVector::default();
-        let go_error: GoError = (self.db.vtable.read_db)(
-            self.db.state,
-            U8SliceView::new(Some(key)),
-            &mut output as *mut UnmanagedVector,
-            &mut error_msg as *mut UnmanagedVector,
-        )
-        .into();
+        let go_error: GoError = (self.db.vtable
+            .read_db)(
+                self.db.state,
+                U8SliceView::new(Some(key)),
+                &mut output as *mut UnmanagedVector,
+                &mut error_msg as *mut UnmanagedVector
+            )
+            .into();
 
         let output = output.consume().unwrap_or_else(|| default.to_vec());
 
         let default = || {
-            format!(
-                "Failed to read a key in the db: {}",
-                String::from_utf8_lossy(key)
-            )
+            format!("Failed to read a key in the db: {}", String::from_utf8_lossy(key))
         };
         unsafe {
             go_error.into_result(error_msg, default)?;
@@ -181,19 +167,17 @@ impl<'r> Storage for GoStorage<'r> {
 
     fn set(&mut self, key: &[u8], value: &[u8]) -> Result<(), BackendError> {
         let mut error_msg = UnmanagedVector::default();
-        let go_error: GoError = (self.db.vtable.write_db)(
-            self.db.state,
-            U8SliceView::new(Some(key)),
-            U8SliceView::new(Some(value)),
-            &mut error_msg as *mut UnmanagedVector,
-        )
-        .into();
+        let go_error: GoError = (self.db.vtable
+            .write_db)(
+                self.db.state,
+                U8SliceView::new(Some(key)),
+                U8SliceView::new(Some(value)),
+                &mut error_msg as *mut UnmanagedVector
+            )
+            .into();
         // return complete error message (reading from buffer for GoError::Other)
         let default = || {
-            format!(
-                "Failed to set a key in the db: {}",
-                String::from_utf8_lossy(key)
-            )
+            format!("Failed to set a key in the db: {}", String::from_utf8_lossy(key))
         };
         unsafe {
             go_error.into_result(error_msg, default)?;
@@ -203,17 +187,15 @@ impl<'r> Storage for GoStorage<'r> {
 
     fn remove(&mut self, key: &[u8]) -> Result<(), BackendError> {
         let mut error_msg = UnmanagedVector::default();
-        let go_error: GoError = (self.db.vtable.remove_db)(
-            self.db.state,
-            U8SliceView::new(Some(key)),
-            &mut error_msg as *mut UnmanagedVector,
-        )
-        .into();
-        let default = || {
-            format!(
-                "Failed to delete a key in the db: {}",
-                String::from_utf8_lossy(key)
+        let go_error: GoError = (self.db.vtable
+            .remove_db)(
+                self.db.state,
+                U8SliceView::new(Some(key)),
+                &mut error_msg as *mut UnmanagedVector
             )
+            .into();
+        let default = || {
+            format!("Failed to delete a key in the db: {}", String::from_utf8_lossy(key))
         };
         unsafe {
             go_error.into_result(error_msg, default)?;
@@ -270,12 +252,10 @@ impl<'a> DatabaseCommit for GoStorage<'a> {
             if is_newly_created && !account.info.is_empty_code_hash() {
                 let code_hash_key = EvmStoreKey::Code(account.info.code_hash()).key();
                 let code_hash_key_slice = code_hash_key.as_slice();
-                let _ = self
-                    .set(
-                        code_hash_key_slice,
-                        account.info.clone().code.unwrap().bytes_slice(),
-                    )
-                    .expect("Code hash key slice should work");
+                let _ = self.set(
+                    code_hash_key_slice,
+                    account.info.clone().code.unwrap().bytes_slice()
+                );
             }
 
             // storage cache commit on value changed

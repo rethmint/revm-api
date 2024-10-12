@@ -8,9 +8,13 @@ table Transaction {
     transact_to: [ubyte];
     value: [ubyte];
     data: [ubyte];
-    nonce: uint64;
-    chain_id: uint64;
     gas_priority_fee: [ubyte];
+
+    // excluded field - optional
+    // nonce: uint64; -> in revm = "14.0.3", nonce value is optional
+    // chain_id: uint64; -> unneccesary
+
+    // excluded field - optional
     // access_list: Vec<AccessListItem>;            
     // blob_hashes: Vec<B256>;                      
     // max_fee_per_blob_gas: Option<[byte]>;          

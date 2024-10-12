@@ -4,10 +4,6 @@ resolver = "2"
 members = [
 	"librevm",
 	"types/rust",
-	"crates/interpreter",
-	"crates/precompile",
-	"crates/primitives",
-	"crates/revm", "types/rust",
 ]
 
 [profile.release]
@@ -49,6 +45,7 @@ bytes = "1.4.0"
 thiserror = "1.0.34"
 errno = "0.3.0"
 flatbuffers = "24.3.25"
+revm = "14.0.3"
 
 # External crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.

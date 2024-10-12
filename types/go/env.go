@@ -92,7 +92,7 @@ type Transaction struct {
 
 	Data []byte
 	/// The nonce of the transaction.
-	Nonce uint64
+	// Nonce uint64 -> nonce value will be auto-filled in revm implementation
 
 	/// The chain ID of the transaction. If set to `None` no checks are performed.
 	///

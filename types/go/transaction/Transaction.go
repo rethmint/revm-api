@@ -223,32 +223,8 @@ func (rcv *Transaction) MutateData(j int, n byte) bool {
 	return false
 }
 
-func (rcv *Transaction) Nonce() uint64 {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(16))
-	if o != 0 {
-		return rcv._tab.GetUint64(o + rcv._tab.Pos)
-	}
-	return 0
-}
-
-func (rcv *Transaction) MutateNonce(n uint64) bool {
-	return rcv._tab.MutateUint64Slot(16, n)
-}
-
-func (rcv *Transaction) ChainId() uint64 {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(18))
-	if o != 0 {
-		return rcv._tab.GetUint64(o + rcv._tab.Pos)
-	}
-	return 0
-}
-
-func (rcv *Transaction) MutateChainId(n uint64) bool {
-	return rcv._tab.MutateUint64Slot(18, n)
-}
-
 func (rcv *Transaction) GasPriorityFee(j int) byte {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(20))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(16))
 	if o != 0 {
 		a := rcv._tab.Vector(o)
 		return rcv._tab.GetByte(a + flatbuffers.UOffsetT(j*1))
@@ -257,7 +233,7 @@ func (rcv *Transaction) GasPriorityFee(j int) byte {
 }
 
 func (rcv *Transaction) GasPriorityFeeLength() int {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(20))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(16))
 	if o != 0 {
 		return rcv._tab.VectorLen(o)
 	}
@@ -265,7 +241,7 @@ func (rcv *Transaction) GasPriorityFeeLength() int {
 }
 
 func (rcv *Transaction) GasPriorityFeeBytes() []byte {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(20))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(16))
 	if o != 0 {
 		return rcv._tab.ByteVector(o + rcv._tab.Pos)
 	}
@@ -273,7 +249,7 @@ func (rcv *Transaction) GasPriorityFeeBytes() []byte {
 }
 
 func (rcv *Transaction) MutateGasPriorityFee(j int, n byte) bool {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(20))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(16))
 	if o != 0 {
 		a := rcv._tab.Vector(o)
 		return rcv._tab.MutateByte(a+flatbuffers.UOffsetT(j*1), n)
@@ -282,7 +258,7 @@ func (rcv *Transaction) MutateGasPriorityFee(j int, n byte) bool {
 }
 
 func TransactionStart(builder *flatbuffers.Builder) {
-	builder.StartObject(9)
+	builder.StartObject(7)
 }
 func TransactionAddCaller(builder *flatbuffers.Builder, caller flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(0, flatbuffers.UOffsetT(caller), 0)
@@ -317,14 +293,8 @@ func TransactionAddData(builder *flatbuffers.Builder, data flatbuffers.UOffsetT)
 func TransactionStartDataVector(builder *flatbuffers.Builder, numElems int) flatbuffers.UOffsetT {
 	return builder.StartVector(1, numElems, 1)
 }
-func TransactionAddNonce(builder *flatbuffers.Builder, nonce uint64) {
-	builder.PrependUint64Slot(6, nonce, 0)
-}
-func TransactionAddChainId(builder *flatbuffers.Builder, chainId uint64) {
-	builder.PrependUint64Slot(7, chainId, 0)
-}
 func TransactionAddGasPriorityFee(builder *flatbuffers.Builder, gasPriorityFee flatbuffers.UOffsetT) {
-	builder.PrependUOffsetTSlot(8, flatbuffers.UOffsetT(gasPriorityFee), 0)
+	builder.PrependUOffsetTSlot(6, flatbuffers.UOffsetT(gasPriorityFee), 0)
 }
 func TransactionStartGasPriorityFeeVector(builder *flatbuffers.Builder, numElems int) flatbuffers.UOffsetT {
 	return builder.StartVector(1, numElems, 1)

@@ -85,7 +85,7 @@ func serializeBlock(block types.Block) []byte {
 }
 
 func serializeTransaction(transaction types.Transaction) []byte {
-	builder := flatbuffers.NewBuilder(244)
+	builder := flatbuffers.NewBuilder(252)
 	caller := builder.CreateByteVector(transaction.Caller[:])
 	gasPrice := builder.CreateByteVector(transaction.GasPrice[:])
 	transactTo := builder.CreateByteVector(transaction.TransactTo[:])
@@ -97,6 +97,7 @@ func serializeTransaction(transaction types.Transaction) []byte {
 	txbuffer.TransactionAddCaller(builder, caller)                 // 20
 	txbuffer.TransactionAddGasLimit(builder, transaction.GasLimit) // 32
 	txbuffer.TransactionAddGasPrice(builder, gasPrice)             // 8
+	txbuffer.TransactionAddNonce(builder, transaction.Nonce)       // 8
 	txbuffer.TransactionAddTransactTo(builder, transactTo)         // 20
 	txbuffer.TransactionAddValue(builder, value)                   // 32
 	txbuffer.TransactionAddData(builder, txData)                   // estimate: 100 byte -> variable

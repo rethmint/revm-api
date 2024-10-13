@@ -1,17 +1,33 @@
 
 namespace transaction;
 
+enum TransactionType: byte {
+    /// Legacy transaction type.
+    Legacy,
+    /// EIP-2930 Access List transaction type.
+    Eip2930,
+    /// EIP-1559 Fee market change transaction type.
+    Eip1559,
+    /// EIP-4844 Blob transaction type.
+    Eip4844,
+    /// EIP-7702 Set EOA account code transaction type.
+    Eip7702,
+    /// Custom type means that transaction trait was extend and have custom types.
+    Custom,
+
+}
 table Transaction {
+    tx_type: TransactionType;
     caller: [ubyte];
     gas_limit: uint64;
     gas_price: [ubyte];
+    nonce: uint64;
     transact_to: [ubyte];
     value: [ubyte];
     data: [ubyte];
     gas_priority_fee: [ubyte];
 
     // excluded field - optional
-    // nonce: uint64; -> in revm = "14.0.3", nonce value is optional
     // chain_id: uint64; -> unneccesary
 
     // excluded field - optional

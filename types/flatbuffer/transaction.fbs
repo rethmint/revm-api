@@ -16,22 +16,29 @@ enum TransactionType: byte {
     Custom,
 
 }
+table StorageKey {
+    value: [ubyte]; // 32
+}
+table AccessListItem {
+    address: [ubyte];
+    storage_key: [StorageKey];
+}
 table Transaction {
     tx_type: TransactionType;
-    caller: [ubyte];
+    caller: [ubyte]; // 20
     gas_limit: uint64;
-    gas_price: [ubyte];
+    gas_price: [ubyte]; // 32
     nonce: uint64;
-    transact_to: [ubyte];
-    value: [ubyte];
-    data: [ubyte];
-    gas_priority_fee: [ubyte];
+    transact_to: [ubyte]; // 20
+    value: [ubyte]; // 32 
+    data: [ubyte]; 
+    gas_priority_fee: [ubyte]; // 32
+    access_list: [AccessListItem];           
 
     // excluded field - optional
     // chain_id: uint64; -> unneccesary
 
     // excluded field - optional
-    // access_list: Vec<AccessListItem>;            
     // blob_hashes: Vec<B256>;                      
     // max_fee_per_blob_gas: Option<[byte]>;          
     // authorization_list: Option<AuthorizationList>

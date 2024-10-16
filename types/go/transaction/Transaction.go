@@ -281,8 +281,28 @@ func (rcv *Transaction) MutateGasPriorityFee(j int, n byte) bool {
 	return false
 }
 
+func (rcv *Transaction) AccessList(obj *AccessListItem, j int) bool {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(22))
+	if o != 0 {
+		x := rcv._tab.Vector(o)
+		x += flatbuffers.UOffsetT(j) * 4
+		x = rcv._tab.Indirect(x)
+		obj.Init(rcv._tab.Bytes, x)
+		return true
+	}
+	return false
+}
+
+func (rcv *Transaction) AccessListLength() int {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(22))
+	if o != 0 {
+		return rcv._tab.VectorLen(o)
+	}
+	return 0
+}
+
 func TransactionStart(builder *flatbuffers.Builder) {
-	builder.StartObject(9)
+	builder.StartObject(10)
 }
 func TransactionAddTxType(builder *flatbuffers.Builder, txType TransactionType) {
 	builder.PrependInt8Slot(0, int8(txType), 0)
@@ -328,6 +348,12 @@ func TransactionAddGasPriorityFee(builder *flatbuffers.Builder, gasPriorityFee f
 }
 func TransactionStartGasPriorityFeeVector(builder *flatbuffers.Builder, numElems int) flatbuffers.UOffsetT {
 	return builder.StartVector(1, numElems, 1)
+}
+func TransactionAddAccessList(builder *flatbuffers.Builder, accessList flatbuffers.UOffsetT) {
+	builder.PrependUOffsetTSlot(9, flatbuffers.UOffsetT(accessList), 0)
+}
+func TransactionStartAccessListVector(builder *flatbuffers.Builder, numElems int) flatbuffers.UOffsetT {
+	return builder.StartVector(4, numElems, 4)
 }
 func TransactionEnd(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	return builder.EndObject()

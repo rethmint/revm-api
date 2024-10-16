@@ -16,8 +16,6 @@ use crate::{
 
 // byte slice view: golang data type
 // unamangedvector: ffi safe vector data type compliants with rust's ownership and data types, for returning optional error value
-pub const BLOCK: &str = "block";
-pub const TRANSACTION: &str = "transaction";
 #[allow(non_camel_case_types)]
 #[repr(C)]
 pub struct evm_t {}
@@ -32,19 +30,20 @@ pub fn to_evm<'a>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, EthereumWiring<GoSt
 }
 // initialize vm instance with handler
 #[no_mangle]
-pub extern "C" fn init_vm() -> *mut evm_t {
+pub extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
     let db = Db::default();
     let gstorage = GoStorage::new(&db);
     let context = Context::<EthereumWiring<GoStorage, ()>>::new_with_db(gstorage);
-    let handler = EvmHandler::mainnet_with_spec(SpecId::CANCUN);
+    let spec = SpecId::try_from_u8(default_spec_id).unwrap_or(SpecId::CANCUN);
+    let handler = EvmHandler::mainnet_with_spec(spec);
     // in now, only support customized precompile and end handler
     // pre execution handler
-    // handler.pre_execution.load_precompiles
+    // handler.pre_execution.load_precompiles().extend(iter);
     // precompiles.extend([(custom_address, precompile.into())]);
 
     // post execution handler
     // handler.post_execution.end
-    
+
     let vm = Box::into_raw(Box::new(Evm::new(context, handler)));
     vm as *mut evm_t
 }

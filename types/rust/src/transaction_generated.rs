@@ -122,6 +122,217 @@ impl<'a> flatbuffers::Verifiable for TransactionType {
 }
 
 impl flatbuffers::SimpleToVerifyInSlice for TransactionType {}
+pub enum StorageKeyOffset {}
+#[derive(Copy, Clone, PartialEq)]
+
+pub struct StorageKey<'a> {
+  pub _tab: flatbuffers::Table<'a>,
+}
+
+impl<'a> flatbuffers::Follow<'a> for StorageKey<'a> {
+  type Inner = StorageKey<'a>;
+  #[inline]
+  unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
+    Self { _tab: flatbuffers::Table::new(buf, loc) }
+  }
+}
+
+impl<'a> StorageKey<'a> {
+  pub const VT_VALUE: flatbuffers::VOffsetT = 4;
+
+  #[inline]
+  pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
+    StorageKey { _tab: table }
+  }
+  #[allow(unused_mut)]
+  pub fn create<'bldr: 'args, 'args: 'mut_bldr, 'mut_bldr, A: flatbuffers::Allocator + 'bldr>(
+    _fbb: &'mut_bldr mut flatbuffers::FlatBufferBuilder<'bldr, A>,
+    args: &'args StorageKeyArgs<'args>
+  ) -> flatbuffers::WIPOffset<StorageKey<'bldr>> {
+    let mut builder = StorageKeyBuilder::new(_fbb);
+    if let Some(x) = args.value { builder.add_value(x); }
+    builder.finish()
+  }
+
+
+  #[inline]
+  pub fn value(&self) -> Option<flatbuffers::Vector<'a, u8>> {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, u8>>>(StorageKey::VT_VALUE, None)}
+  }
+}
+
+impl flatbuffers::Verifiable for StorageKey<'_> {
+  #[inline]
+  fn run_verifier(
+    v: &mut flatbuffers::Verifier, pos: usize
+  ) -> Result<(), flatbuffers::InvalidFlatbuffer> {
+    use self::flatbuffers::Verifiable;
+    v.visit_table(pos)?
+     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, u8>>>("value", Self::VT_VALUE, false)?
+     .finish();
+    Ok(())
+  }
+}
+pub struct StorageKeyArgs<'a> {
+    pub value: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, u8>>>,
+}
+impl<'a> Default for StorageKeyArgs<'a> {
+  #[inline]
+  fn default() -> Self {
+    StorageKeyArgs {
+      value: None,
+    }
+  }
+}
+
+pub struct StorageKeyBuilder<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> {
+  fbb_: &'b mut flatbuffers::FlatBufferBuilder<'a, A>,
+  start_: flatbuffers::WIPOffset<flatbuffers::TableUnfinishedWIPOffset>,
+}
+impl<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> StorageKeyBuilder<'a, 'b, A> {
+  #[inline]
+  pub fn add_value(&mut self, value: flatbuffers::WIPOffset<flatbuffers::Vector<'b , u8>>) {
+    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(StorageKey::VT_VALUE, value);
+  }
+  #[inline]
+  pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a, A>) -> StorageKeyBuilder<'a, 'b, A> {
+    let start = _fbb.start_table();
+    StorageKeyBuilder {
+      fbb_: _fbb,
+      start_: start,
+    }
+  }
+  #[inline]
+  pub fn finish(self) -> flatbuffers::WIPOffset<StorageKey<'a>> {
+    let o = self.fbb_.end_table(self.start_);
+    flatbuffers::WIPOffset::new(o.value())
+  }
+}
+
+impl core::fmt::Debug for StorageKey<'_> {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    let mut ds = f.debug_struct("StorageKey");
+      ds.field("value", &self.value());
+      ds.finish()
+  }
+}
+pub enum AccessListItemOffset {}
+#[derive(Copy, Clone, PartialEq)]
+
+pub struct AccessListItem<'a> {
+  pub _tab: flatbuffers::Table<'a>,
+}
+
+impl<'a> flatbuffers::Follow<'a> for AccessListItem<'a> {
+  type Inner = AccessListItem<'a>;
+  #[inline]
+  unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
+    Self { _tab: flatbuffers::Table::new(buf, loc) }
+  }
+}
+
+impl<'a> AccessListItem<'a> {
+  pub const VT_ADDRESS: flatbuffers::VOffsetT = 4;
+  pub const VT_STORAGE_KEY: flatbuffers::VOffsetT = 6;
+
+  #[inline]
+  pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
+    AccessListItem { _tab: table }
+  }
+  #[allow(unused_mut)]
+  pub fn create<'bldr: 'args, 'args: 'mut_bldr, 'mut_bldr, A: flatbuffers::Allocator + 'bldr>(
+    _fbb: &'mut_bldr mut flatbuffers::FlatBufferBuilder<'bldr, A>,
+    args: &'args AccessListItemArgs<'args>
+  ) -> flatbuffers::WIPOffset<AccessListItem<'bldr>> {
+    let mut builder = AccessListItemBuilder::new(_fbb);
+    if let Some(x) = args.storage_key { builder.add_storage_key(x); }
+    if let Some(x) = args.address { builder.add_address(x); }
+    builder.finish()
+  }
+
+
+  #[inline]
+  pub fn address(&self) -> Option<flatbuffers::Vector<'a, u8>> {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, u8>>>(AccessListItem::VT_ADDRESS, None)}
+  }
+  #[inline]
+  pub fn storage_key(&self) -> Option<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<StorageKey<'a>>>> {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<StorageKey>>>>(AccessListItem::VT_STORAGE_KEY, None)}
+  }
+}
+
+impl flatbuffers::Verifiable for AccessListItem<'_> {
+  #[inline]
+  fn run_verifier(
+    v: &mut flatbuffers::Verifier, pos: usize
+  ) -> Result<(), flatbuffers::InvalidFlatbuffer> {
+    use self::flatbuffers::Verifiable;
+    v.visit_table(pos)?
+     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, u8>>>("address", Self::VT_ADDRESS, false)?
+     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<StorageKey>>>>("storage_key", Self::VT_STORAGE_KEY, false)?
+     .finish();
+    Ok(())
+  }
+}
+pub struct AccessListItemArgs<'a> {
+    pub address: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, u8>>>,
+    pub storage_key: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<StorageKey<'a>>>>>,
+}
+impl<'a> Default for AccessListItemArgs<'a> {
+  #[inline]
+  fn default() -> Self {
+    AccessListItemArgs {
+      address: None,
+      storage_key: None,
+    }
+  }
+}
+
+pub struct AccessListItemBuilder<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> {
+  fbb_: &'b mut flatbuffers::FlatBufferBuilder<'a, A>,
+  start_: flatbuffers::WIPOffset<flatbuffers::TableUnfinishedWIPOffset>,
+}
+impl<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> AccessListItemBuilder<'a, 'b, A> {
+  #[inline]
+  pub fn add_address(&mut self, address: flatbuffers::WIPOffset<flatbuffers::Vector<'b , u8>>) {
+    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(AccessListItem::VT_ADDRESS, address);
+  }
+  #[inline]
+  pub fn add_storage_key(&mut self, storage_key: flatbuffers::WIPOffset<flatbuffers::Vector<'b , flatbuffers::ForwardsUOffset<StorageKey<'b >>>>) {
+    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(AccessListItem::VT_STORAGE_KEY, storage_key);
+  }
+  #[inline]
+  pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a, A>) -> AccessListItemBuilder<'a, 'b, A> {
+    let start = _fbb.start_table();
+    AccessListItemBuilder {
+      fbb_: _fbb,
+      start_: start,
+    }
+  }
+  #[inline]
+  pub fn finish(self) -> flatbuffers::WIPOffset<AccessListItem<'a>> {
+    let o = self.fbb_.end_table(self.start_);
+    flatbuffers::WIPOffset::new(o.value())
+  }
+}
+
+impl core::fmt::Debug for AccessListItem<'_> {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    let mut ds = f.debug_struct("AccessListItem");
+      ds.field("address", &self.address());
+      ds.field("storage_key", &self.storage_key());
+      ds.finish()
+  }
+}
 pub enum TransactionOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
@@ -147,6 +358,7 @@ impl<'a> Transaction<'a> {
   pub const VT_VALUE: flatbuffers::VOffsetT = 16;
   pub const VT_DATA: flatbuffers::VOffsetT = 18;
   pub const VT_GAS_PRIORITY_FEE: flatbuffers::VOffsetT = 20;
+  pub const VT_ACCESS_LIST: flatbuffers::VOffsetT = 22;
 
   #[inline]
   pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
@@ -160,6 +372,7 @@ impl<'a> Transaction<'a> {
     let mut builder = TransactionBuilder::new(_fbb);
     builder.add_nonce(args.nonce);
     builder.add_gas_limit(args.gas_limit);
+    if let Some(x) = args.access_list { builder.add_access_list(x); }
     if let Some(x) = args.gas_priority_fee { builder.add_gas_priority_fee(x); }
     if let Some(x) = args.data { builder.add_data(x); }
     if let Some(x) = args.value { builder.add_value(x); }
@@ -234,6 +447,13 @@ impl<'a> Transaction<'a> {
     // which contains a valid value in this slot
     unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, u8>>>(Transaction::VT_GAS_PRIORITY_FEE, None)}
   }
+  #[inline]
+  pub fn access_list(&self) -> Option<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<AccessListItem<'a>>>> {
+    // Safety:
+    // Created from valid Table for this object
+    // which contains a valid value in this slot
+    unsafe { self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<AccessListItem>>>>(Transaction::VT_ACCESS_LIST, None)}
+  }
 }
 
 impl flatbuffers::Verifiable for Transaction<'_> {
@@ -252,6 +472,7 @@ impl flatbuffers::Verifiable for Transaction<'_> {
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, u8>>>("value", Self::VT_VALUE, false)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, u8>>>("data", Self::VT_DATA, false)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, u8>>>("gas_priority_fee", Self::VT_GAS_PRIORITY_FEE, false)?
+     .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, flatbuffers::ForwardsUOffset<AccessListItem>>>>("access_list", Self::VT_ACCESS_LIST, false)?
      .finish();
     Ok(())
   }
@@ -266,6 +487,7 @@ pub struct TransactionArgs<'a> {
     pub value: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, u8>>>,
     pub data: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, u8>>>,
     pub gas_priority_fee: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, u8>>>,
+    pub access_list: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, flatbuffers::ForwardsUOffset<AccessListItem<'a>>>>>,
 }
 impl<'a> Default for TransactionArgs<'a> {
   #[inline]
@@ -280,6 +502,7 @@ impl<'a> Default for TransactionArgs<'a> {
       value: None,
       data: None,
       gas_priority_fee: None,
+      access_list: None,
     }
   }
 }
@@ -326,6 +549,10 @@ impl<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> TransactionBuilder<'a, 'b, A> {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Transaction::VT_GAS_PRIORITY_FEE, gas_priority_fee);
   }
   #[inline]
+  pub fn add_access_list(&mut self, access_list: flatbuffers::WIPOffset<flatbuffers::Vector<'b , flatbuffers::ForwardsUOffset<AccessListItem<'b >>>>) {
+    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Transaction::VT_ACCESS_LIST, access_list);
+  }
+  #[inline]
   pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a, A>) -> TransactionBuilder<'a, 'b, A> {
     let start = _fbb.start_table();
     TransactionBuilder {
@@ -352,6 +579,7 @@ impl core::fmt::Debug for Transaction<'_> {
       ds.field("value", &self.value());
       ds.field("data", &self.data());
       ds.field("gas_priority_fee", &self.gas_priority_fee());
+      ds.field("access_list", &self.access_list());
       ds.finish()
   }
 }

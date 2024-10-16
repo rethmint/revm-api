@@ -1,4 +1,4 @@
-use alloy_primitives::{ Address, Bytes, TxKind, B256, U256 };
+use alloy_primitives::{ Address, Bytes, FixedBytes, TxKind, B256, U256 };
 use flatbuffer_types::{
     block::Block,
     result::{
@@ -24,9 +24,12 @@ use flatbuffer_types::{
     transaction::{ Transaction, TransactionType },
 };
 use revm::{
-    specification::{ eip2930::AccessList, eip7702::AuthorizationList },
+    specification::{ eip2930::{ AccessList, AccessListItem }, eip7702::AuthorizationList },
     wiring::{
-        block::BlobExcessGasAndPrice, default::{ block::BlockEnv, TxEnv }, result::{ ExecutionResult, HaltReason, OutOfGasError, SuccessReason }, EthereumWiring
+        block::BlobExcessGasAndPrice,
+        default::{ block::BlockEnv, TxEnv },
+        result::{ ExecutionResult, HaltReason, OutOfGasError, SuccessReason },
+        EthereumWiring,
     },
     Evm,
 };
@@ -53,7 +56,6 @@ pub fn set_evm_env(
 
     let tx_bytes = tx.read().unwrap();
     let tx = flatbuffers::root::<Transaction>(tx_bytes).unwrap();
-
     let tx_env = TxEnv {
         tx_type: match tx.tx_type() {
             TransactionType::Legacy => revm::wiring::TransactionType::Legacy,
@@ -75,7 +77,26 @@ pub fn set_evm_env(
             address => TxKind::Call(address),
         },
         nonce: tx.nonce(),
-        access_list: AccessList::default(),
+        access_list: AccessList::from(
+            tx
+                .access_list()
+                .unwrap()
+                .into_iter()
+                .filter_map(|al| {
+                    al.address().and_then(|address| {
+                        al.storage_key().map(|storage_keys| AccessListItem {
+                            address: Address::from_slice(address.bytes()),
+                            storage_keys: storage_keys
+                                .into_iter()
+                                .map(|sk| {
+                                    FixedBytes::<32>::try_from(sk.value().unwrap().bytes()).unwrap()
+                                })
+                                .collect(),
+                        })
+                    })
+                })
+                .collect::<Vec<AccessListItem>>()
+        ),
         blob_hashes: Vec::new(),
         max_fee_per_blob_gas: None,
         authorization_list: AuthorizationList::default(),

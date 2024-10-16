@@ -71,8 +71,8 @@ func extractCallData(t *testing.T, abi abi.ABI, method string) []byte {
 	return callData
 }
 
-func defaultTx(caller types.AccountAddress, transactTo [20]byte, txData []byte, nonce uint64) types.Transaction {
-	return types.Transaction{
+func defaultTx(caller types.AccountAddress, transactTo [20]byte, txData []byte, nonce uint64) types.TransactionEnv {
+	return types.TransactionEnv{
 		Caller:         caller,
 		GasLimit:       0xf4240,
 		GasPrice:       types.NewU256(big.NewInt(10000)),
@@ -82,11 +82,14 @@ func defaultTx(caller types.AccountAddress, transactTo [20]byte, txData []byte, 
 		Nonce:          nonce,
 		ChainId:        1,
 		GasPriorityFee: types.NewU256(big.NewInt(0)),
+		AccessList: types.AccessList{
+			types.ZeroAddress(): []types.U256{types.NewU256(big.NewInt(0))},
+		},
 	}
 }
 
-func defaultBlock() types.Block {
-	return types.Block{
+func defaultBlock() types.BlockEnv {
+	return types.BlockEnv{
 		Number:    types.NewU256(big.NewInt(1)),
 		Coinbase:  types.ZeroAddress(),
 		Timestamp: types.NewU256(big.NewInt(1000000)),

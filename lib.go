@@ -18,8 +18,8 @@ type VM struct {
 
 // NewVm return VM instance
 // handler
-func NewVM() VM {
-	inner := api.InitVM()
+func NewVM(SPEC_ID uint8, kvStore api.KVStore) VM {
+	inner := api.InitVM(SPEC_ID, kvStore)
 	return VM{inner}
 }
 
@@ -31,8 +31,8 @@ func (vm *VM) Destroy() {
 // for bootstrapping genesis
 func (vm *VM) ExecuteTx(
 	kvStore api.KVStore,
-	block types.Block,
-	tx types.Transaction,
+	block types.BlockEnv,
+	tx types.TransactionEnv,
 ) (types.Result, error) {
 
 	res, err := api.ExecuteTx(
@@ -50,8 +50,8 @@ func (vm *VM) ExecuteTx(
 
 func (vm *VM) Query(
 	kvStore api.KVStore,
-	block types.Block,
-	tx types.Transaction,
+	block types.BlockEnv,
+	tx types.TransactionEnv,
 ) (types.Result, error) {
 	res, err := api.Query(
 		vm.Inner,
@@ -66,7 +66,7 @@ func (vm *VM) Query(
 	return processExecutionResult(res)
 }
 
-func serializeBlock(block types.Block) []byte {
+func serializeBlock(block types.BlockEnv) []byte {
 	builder := flatbuffers.NewBuilder(164)
 	number := builder.CreateByteVector(block.Number[:])
 	coinbase := builder.CreateByteVector(block.Coinbase[:])
@@ -84,23 +84,54 @@ func serializeBlock(block types.Block) []byte {
 	return builder.FinishedBytes()
 }
 
-func serializeTransaction(transaction types.Transaction) []byte {
-	builder := flatbuffers.NewBuilder(244)
-	caller := builder.CreateByteVector(transaction.Caller[:])
-	gasPrice := builder.CreateByteVector(transaction.GasPrice[:])
-	transactTo := builder.CreateByteVector(transaction.TransactTo[:])
-	value := builder.CreateByteVector(transaction.Value[:])
-	txData := builder.CreateByteVector(transaction.Data[:])
-	gasPriorityFee := builder.CreateByteVector(transaction.GasPriorityFee[:])
+func serializeTransaction(transaction types.TransactionEnv) []byte {
+	builder := flatbuffers.NewBuilder(300)
+	accessListOffsets := make([]flatbuffers.UOffsetT, len(transaction.AccessList))
+	idx := 0
+	for address, storageKeys := range transaction.AccessList {
+		addressVec := builder.CreateByteVector(address[:])
+		storageKeyOffsets := make([]flatbuffers.UOffsetT, len(storageKeys))
+		for i, key := range storageKeys {
+			storageKey := builder.CreateByteVector(key[:])
+			txbuffer.StorageKeyStart(builder)
+			txbuffer.StorageKeyAddValue(builder, storageKey)
+			storageKeyOffsets[i] = txbuffer.StorageKeyEnd(builder)
+		}
+		txbuffer.AccessListItemStartStorageKeyVector(builder, len(storageKeys))
+		for i := len(storageKeys) - 1; i >= 0; i-- {
+			builder.PrependUOffsetT(storageKeyOffsets[i])
+		}
+		storageKeysVec := builder.EndVector(len(storageKeys))
+
+		txbuffer.AccessListItemStart(builder)
+		txbuffer.AccessListItemAddAddress(builder, addressVec)
+		txbuffer.AccessListItemAddStorageKey(builder, storageKeysVec)
+		accessListOffsets[idx] = txbuffer.AccessListItemEnd(builder)
+		idx++
+	}
+
+	txbuffer.TransactionStartAccessListVector(builder, len(accessListOffsets))
+	for i := len(accessListOffsets) - 1; i >= 0; i-- {
+		builder.PrependUOffsetT(accessListOffsets[i])
+	}
+	accessListOffset := builder.EndVector(len(accessListOffsets))
+	callerOffset := builder.CreateByteVector(transaction.Caller[:])
+	gasPriceOffset := builder.CreateByteVector(transaction.GasPrice[:])
+	transactToOffset := builder.CreateByteVector(transaction.TransactTo[:])
+	valueOffset := builder.CreateByteVector(transaction.Value[:])
+	txDataOffset := builder.CreateByteVector(transaction.Data[:])
+	gasPriorityFeeOffset := builder.CreateByteVector(transaction.GasPriorityFee[:])
 
 	txbuffer.TransactionStart(builder)
-	txbuffer.TransactionAddCaller(builder, caller)                 // 20
-	txbuffer.TransactionAddGasLimit(builder, transaction.GasLimit) // 32
-	txbuffer.TransactionAddGasPrice(builder, gasPrice)             // 8
-	txbuffer.TransactionAddTransactTo(builder, transactTo)         // 20
-	txbuffer.TransactionAddValue(builder, value)                   // 32
-	txbuffer.TransactionAddData(builder, txData)                   // estimate: 100 byte -> variable
-	txbuffer.TransactionAddGasPriorityFee(builder, gasPriorityFee) // 32
+	txbuffer.TransactionAddCaller(builder, callerOffset)                 // 20
+	txbuffer.TransactionAddGasLimit(builder, transaction.GasLimit)       // 32
+	txbuffer.TransactionAddGasPrice(builder, gasPriceOffset)             // 8
+	txbuffer.TransactionAddNonce(builder, transaction.Nonce)             // 8
+	txbuffer.TransactionAddTransactTo(builder, transactToOffset)         // 20
+	txbuffer.TransactionAddValue(builder, valueOffset)                   // 32
+	txbuffer.TransactionAddData(builder, txDataOffset)                   // estimate: 100 byte -> variable
+	txbuffer.TransactionAddGasPriorityFee(builder, gasPriorityFeeOffset) // 32
+	txbuffer.TransactionAddAccessList(builder, accessListOffset)
 	offset := txbuffer.TransactionEnd(builder)
 	builder.Finish(offset)
 	return builder.FinishedBytes()

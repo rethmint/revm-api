@@ -1,7 +1,7 @@
 /* (c) 2024 initia labs. Licensed under BUSL-1.1 */
 
-#ifndef __LIBMOVEVM__
-#define __LIBMOVEVM__
+#ifndef __LIBREVMAPI__
+#define __LIBREVMAPI__
 
 /* Generated with cbindgen:0.26.0 */
 
@@ -158,7 +158,7 @@ UnmanagedVector execute_tx(evm_t *vm_ptr,
                            ByteSliceView tx,
                            UnmanagedVector *errmsg);
 
-evm_t *init_vm(void);
+evm_t *init_vm(uint8_t default_spec_id, Db db);
 
 UnmanagedVector new_unmanaged_vector(bool nil, const uint8_t *ptr, size_t length);
 
@@ -170,4 +170,4 @@ UnmanagedVector query(evm_t *vm_ptr,
 
 void release_vm(evm_t *vm);
 
-#endif /* __LIBMOVEVM__ */
+#endif /* __LIBREVMAPI__ */

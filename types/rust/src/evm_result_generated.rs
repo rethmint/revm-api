@@ -117,15 +117,16 @@ pub struct ExResultUnionTableOffset {}
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 pub const ENUM_MIN_HALT_REASON_ENUM: i8 = 0;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MAX_HALT_REASON_ENUM: i8 = 26;
+pub const ENUM_MAX_HALT_REASON_ENUM: i8 = 27;
 #[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
 #[allow(non_camel_case_types)]
-pub const ENUM_VALUES_HALT_REASON_ENUM: [HaltReasonEnum; 27] = [
+pub const ENUM_VALUES_HALT_REASON_ENUM: [HaltReasonEnum; 28] = [
   HaltReasonEnum::OutOfGasBasic,
   HaltReasonEnum::OutOfGasMemoryLimit,
   HaltReasonEnum::OutOfGasMemory,
   HaltReasonEnum::OutOfGasPrecompile,
   HaltReasonEnum::OutOfGasInvalidOperand,
+  HaltReasonEnum::OutOfGasReentrancySentry,
   HaltReasonEnum::OpcodeNotFound,
   HaltReasonEnum::InvalidFEOpcode,
   HaltReasonEnum::InvalidJump,
@@ -160,37 +161,39 @@ impl HaltReasonEnum {
   pub const OutOfGasMemory: Self = Self(2);
   pub const OutOfGasPrecompile: Self = Self(3);
   pub const OutOfGasInvalidOperand: Self = Self(4);
-  pub const OpcodeNotFound: Self = Self(5);
-  pub const InvalidFEOpcode: Self = Self(6);
-  pub const InvalidJump: Self = Self(7);
-  pub const NotActivated: Self = Self(8);
-  pub const StackUnderflow: Self = Self(9);
-  pub const StackOverflow: Self = Self(10);
-  pub const OutOfOffset: Self = Self(11);
-  pub const CreateCollision: Self = Self(12);
-  pub const PrecompileError: Self = Self(13);
-  pub const NonceOverflow: Self = Self(14);
-  pub const CreateContractSizeLimit: Self = Self(15);
-  pub const CreateContractStartingWithEF: Self = Self(16);
-  pub const CreateInitCodeSizeLimit: Self = Self(17);
-  pub const OverflowPayment: Self = Self(18);
-  pub const StateChangeDuringStaticCall: Self = Self(19);
-  pub const CallNotAllowedInsideStatic: Self = Self(20);
-  pub const OutOfFunds: Self = Self(21);
-  pub const CallTooDeep: Self = Self(22);
-  pub const EOFFunctionStackOverflow: Self = Self(23);
-  pub const InvalidEXTCALLTarget: Self = Self(24);
-  pub const EofAuxDataOverflow: Self = Self(25);
-  pub const EofAuxDataTooSmall: Self = Self(26);
+  pub const OutOfGasReentrancySentry: Self = Self(5);
+  pub const OpcodeNotFound: Self = Self(6);
+  pub const InvalidFEOpcode: Self = Self(7);
+  pub const InvalidJump: Self = Self(8);
+  pub const NotActivated: Self = Self(9);
+  pub const StackUnderflow: Self = Self(10);
+  pub const StackOverflow: Self = Self(11);
+  pub const OutOfOffset: Self = Self(12);
+  pub const CreateCollision: Self = Self(13);
+  pub const PrecompileError: Self = Self(14);
+  pub const NonceOverflow: Self = Self(15);
+  pub const CreateContractSizeLimit: Self = Self(16);
+  pub const CreateContractStartingWithEF: Self = Self(17);
+  pub const CreateInitCodeSizeLimit: Self = Self(18);
+  pub const OverflowPayment: Self = Self(19);
+  pub const StateChangeDuringStaticCall: Self = Self(20);
+  pub const CallNotAllowedInsideStatic: Self = Self(21);
+  pub const OutOfFunds: Self = Self(22);
+  pub const CallTooDeep: Self = Self(23);
+  pub const EOFFunctionStackOverflow: Self = Self(24);
+  pub const InvalidEXTCALLTarget: Self = Self(25);
+  pub const EofAuxDataOverflow: Self = Self(26);
+  pub const EofAuxDataTooSmall: Self = Self(27);
 
   pub const ENUM_MIN: i8 = 0;
-  pub const ENUM_MAX: i8 = 26;
+  pub const ENUM_MAX: i8 = 27;
   pub const ENUM_VALUES: &'static [Self] = &[
     Self::OutOfGasBasic,
     Self::OutOfGasMemoryLimit,
     Self::OutOfGasMemory,
     Self::OutOfGasPrecompile,
     Self::OutOfGasInvalidOperand,
+    Self::OutOfGasReentrancySentry,
     Self::OpcodeNotFound,
     Self::InvalidFEOpcode,
     Self::InvalidJump,
@@ -222,6 +225,7 @@ impl HaltReasonEnum {
       Self::OutOfGasMemory => Some("OutOfGasMemory"),
       Self::OutOfGasPrecompile => Some("OutOfGasPrecompile"),
       Self::OutOfGasInvalidOperand => Some("OutOfGasInvalidOperand"),
+      Self::OutOfGasReentrancySentry => Some("OutOfGasReentrancySentry"),
       Self::OpcodeNotFound => Some("OpcodeNotFound"),
       Self::InvalidFEOpcode => Some("InvalidFEOpcode"),
       Self::InvalidJump => Some("InvalidJump"),

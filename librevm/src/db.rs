@@ -1,4 +1,4 @@
-use crate::{U8SliceView, UnmanagedVector};
+use crate::memory::{ U8SliceView, UnmanagedVector };
 
 //use crate::{ iterator::GoIter, memory::{ U8SliceView, UnmanagedVector } };
 //
@@ -18,18 +18,18 @@ pub struct Db_vtable {
         *mut db_t,
         U8SliceView,
         *mut UnmanagedVector, // result output
-        *mut UnmanagedVector, // error message output
+        *mut UnmanagedVector // error message output
     ) -> i32,
     pub write_db: extern "C" fn(
         *mut db_t,
         U8SliceView,
         U8SliceView,
-        *mut UnmanagedVector, // error message output
+        *mut UnmanagedVector // error message output
     ) -> i32,
     pub remove_db: extern "C" fn(
         *mut db_t,
         U8SliceView,
-        *mut UnmanagedVector, // error message output
+        *mut UnmanagedVector // error message output
     ) -> i32,
 }
 
@@ -59,7 +59,7 @@ extern "C" fn default_read_db(
     _db: *mut db_t,
     _key: U8SliceView,
     _result: *mut UnmanagedVector,
-    _errmsg: *mut UnmanagedVector,
+    _errmsg: *mut UnmanagedVector
 ) -> i32 {
     println!("Default read_db called");
     -1 // Indicating an error or default behavior
@@ -69,7 +69,7 @@ extern "C" fn default_write_db(
     _db: *mut db_t,
     _key: U8SliceView,
     _value: U8SliceView,
-    _errmsg: *mut UnmanagedVector,
+    _errmsg: *mut UnmanagedVector
 ) -> i32 {
     println!("Default write_db called");
     -1 // Indicating an error or default behavior
@@ -78,7 +78,7 @@ extern "C" fn default_write_db(
 extern "C" fn default_remove_db(
     _db: *mut db_t,
     _key: U8SliceView,
-    _errmsg: *mut UnmanagedVector,
+    _errmsg: *mut UnmanagedVector
 ) -> i32 {
     println!("Default remove_db called");
     -1 // Indicating an error or default behavior

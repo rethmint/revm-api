@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	github.com/cosmos/cosmos-db v1.0.0
-	github.com/ethereum/go-ethereum v1.14.10
+	github.com/ethereum/go-ethereum v1.14.11
 	github.com/stretchr/testify v1.9.0
 )
 

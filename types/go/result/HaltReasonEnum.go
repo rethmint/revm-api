@@ -12,28 +12,29 @@ const (
 	HaltReasonEnumOutOfGasMemory               HaltReasonEnum = 2
 	HaltReasonEnumOutOfGasPrecompile           HaltReasonEnum = 3
 	HaltReasonEnumOutOfGasInvalidOperand       HaltReasonEnum = 4
-	HaltReasonEnumOpcodeNotFound               HaltReasonEnum = 5
-	HaltReasonEnumInvalidFEOpcode              HaltReasonEnum = 6
-	HaltReasonEnumInvalidJump                  HaltReasonEnum = 7
-	HaltReasonEnumNotActivated                 HaltReasonEnum = 8
-	HaltReasonEnumStackUnderflow               HaltReasonEnum = 9
-	HaltReasonEnumStackOverflow                HaltReasonEnum = 10
-	HaltReasonEnumOutOfOffset                  HaltReasonEnum = 11
-	HaltReasonEnumCreateCollision              HaltReasonEnum = 12
-	HaltReasonEnumPrecompileError              HaltReasonEnum = 13
-	HaltReasonEnumNonceOverflow                HaltReasonEnum = 14
-	HaltReasonEnumCreateContractSizeLimit      HaltReasonEnum = 15
-	HaltReasonEnumCreateContractStartingWithEF HaltReasonEnum = 16
-	HaltReasonEnumCreateInitCodeSizeLimit      HaltReasonEnum = 17
-	HaltReasonEnumOverflowPayment              HaltReasonEnum = 18
-	HaltReasonEnumStateChangeDuringStaticCall  HaltReasonEnum = 19
-	HaltReasonEnumCallNotAllowedInsideStatic   HaltReasonEnum = 20
-	HaltReasonEnumOutOfFunds                   HaltReasonEnum = 21
-	HaltReasonEnumCallTooDeep                  HaltReasonEnum = 22
-	HaltReasonEnumEOFFunctionStackOverflow     HaltReasonEnum = 23
-	HaltReasonEnumInvalidEXTCALLTarget         HaltReasonEnum = 24
-	HaltReasonEnumEofAuxDataOverflow           HaltReasonEnum = 25
-	HaltReasonEnumEofAuxDataTooSmall           HaltReasonEnum = 26
+	HaltReasonEnumOutOfGasReentrancySentry     HaltReasonEnum = 5
+	HaltReasonEnumOpcodeNotFound               HaltReasonEnum = 6
+	HaltReasonEnumInvalidFEOpcode              HaltReasonEnum = 7
+	HaltReasonEnumInvalidJump                  HaltReasonEnum = 8
+	HaltReasonEnumNotActivated                 HaltReasonEnum = 9
+	HaltReasonEnumStackUnderflow               HaltReasonEnum = 10
+	HaltReasonEnumStackOverflow                HaltReasonEnum = 11
+	HaltReasonEnumOutOfOffset                  HaltReasonEnum = 12
+	HaltReasonEnumCreateCollision              HaltReasonEnum = 13
+	HaltReasonEnumPrecompileError              HaltReasonEnum = 14
+	HaltReasonEnumNonceOverflow                HaltReasonEnum = 15
+	HaltReasonEnumCreateContractSizeLimit      HaltReasonEnum = 16
+	HaltReasonEnumCreateContractStartingWithEF HaltReasonEnum = 17
+	HaltReasonEnumCreateInitCodeSizeLimit      HaltReasonEnum = 18
+	HaltReasonEnumOverflowPayment              HaltReasonEnum = 19
+	HaltReasonEnumStateChangeDuringStaticCall  HaltReasonEnum = 20
+	HaltReasonEnumCallNotAllowedInsideStatic   HaltReasonEnum = 21
+	HaltReasonEnumOutOfFunds                   HaltReasonEnum = 22
+	HaltReasonEnumCallTooDeep                  HaltReasonEnum = 23
+	HaltReasonEnumEOFFunctionStackOverflow     HaltReasonEnum = 24
+	HaltReasonEnumInvalidEXTCALLTarget         HaltReasonEnum = 25
+	HaltReasonEnumEofAuxDataOverflow           HaltReasonEnum = 26
+	HaltReasonEnumEofAuxDataTooSmall           HaltReasonEnum = 27
 )
 
 var EnumNamesHaltReasonEnum = map[HaltReasonEnum]string{
@@ -42,6 +43,7 @@ var EnumNamesHaltReasonEnum = map[HaltReasonEnum]string{
 	HaltReasonEnumOutOfGasMemory:               "OutOfGasMemory",
 	HaltReasonEnumOutOfGasPrecompile:           "OutOfGasPrecompile",
 	HaltReasonEnumOutOfGasInvalidOperand:       "OutOfGasInvalidOperand",
+	HaltReasonEnumOutOfGasReentrancySentry:     "OutOfGasReentrancySentry",
 	HaltReasonEnumOpcodeNotFound:               "OpcodeNotFound",
 	HaltReasonEnumInvalidFEOpcode:              "InvalidFEOpcode",
 	HaltReasonEnumInvalidJump:                  "InvalidJump",
@@ -72,6 +74,7 @@ var EnumValuesHaltReasonEnum = map[string]HaltReasonEnum{
 	"OutOfGasMemory":               HaltReasonEnumOutOfGasMemory,
 	"OutOfGasPrecompile":           HaltReasonEnumOutOfGasPrecompile,
 	"OutOfGasInvalidOperand":       HaltReasonEnumOutOfGasInvalidOperand,
+	"OutOfGasReentrancySentry":     HaltReasonEnumOutOfGasReentrancySentry,
 	"OpcodeNotFound":               HaltReasonEnumOpcodeNotFound,
 	"InvalidFEOpcode":              HaltReasonEnumInvalidFEOpcode,
 	"InvalidJump":                  HaltReasonEnumInvalidJump,

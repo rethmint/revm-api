@@ -13,6 +13,7 @@ enum HaltReasonEnum: byte {
     OutOfGasMemory,
     OutOfGasPrecompile,
     OutOfGasInvalidOperand,
+    OutOfGasReentrancySentry,
     OpcodeNotFound,
     InvalidFEOpcode,
     InvalidJump,

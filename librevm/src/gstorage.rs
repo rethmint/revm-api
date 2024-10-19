@@ -1,11 +1,11 @@
-use std::collections::HashMap;
-use revm::primitives::{ Account, AccountInfo, Address, Bytecode, Bytes, B256, U256 };
+use alloy_primitives::{ Address, Bytes, B256, U256 };
+use revm::bytecode::LegacyRawBytecode;
+use revm::primitives::HashMap;
 use revm::{ Database, DatabaseCommit };
-
+use state::{ Account, AccountInfo, Bytecode };
 use crate::db::Db;
-use crate::error::GoError;
+use crate::error::{ BackendError, GoError };
 use crate::memory::{ U8SliceView, UnmanagedVector };
-use crate::BackendError;
 /// Access to the VM's backend storage, i.e. the chain
 pub trait Storage {
     #[allow(dead_code)]
@@ -23,6 +23,7 @@ pub trait Storage {
     ///
     /// The current interface does not allow to differentiate between a key that existed
     /// before and one that didn't exist. See https://github.com/CosmWasm/cosmwasm/issues/290
+    #[allow(dead_code)]
     fn remove(&mut self, key: &[u8]) -> Result<(), BackendError>;
 }
 
@@ -137,7 +138,7 @@ impl<'db> Database for GoStorage<'db> {
         let default = Vec::new();
         let output = self.get(code_key_slice, &default)?;
 
-        Ok(Bytecode::LegacyRaw(Bytes::from(output)))
+        Ok(Bytecode::LegacyRaw(LegacyRawBytecode::from(Bytes::from(output))))
     }
 }
 

@@ -1,21 +1,44 @@
 
 namespace transaction;
 
+enum TransactionType: byte {
+    /// Legacy transaction type.
+    Legacy,
+    /// EIP-2930 Access List transaction type.
+    Eip2930,
+    /// EIP-1559 Fee market change transaction type.
+    Eip1559,
+    /// EIP-4844 Blob transaction type.
+    Eip4844,
+    /// EIP-7702 Set EOA account code transaction type.
+    Eip7702,
+    /// Custom type means that transaction trait was extend and have custom types.
+    Custom,
+
+}
+table StorageKey {
+    value: [ubyte]; // 32
+}
+table AccessListItem {
+    address: [ubyte];
+    storage_key: [StorageKey];
+}
 table Transaction {
-    caller: [ubyte];
+    tx_type: TransactionType;
+    caller: [ubyte]; // 20
     gas_limit: uint64;
-    gas_price: [ubyte];
-    transact_to: [ubyte];
-    value: [ubyte];
-    data: [ubyte];
-    gas_priority_fee: [ubyte];
+    gas_price: [ubyte]; // 32
+    nonce: uint64;
+    transact_to: [ubyte]; // 20
+    value: [ubyte]; // 32 
+    data: [ubyte]; 
+    gas_priority_fee: [ubyte]; // 32
+    access_list: [AccessListItem];           
 
     // excluded field - optional
-    // nonce: uint64; -> in revm = "14.0.3", nonce value is optional
     // chain_id: uint64; -> unneccesary
 
     // excluded field - optional
-    // access_list: Vec<AccessListItem>;            
     // blob_hashes: Vec<B256>;                      
     // max_fee_per_blob_gas: Option<[byte]>;          
     // authorization_list: Option<AuthorizationList>

@@ -41,7 +41,11 @@ func NewU256(b *big.Int) U256 {
 	return u
 }
 
-type Block struct {
+func (u U256) String() string {
+	return "0x" + hex.EncodeToString(u[:])
+}
+
+type BlockEnv struct {
 	/// The number of ancestor blocks of this block (block height).
 	Number U256
 	/// Coinbase or miner or address that created and signed the block.
@@ -78,7 +82,11 @@ type Block struct {
 	// /// [EIP-4844]: https://eips.ethereum.org/EIPS/eip-4844
 	// blob_excess_gas_and_price: Option<BlobExcessGasAndPrice>
 }
-type Transaction struct {
+
+// address =>  []storageKey
+type AccessList map[AccountAddress][]U256
+
+type TransactionEnv struct {
 	/// Caller aka Author aka transaction signer.
 	Caller AccountAddress
 	/// The gas limit of the transaction.
@@ -92,7 +100,7 @@ type Transaction struct {
 
 	Data []byte
 	/// The nonce of the transaction.
-	// Nonce uint64 -> nonce value will be auto-filled in revm implementation
+	Nonce uint64
 
 	/// The chain ID of the transaction. If set to `None` no checks are performed.
 	///
@@ -106,7 +114,7 @@ type Transaction struct {
 	/// Added in [EIP-2930].
 	///
 	/// [EIP-2930] https://eips.ethereum.org/EIPS/eip-2930
-	// access_list Vec<AccessListItem>
+	AccessList AccessList
 
 	/// The priority fee per gas.
 	///

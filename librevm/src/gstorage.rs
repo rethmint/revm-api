@@ -1,6 +1,6 @@
-use std::collections::HashMap;
 use alloy_primitives::{ Address, Bytes, B256, U256 };
 use revm::bytecode::LegacyRawBytecode;
+use revm::primitives::HashMap;
 use revm::{ Database, DatabaseCommit };
 use state::{ Account, AccountInfo, Bytecode };
 use crate::db::Db;

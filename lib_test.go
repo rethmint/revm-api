@@ -13,9 +13,11 @@ import (
 	types "github.com/rethmint/revm-api/types/go"
 )
 
+const CANCUN uint8 = 17
+
 func startVM(t *testing.T) (revm.VM, *api.MockKVStore) {
 	kvStore := api.NewMockKVStore()
-	vm := revm.NewVM()
+	vm := revm.NewVM(CANCUN, kvStore)
 	t.Cleanup(func() {
 		vm.Destroy()
 	})

@@ -11,8 +11,6 @@ import (
 	types "github.com/rethmint/revm-api/types/go"
 )
 
-const CANCUN = 17
-
 type VM struct {
 	ptr *C.evm_t
 }
@@ -23,10 +21,11 @@ func ReleaseVM(vm VM) {
 }
 
 // InitVM call ffi(`init_vm`) to initialize vm instance
-func InitVM() VM {
-
+func InitVM(SPEC_ID uint8, store KVStore) VM {
+	dbState := buildDBState(store)
+	db := buildDB(&dbState)
 	return VM{
-		ptr: C.init_vm(CANCUN),
+		ptr: C.init_vm(cu8(SPEC_ID), db),
 	}
 }
 

@@ -18,8 +18,8 @@ type VM struct {
 
 // NewVm return VM instance
 // handler
-func NewVM() VM {
-	inner := api.InitVM()
+func NewVM(SPEC_ID uint8, kvStore api.KVStore) VM {
+	inner := api.InitVM(SPEC_ID, kvStore)
 	return VM{inner}
 }
 

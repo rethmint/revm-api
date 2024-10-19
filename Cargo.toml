@@ -1,0 +1,111 @@
+[workspace]
+resolver = "2"
+
+members = [
+	"librevm",
+	"crates/interpreter",
+	"crates/bytecode",
+	"crates/wiring",
+	"crates/precompile",
+	"crates/primitives",
+	"crates/revm",
+	#types
+	"types/rust",
+]
+
+[profile.release]
+opt-level = 3
+debug = false
+rpath = true
+lto = false
+debug-assertions = false
+codegen-units = 16
+panic = 'unwind'
+incremental = true
+overflow-checks = true
+
+[profile.bench]
+debug = true
+
+[profile.dev]
+debug = true
+
+
+# use release settings to reduce memory pressure in the linking step in CI
+[profile.ci]
+inherits = "test"
+opt-level = 3
+debug = 0           # for saving disk space during linking
+incremental = false
+codegen-units = 16
+
+[workspace.package]
+version = "0.0.1"
+edition = "2021"
+authors = ["rethmint"]
+keywords= ["cosmos-sdk", "revm", "crypto"]
+license = "MIT"
+license-file = "LICENSE"
+readme = "README.md"
+repository = "https://github.com/rethmint/revm-api"
+rust-version = "1.81.0"
+
+
+[workspace.dependencies]
+bytes = "1.4.0"
+thiserror = "1.0.34"
+errno = "0.3.0"
+flatbuffers = "24.3.25"
+
+# External crate dependencies.
+# Please do not add any test features here: they should be declared by the individual crate.
+anyhow = "1.0.41"
+better_any = "0.1.1"
+clru = "0.6"
+cbindgen = "0.26.0"
+clap = { version = "4.3.9", features = ["derive", "env", "suggestions"] }
+codespan-reporting = "0.11.1"
+dialoguer = "0.10.2"
+ed25519-consensus = { version = "2.0.1", features = ["serde"] }
+hex = { version = "0.4.3", default-features = false }
+itertools = "0.10.3"
+libsecp256k1 = { version = "0.7.1" }
+log = { version = "0.4.17", features = [
+	"max_level_debug",
+	"release_max_level_warn",
+] }
+once_cell = "1.18.0"
+rand = "0.8.5"
+rand_core = { version = "0.6", features = ["getrandom"] }
+serde = { version = "1.0.188", default-features = false, features = [
+	"derive",
+	"rc",
+] }
+serde_bytes = "0.11.9"
+serde_json = { version = "1.0.94" }
+serde-generate = { git = "https://github.com/aptos-labs/serde-reflection", rev = "73b6bbf748334b71ff6d7d09d06a29e3062ca075" }
+serde-reflection = { git = "https://github.com/aptos-labs/serde-reflection", rev = "73b6bbf748334b71ff6d7d09d06a29e3062ca075" }
+sha2 = "0.10.8"
+sha3 = "0.10.6"
+smallvec = "1.6.1"
+tempfile = "3.2.0"
+serial_test = "1.0.0"
+tsu = "1.0.1"
+parking_lot = "0.12.1"
+base64 = "0.21.7"
+bigdecimal = "0.4"
+bech32 = "0.11"
+triomphe = "0.1.9"
+revm = { path = "crates/revm", version = "14.0.1", default-features = false }
+primitives = { path = "crates/primitives", package = "revm-primitives", version = "9.0.1", default-features = false }
+bytecode = { path = "crates/bytecode", package = "revm-bytecode", version = "1.0.0", default-features = false }
+database = { path = "crates/database", package = "revm-database", version = "1.0.0", default-features = false }
+database-interface = { path = "crates/database/interface", package = "revm-database-interface", version = "1.0.0", default-features = false }
+specification = { path = "crates/specification", package = "revm-specification", version = "1.0.0", default-features = false }
+state = { path = "crates/state", package = "revm-state", version = "1.0.0", default-features = false }
+wiring = { path = "crates/wiring", package = "revm-wiring", version = "1.0.0", default-features = false }
+transaction = { path = "crates/wiring/transaction", package = "revm-transaction", version = "1.0.0", default-features = false }
+interpreter = { path = "crates/interpreter", package = "revm-interpreter", version = "10.0.1", default-features = false }
+inspector = { path = "crates/inspector", package = "revm-inspector", version = "1.0.0", default-features = false }
+precompile = { path = "crates/precompile", package = "revm-precompile", version = "11.0.1", default-features = false }
+statetest-types = { path = "crates/statetest-types", package = "revm-statetest-types", version = "1.0.0", default-features = false }

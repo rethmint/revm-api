@@ -21,11 +21,9 @@ func ReleaseVM(vm VM) {
 }
 
 // InitVM call ffi(`init_vm`) to initialize vm instance
-func InitVM(SPEC_ID uint8, store KVStore) VM {
-	dbState := buildDBState(store)
-	db := buildDB(&dbState)
+func InitVM(SPEC_ID uint8) VM {
 	return VM{
-		ptr: C.init_vm(cu8(SPEC_ID), db),
+		ptr: C.init_vm(cu8(SPEC_ID)),
 	}
 }
 

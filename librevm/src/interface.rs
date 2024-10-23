@@ -30,12 +30,12 @@ pub fn to_evm<'a>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, EthereumWiring<GoSt
 }
 // initialize vm instance with handler
 #[no_mangle]
-pub extern "C" fn init_vm(default_spec_id: u8, db: Db) -> *mut evm_t {
-    let gstorage = GoStorage::new(&db);
-    let context = Context::<EthereumWiring<GoStorage, ()>>::new_with_db(gstorage);
+pub extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
+    let db = Db::default();
+    let go_storage = GoStorage::new(&db);
+    let context = Context::<EthereumWiring<GoStorage, ()>>::new_with_db(go_storage);
     let spec = SpecId::try_from_u8(default_spec_id).unwrap_or(SpecId::CANCUN);
     let handler = EvmHandler::mainnet_with_spec(spec);
-
     let vm = Box::into_raw(Box::new(Evm::new(context, handler)));
     vm as *mut evm_t
 }
@@ -74,7 +74,6 @@ pub extern "C" fn execute_tx(
             Vec::new()
         }
     };
-
     UnmanagedVector::new(Some(data))
 }
 

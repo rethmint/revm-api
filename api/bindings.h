@@ -158,7 +158,7 @@ UnmanagedVector execute_tx(evm_t *vm_ptr,
                            ByteSliceView tx,
                            UnmanagedVector *errmsg);
 
-evm_t *init_vm(uint8_t default_spec_id, Db db);
+evm_t *init_vm(uint8_t default_spec_id);
 
 UnmanagedVector new_unmanaged_vector(bool nil, const uint8_t *ptr, size_t length);
 

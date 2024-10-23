@@ -3,22 +3,31 @@ pub(crate) mod evm_context;
 mod inner_evm_context;
 
 pub use context_precompiles::{
-    ContextPrecompile, ContextPrecompiles, ContextStatefulPrecompile, ContextStatefulPrecompileArc,
-    ContextStatefulPrecompileBox, ContextStatefulPrecompileMut,
+    ContextPrecompile,
+    ContextPrecompiles,
+    ContextStatefulPrecompile,
+    ContextStatefulPrecompileArc,
+    ContextStatefulPrecompileBox,
+    ContextStatefulPrecompileMut,
 };
 use derive_where::derive_where;
 pub use evm_context::EvmContext;
 pub use inner_evm_context::InnerEvmContext;
 
 use crate::EvmWiring;
-use database_interface::{Database, EmptyDB};
+use database_interface::{ Database, EmptyDB };
 use interpreter::{
-    as_u64_saturated, AccountLoad, Eip7702CodeLoad, Host, SStoreResult, SelfDestructResult,
+    as_u64_saturated,
+    AccountLoad,
+    Eip7702CodeLoad,
+    Host,
+    SStoreResult,
+    SelfDestructResult,
     StateLoad,
 };
-use primitives::{Address, Bytes, Log, B256, BLOCK_HASH_HISTORY, U256};
+use primitives::{ Address, Bytes, Log, B256, BLOCK_HASH_HISTORY, U256 };
 use std::boxed::Box;
-use wiring::{default::EnvWiring, Block, EthereumWiring};
+use wiring::{ default::EnvWiring, Block, EthereumWiring };
 
 /// Main Context structure that contains both EvmContext and External context.
 #[derive_where(Clone; EvmWiringT::Block, EvmWiringT::ChainContext, EvmWiringT::Transaction, EvmWiringT::Database, <EvmWiringT::Database as Database>::Error, EvmWiringT::ExternalContext)]
@@ -39,9 +48,13 @@ impl Default for Context<EthereumWiring<EmptyDB, ()>> {
 }
 
 impl<DB: Database, EvmWiringT> Context<EvmWiringT>
-where
-    EvmWiringT:
-        EvmWiring<Block: Default, Transaction: Default, ExternalContext = (), Database = DB>,
+    where
+        EvmWiringT: EvmWiring<
+            Block: Default,
+            Transaction: Default,
+            ExternalContext = (),
+            Database = DB
+        >
 {
     /// Creates new context with database.
     pub fn new_with_db(db: DB) -> Context<EvmWiringT> {
@@ -56,7 +69,7 @@ impl<EvmWiringT: EvmWiring> Context<EvmWiringT> {
     /// Creates new context with external and database.
     pub fn new(
         evm: EvmContext<EvmWiringT>,
-        external: EvmWiringT::ExternalContext,
+        external: EvmWiringT::ExternalContext
     ) -> Context<EvmWiringT> {
         Context { evm, external }
     }
@@ -104,10 +117,11 @@ impl<EvmWiringT: EvmWiring> Host for Context<EvmWiringT> {
         }
 
         if diff <= BLOCK_HASH_HISTORY {
-            return self
-                .evm
+            return self.evm
                 .block_hash(requested_number)
-                .map_err(|e| self.evm.error = Err(e))
+                .map_err(|e| {
+                    self.evm.error = Err(e);
+                })
                 .ok();
         }
 
@@ -117,35 +131,45 @@ impl<EvmWiringT: EvmWiring> Host for Context<EvmWiringT> {
     fn load_account_delegated(&mut self, address: Address) -> Option<AccountLoad> {
         self.evm
             .load_account_delegated(address)
-            .map_err(|e| self.evm.error = Err(e))
+            .map_err(|e| {
+                self.evm.error = Err(e);
+            })
             .ok()
     }
 
     fn balance(&mut self, address: Address) -> Option<StateLoad<U256>> {
         self.evm
             .balance(address)
-            .map_err(|e| self.evm.error = Err(e))
+            .map_err(|e| {
+                self.evm.error = Err(e);
+            })
             .ok()
     }
 
     fn code(&mut self, address: Address) -> Option<Eip7702CodeLoad<Bytes>> {
         self.evm
             .code(address)
-            .map_err(|e| self.evm.error = Err(e))
+            .map_err(|e| {
+                self.evm.error = Err(e);
+            })
             .ok()
     }
 
     fn code_hash(&mut self, address: Address) -> Option<Eip7702CodeLoad<B256>> {
         self.evm
             .code_hash(address)
-            .map_err(|e| self.evm.error = Err(e))
+            .map_err(|e| {
+                self.evm.error = Err(e);
+            })
             .ok()
     }
 
     fn sload(&mut self, address: Address, index: U256) -> Option<StateLoad<U256>> {
         self.evm
             .sload(address, index)
-            .map_err(|e| self.evm.error = Err(e))
+            .map_err(|e| {
+                self.evm.error = Err(e);
+            })
             .ok()
     }
 
@@ -153,11 +177,13 @@ impl<EvmWiringT: EvmWiring> Host for Context<EvmWiringT> {
         &mut self,
         address: Address,
         index: U256,
-        value: U256,
+        value: U256
     ) -> Option<StateLoad<SStoreResult>> {
         self.evm
             .sstore(address, index, value)
-            .map_err(|e| self.evm.error = Err(e))
+            .map_err(|e| {
+                self.evm.error = Err(e);
+            })
             .ok()
     }
 
@@ -176,13 +202,13 @@ impl<EvmWiringT: EvmWiring> Host for Context<EvmWiringT> {
     fn selfdestruct(
         &mut self,
         address: Address,
-        target: Address,
+        target: Address
     ) -> Option<StateLoad<SelfDestructResult>> {
-        self.evm
-            .inner
-            .journaled_state
+        self.evm.inner.journaled_state
             .selfdestruct(address, target, &mut self.evm.inner.db)
-            .map_err(|e| self.evm.error = Err(e))
+            .map_err(|e| {
+                self.evm.error = Err(e);
+            })
             .ok()
     }
 }

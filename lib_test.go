@@ -17,7 +17,7 @@ const CANCUN uint8 = 17
 
 func startVM(t *testing.T) (revm.VM, *api.MockKVStore) {
 	kvStore := api.NewMockKVStore()
-	vm := revm.NewVM(CANCUN, kvStore)
+	vm := revm.NewVM(CANCUN)
 	t.Cleanup(func() {
 		vm.Destroy()
 	})

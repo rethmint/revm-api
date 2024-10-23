@@ -18,8 +18,8 @@ type VM struct {
 
 // NewVm return VM instance
 // handler
-func NewVM(SPEC_ID uint8, kvStore api.KVStore) VM {
-	inner := api.InitVM(SPEC_ID, kvStore)
+func NewVM(SPEC_ID uint8) VM {
+	inner := api.InitVM(SPEC_ID)
 	return VM{inner}
 }
 
@@ -34,7 +34,6 @@ func (vm *VM) ExecuteTx(
 	block types.BlockEnv,
 	tx types.TransactionEnv,
 ) (types.Result, error) {
-
 	res, err := api.ExecuteTx(
 		vm.Inner,
 		kvStore,

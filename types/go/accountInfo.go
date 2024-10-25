@@ -22,7 +22,7 @@ func (accountInfo AccountInfo) ToBytes() []byte {
 	result.Write(paddedBalance)
 
 	nonceBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(nonceBytes, accountInfo.Nonce)
+	binary.BigEndian.PutUint64(nonceBytes, accountInfo.Nonce)
 	result.Write(nonceBytes)
 
 	result.Write(accountInfo.CodeHash[:])
@@ -35,7 +35,7 @@ func AccountInfoFromBytes(data []byte) (AccountInfo, error) {
 	balance := new(big.Int)
 	balance.SetBytes(data[:32])
 	account.Balance = balance
-	account.Nonce = binary.LittleEndian.Uint64(data[32:40])
+	account.Nonce = binary.BigEndian.Uint64(data[32:40])
 	copy(account.CodeHash[:], data[40:])
 
 	return account, nil

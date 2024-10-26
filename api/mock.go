@@ -8,7 +8,7 @@ import (
 	types "github.com/rethmint/revm-api/types/go"
 )
 
-const keccakEmpty = "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+const KECCAK_EMPTY = "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
 
 /*** Mock KVStore ****/
 
@@ -24,7 +24,7 @@ func NewMockKVStore() *MockKVStore {
 
 func (k *MockKVStore) CreateEOA(accountKey []byte) ([]byte, error) {
 	var codeHashBytes [32]byte
-	codeHash, err := hex.DecodeString(keccakEmpty)
+	codeHash, err := hex.DecodeString(KECCAK_EMPTY)
 	if err != nil {
 		return []byte{}, err
 	}

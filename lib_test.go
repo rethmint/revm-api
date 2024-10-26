@@ -127,8 +127,10 @@ func suiteTest(t *testing.T, binString string, abiString string, method []string
 
 	res, _ := vm.ExecuteTx(kvStore, block, tx)
 
-	successRes, _ := res.(types.Success)
-
+	successRes, ok:= res.(types.Success)
+	if ok == false {
+		t.Fatal("Success res not success")
+	}
 	deployedAddr := successRes.Output.DeployedAddress
 
 	abi := parseABI(t, abiString)
@@ -141,7 +143,7 @@ func suiteTest(t *testing.T, binString string, abiString string, method []string
 
 	callRes, _ := vm.ExecuteTx(kvStore, block2, tx2)
 
-	_, ok := callRes.(types.Success)
+	_, ok = callRes.(types.Success)
 	if ok == false {
 		t.Fatal("Call res not success")
 	}

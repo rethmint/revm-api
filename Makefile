@@ -105,9 +105,6 @@ release-build:
 	make release-build-linux
 	make release-build-macos
 
-contracts-gen: $(CONTRACTS_DIR)/*
-	@bash ./scripts/contractsgen.sh
-
 flatbuffer-gen:
 	@bash ./scripts/flatbuffer-gen.sh
 	cargo fix --allow-dirty

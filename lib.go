@@ -155,6 +155,9 @@ func processExecutionResult(res types.ExecutionResult) (types.Result, error) {
 				return nil, fmt.Errorf("failed to get log at index %d", i)
 			}
 			var logData resulttype.LogData
+			if log.Data(&logData) == nil {
+				return nil, fmt.Errorf("failed to get log data at index %d", i)
+			}
 			topicsLen := logData.TopicsLength()
 			var topic resulttype.Topic
 			topics := make([]types.U256, topicsLen)

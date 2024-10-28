@@ -6,6 +6,7 @@ use state::{ Account, AccountInfo, Bytecode };
 use crate::db::Db;
 use crate::error::{ BackendError, GoError };
 use crate::memory::{ U8SliceView, UnmanagedVector };
+use crate::storeutils::{ compress_account_info, parse_account_info, EvmStoreKey };
 /// Access to the VM's backend storage, i.e. the chain
 pub trait Storage {
     #[allow(dead_code)]
@@ -34,69 +35,6 @@ pub struct GoStorage<'r> {
 impl<'r> GoStorage<'r> {
     pub fn new(db: &'r Db) -> Self {
         GoStorage { db }
-    }
-}
-// KVStore
-// ACCOUNT_PREFIX(B1) + {address(B20)} => ACCOUNT INFO {balance(B64)(0) | nonce(B256)(1) | code_hash(B256)(2)}
-// CODE_PREFIX(B1) + {code_hash(B32)} => vm bytecode
-// STORAGE_PREFIX(B1) + {address(B20)} + {index(B32)} => [32]byte(value)
-// BLOCK_PREFIX(B1) + block_num(B8) => block_hash
-
-enum EvmStoreKeyPrefix {
-    Account,
-    Code,
-    Storage,
-    Block,
-}
-
-impl From<EvmStoreKeyPrefix> for u8 {
-    fn from(value: EvmStoreKeyPrefix) -> Self {
-        match value {
-            EvmStoreKeyPrefix::Account => 1,
-            EvmStoreKeyPrefix::Code => 2,
-            EvmStoreKeyPrefix::Storage => 3,
-            EvmStoreKeyPrefix::Block => 4,
-        }
-    }
-}
-
-type CodeHash = B256;
-type StorageIndex = U256;
-type BlockNum = u64;
-
-enum EvmStoreKey {
-    Account(Address),
-    Code(CodeHash),
-    Storage(Address, StorageIndex),
-    Block(BlockNum),
-}
-
-impl EvmStoreKey {
-    fn key(self) -> Vec<u8> {
-        match self {
-            Self::Account(addr) => {
-                let mut result: Vec<u8> = vec![EvmStoreKeyPrefix::Account.into()];
-
-                result.append(&mut addr.to_vec());
-                result
-            }
-            Self::Code(addr) => {
-                let mut result = vec![EvmStoreKeyPrefix::Code.into()];
-                result.append(&mut addr.to_vec());
-                result
-            }
-            Self::Storage(addr, idx) => {
-                let mut result = vec![EvmStoreKeyPrefix::Storage.into()];
-                result.append(&mut addr.to_vec());
-                result.append(&mut idx.to_be_bytes::<32>().to_vec());
-                result
-            }
-            Self::Block(block_num) => {
-                let mut result = vec![EvmStoreKeyPrefix::Block.into()];
-                result.append(&mut block_num.to_be_bytes().to_vec());
-                result
-            }
-        }
     }
 }
 
@@ -205,35 +143,6 @@ impl<'r> Storage for GoStorage<'r> {
     }
 }
 
-// compress account info data with bigedien order, not included bytecode
-fn compress_account_info(info: AccountInfo) -> Vec<u8> {
-    let mut vec = Vec::with_capacity(72);
-
-    let balance_be_bytes = info.balance.to_be_bytes_vec();
-    vec.extend(&balance_be_bytes);
-
-    let nonce_be_bytes = info.nonce.to_be_bytes();
-    vec.extend_from_slice(&nonce_be_bytes);
-
-    vec.extend(info.code_hash.to_vec());
-
-    vec
-}
-// return Account info with no code
-fn parse_account_info(value: Vec<u8>) -> AccountInfo {
-    let balance_bytes: [u8; 32] = value[0..32].try_into().unwrap();
-    let balance = U256::from_be_slice(&balance_bytes);
-
-    let nonce_bytes: [u8; 8] = value[32..40].try_into().unwrap();
-    let nonce = u64::from_be_bytes(nonce_bytes);
-
-    let code_hash_bytes: [u8; 32] = value[40..72]
-        .try_into()
-        .expect("Code hash is not long enough size of code hash");
-    let code_hash = B256::from(code_hash_bytes);
-
-    AccountInfo::new(balance, nonce, code_hash, Bytecode::default()).without_code()
-}
 // COMM: cold , selfdestructed , LoadedAsNotExisting are not supported
 impl<'a> DatabaseCommit for GoStorage<'a> {
     fn commit(&mut self, changes: HashMap<Address, Account>) {
@@ -269,7 +178,7 @@ impl<'a> DatabaseCommit for GoStorage<'a> {
                 let storage_key_slice = storage_key.as_slice();
 
                 let mut vec = Vec::with_capacity(72);
-                let slot_present_value_vec = slot.present_value.to_le_bytes_vec();
+                let slot_present_value_vec = slot.present_value.to_be_bytes_vec();
                 vec.extend(&slot_present_value_vec);
 
                 self.set(storage_key_slice, &vec).unwrap();

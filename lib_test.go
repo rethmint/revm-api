@@ -1,152 +1,101 @@
 package revm_api_test
 
 import (
-	"encoding/hex"
 	"math/big"
-	"strings"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	revm "github.com/rethmint/revm-api"
-	api "github.com/rethmint/revm-api/api"
-	"github.com/rethmint/revm-api/contracts/Call"
+	testca "github.com/rethmint/revm-api/contracts/Test"
+	testutils "github.com/rethmint/revm-api/testutils"
 	types "github.com/rethmint/revm-api/types/go"
+	"github.com/stretchr/testify/require"
 )
 
 const CANCUN uint8 = 17
 
-func startVM(t *testing.T) (revm.VM, *api.MockKVStore) {
-	kvStore := api.NewMockKVStore()
+func setupTest(t *testing.T) (revm.VM, *testutils.MockKVStore, types.AccountAddress) {
+	kvStore := testutils.NewMockKVStore()
 	vm := revm.NewVM(CANCUN)
 	t.Cleanup(func() {
 		vm.Destroy()
 	})
-	return vm, kvStore
-}
-
-var AccountPrefix = [1]byte{0x01}
-var CreateTransactTo = [20]uint8{0}
-
-type AccountAddressKey []byte
-
-func AddressToAccountAddressKey(address types.AccountAddress) AccountAddressKey {
-	result := make([]byte, 1)
-	copy(result[:], AccountPrefix[:])
-
-	result = append(result, address[:]...)
-
-	return result
-}
-
-func faucet(kvStore *api.MockKVStore, address types.AccountAddress, amount *big.Int) {
-	accountKey := AddressToAccountAddressKey(address)
-
-	var accountInfoBytes []byte
-	if accountInfoBytes = kvStore.Get(accountKey); accountInfoBytes == nil {
-		accountInfoBytes, _ = kvStore.CreateEOA(accountKey)
-	}
-
-	accountInfo, _ := types.AccountInfoFromBytes(accountInfoBytes)
-	accountInfo.Balance = accountInfo.Balance.Add(accountInfo.Balance, amount)
-
-	kvStore.Set(accountKey, accountInfo.ToBytes())
-}
-
-func extractTxData(t *testing.T, txStr string) []byte {
-	if txStr[:2] == "0x" {
-		txStr = txStr[2:]
-	}
-
-	txData, err := hex.DecodeString(txStr)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return txData
-}
-
-func extractCallData(t *testing.T, abi abi.ABI, method string) []byte {
-	callData, err := abi.Pack(method)
-	if err != nil {
-		t.Fatalf("Failed to pack method call: %v", err)
-	}
-	return callData
-}
-
-func defaultTx(caller types.AccountAddress, transactTo [20]byte, txData []byte, nonce uint64) types.TransactionEnv {
-	return types.TransactionEnv{
-		Caller:         caller,
-		GasLimit:       0xf4240,
-		GasPrice:       types.NewU256(big.NewInt(10000)),
-		TransactTo:     transactTo,
-		Value:          types.NewU256(big.NewInt(0)),
-		Data:           txData,
-		Nonce:          nonce,
-		ChainId:        1,
-		GasPriorityFee: types.NewU256(big.NewInt(0)),
-		AccessList: types.AccessList{
-			types.ZeroAddress(): []types.U256{types.NewU256(big.NewInt(0))},
-		},
-	}
-}
-
-func defaultBlock() types.BlockEnv {
-	return types.BlockEnv{
-		Number:    types.NewU256(big.NewInt(1)),
-		Coinbase:  types.ZeroAddress(),
-		Timestamp: types.NewU256(big.NewInt(1000000)),
-		GasLimit:  types.NewU256(big.NewInt(10000000)),
-		Basefee:   types.NewU256(big.NewInt(0)),
-	}
-
-}
-
-func parseABI(t *testing.T, dest_abi string) abi.ABI {
-	parsedABI, err := abi.JSON(strings.NewReader(dest_abi))
-	if err != nil {
-		t.Fatalf("Failed to parse ABI: %v", err)
-	}
-
-	return parsedABI
-}
-func setupTest(t *testing.T) (revm.VM, *api.MockKVStore, types.AccountAddress) {
-	vm, kvStore := startVM(t)
 	caller, _ := types.NewAccountAddress("0xe100713fc15400d1e94096a545879e7c647001e0")
-	faucet(kvStore, caller, big.NewInt(1000000000000))
+	testutils.Faucet(kvStore, caller, big.NewInt(1000000000000))
 
 	return vm, kvStore, caller
 }
 
-func suiteTest(t *testing.T, binString string, abiString string, method []string) {
+func Test_e2e(t *testing.T) {
 	vm, kvStore, caller := setupTest(t)
+	// Deploy Test Contract
+	txData, err := hexutil.Decode(testca.TestBin)
+	require.NoError(t, err)
+	createTx := testutils.DefaultTx(caller, testutils.CreateTransactTo, txData, 0)
+	block := testutils.DefaultBlock(1)
+	res, err := vm.ExecuteTx(kvStore, block, createTx)
+	require.NoError(t, err)
 
-	txData := extractTxData(t, binString)
+	createRes, ok := res.(types.Success)
+	require.True(t, ok)
+	deployedAddr := createRes.Output.DeployedAddress
 
-	tx := defaultTx(caller, CreateTransactTo, txData, 0)
-	block := defaultBlock()
+	// Call the increase function
+	abi, err := testca.TestMetaData.GetAbi()
+	require.NoError(t, err)
+	increaseInput, err := abi.Pack("increase")
+	require.NoError(t, err)
 
-	res, _ := vm.ExecuteTx(kvStore, block, tx)
+	increaseTx := testutils.DefaultTx(caller, deployedAddr, increaseInput, 1)
+	block = testutils.DefaultBlock(2)
+	res, err = vm.ExecuteTx(kvStore, block, increaseTx)
+	require.NoError(t, err)
 
-	successRes, _ := res.(types.Success)
+	increaseRes, ok := res.(types.Success)
+	require.True(t, ok)
+	require.Equal(t, types.Success{
+		Reason:      "Stop",
+		GasUsed:     45410,
+		GasRefunded: 0,
+		Logs: []types.Log{
+			{
+				Address: deployedAddr,
+				Data: types.LogData{
+					Topics: []types.U256{ // keccack256(increased(uint256,uint256))
+						{0x61, 0x99, 0x6f, 0xe1, 0x96, 0xf7, 0x2c, 0xb5, 0x98, 0xc4, 0x83, 0xe8, 0x96, 0xa1, 0x22, 0x12, 0x63, 0xa2, 0x8b, 0xb6, 0x30, 0x48, 0x0a, 0xa8, 0x94, 0x95, 0xf7, 0x37, 0xd4, 0xa8, 0xe3, 0xdf},
+					},
+					Data: []uint8{
+						0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+					},
+				},
+			},
+		},
+		Output: types.Output{
+			DeployedAddress: [20]byte{},
+			Output:          []uint8{},
+		},
+	}, increaseRes)
 
-	deployedAddr := successRes.Output.DeployedAddress
+	// Query
+	countQuery, err := abi.Pack("count")
+	require.NoError(t, err)
+	query := testutils.DefaultTx(caller, deployedAddr, countQuery, 2)
+	block = testutils.DefaultBlock(2)
+	res, err = vm.Query(kvStore, block, query)
+	require.NoError(t, err)
 
-	abi := parseABI(t, abiString)
-	res = extractCallData(t, abi, method[0])
-
-	callData := extractCallData(t, abi, method[0])
-
-	tx2 := defaultTx(caller, deployedAddr, callData, 1)
-	block2 := defaultBlock()
-
-	callRes, _ := vm.ExecuteTx(kvStore, block2, tx2)
-
-	_, ok := callRes.(types.Success)
-	if ok == false {
-		t.Fatal("Call res not success")
-	}
-}
-
-func TestCall(t *testing.T) {
-	suiteTest(t, Call.CallBin, Call.CallABI, []string{"reflect"})
+	queryRes, ok := res.(types.Success)
+	require.True(t, ok)
+	require.Equal(t, types.Success{
+		Reason:      "Return",
+		GasUsed:     23466,
+		GasRefunded: 0,
+		Logs:        []types.Log{},
+		Output: types.Output{
+			DeployedAddress: types.ZeroAddress(),
+			Output: []uint8{
+				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+			},
+		},
+	}, queryRes)
 }

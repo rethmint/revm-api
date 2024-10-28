@@ -241,8 +241,5 @@ pub fn build_flat_buffer(result: ExecutionResult<HaltReason>) -> Vec<u8> {
         }
     };
     finish_evm_result_buffer(&mut builder, args);
-    let finished_data = builder.finished_data();
-    let mut res = Vec::new();
-    res.extend_from_slice(finished_data);
-    res
+    builder.finished_data().to_vec()
 }

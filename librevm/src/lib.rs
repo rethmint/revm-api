@@ -4,7 +4,5 @@ mod gstorage;
 mod interface;
 mod memory;
 mod utils;
-#[cfg(test)]
-mod tests;
-
+mod storeutils;
 pub use interface::*;

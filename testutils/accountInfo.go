@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"math/big"
+
+	types "github.com/rethmint/revm-api/types/go"
 )
 
 // 72 Byte
@@ -39,6 +41,18 @@ func AccountInfoFromBytes(data []byte) (AccountInfo, error) {
 	copy(account.CodeHash[:], data[40:])
 
 	return account, nil
+}
+
+func ExtractAccountInfo(kvStore *MockKVStore, caller types.AccountAddress) AccountInfo {
+	accountKey := AddressToAccountAddressKey(caller)
+	accountBytes := kvStore.Get(accountKey)
+
+	if accountBytes != nil {
+		accountInfo, _ := AccountInfoFromBytes(accountBytes)
+		return accountInfo
+	}
+
+	return AccountInfo{Nonce: 0}
 }
 
 type Bytecode []byte

@@ -20,7 +20,7 @@ table StorageKey {
     value: [ubyte]; // 32
 }
 table AccessListItem {
-    address: [ubyte];
+    address: [ubyte]; // 20
     storage_key: [StorageKey];
 }
 table Transaction {

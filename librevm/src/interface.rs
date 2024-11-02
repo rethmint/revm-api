@@ -78,7 +78,7 @@ pub extern "C" fn execute_tx(
 }
 
 #[no_mangle]
-pub extern "C" fn query(
+pub extern "C" fn query_tx(
     vm_ptr: *mut evm_t,
     db: Db,
     block: ByteSliceView,

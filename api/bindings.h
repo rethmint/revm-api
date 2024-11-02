@@ -162,11 +162,11 @@ evm_t *init_vm(uint8_t default_spec_id);
 
 UnmanagedVector new_unmanaged_vector(bool nil, const uint8_t *ptr, size_t length);
 
-UnmanagedVector query(evm_t *vm_ptr,
-                      Db db,
-                      ByteSliceView block,
-                      ByteSliceView tx,
-                      UnmanagedVector *errmsg);
+UnmanagedVector query_tx(evm_t *vm_ptr,
+                         Db db,
+                         ByteSliceView block,
+                         ByteSliceView tx,
+                         UnmanagedVector *errmsg);
 
 void release_vm(evm_t *vm);
 

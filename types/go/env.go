@@ -5,6 +5,10 @@ import (
 	"errors"
 	"math/big"
 	"strings"
+
+	flatbuffers "github.com/google/flatbuffers/go"
+	blockbuffer "github.com/rethmint/revm-api/types/go/block"
+	txbuffer "github.com/rethmint/revm-api/types/go/transaction"
 )
 
 type AccountAddress [20]uint8
@@ -82,6 +86,25 @@ type BlockEnv struct {
 	// /// [EIP-4844]: https://eips.ethereum.org/EIPS/eip-4844
 	// blob_excess_gas_and_price: Option<BlobExcessGasAndPrice>
 }
+type SerializedBlock = []byte
+
+func (block BlockEnv) ToSerialized() SerializedBlock {
+	builder := flatbuffers.NewBuilder(180)
+	number := builder.CreateByteVector(block.Number[:])
+	coinbase := builder.CreateByteVector(block.Coinbase[:])
+	timeStamp := builder.CreateByteVector(block.Timestamp[:])
+	gasLimit := builder.CreateByteVector(block.GasLimit[:])
+	baseFee := builder.CreateByteVector(block.Basefee[:])
+	blockbuffer.BlockStart(builder)
+	blockbuffer.BlockAddNumber(builder, number)       // 32
+	blockbuffer.BlockAddCoinbase(builder, coinbase)   // 20
+	blockbuffer.BlockAddTimestamp(builder, timeStamp) // 32
+	blockbuffer.BlockAddGasLimit(builder, gasLimit)   // 32
+	blockbuffer.BlockAddBasefee(builder, baseFee)     //32
+	offset := blockbuffer.BlockEnd(builder)
+	builder.Finish(offset)
+	return builder.FinishedBytes()
+}
 
 // address =>  []storageKey
 type AccessList map[AccountAddress][]U256
@@ -146,4 +169,63 @@ type TransactionEnv struct {
 	///
 	/// [EIP-Set EOA account code for one transaction](https://eips.ethereum.org/EIPS/eip-7702)
 	// authorization_list Option<AuthorizationList>
+}
+type SerializedTransaction = []byte
+
+func (transaction TransactionEnv) ToSerialized() SerializedTransaction {
+	fixedSize := 152
+	dynSize := len(transaction.Data)
+	for address, storageKeys := range transaction.AccessList {
+		dynSize += len(address) + len(storageKeys)*32
+	}
+	builder := flatbuffers.NewBuilder(fixedSize + dynSize)
+	accessListOffsets := make([]flatbuffers.UOffsetT, len(transaction.AccessList))
+	idx := 0
+	for address, storageKeys := range transaction.AccessList {
+		addressVec := builder.CreateByteVector(address[:])
+		storageKeyOffsets := make([]flatbuffers.UOffsetT, len(storageKeys))
+		for i, key := range storageKeys {
+			storageKey := builder.CreateByteVector(key[:])
+			txbuffer.StorageKeyStart(builder)
+			txbuffer.StorageKeyAddValue(builder, storageKey)
+			storageKeyOffsets[i] = txbuffer.StorageKeyEnd(builder)
+		}
+		txbuffer.AccessListItemStartStorageKeyVector(builder, len(storageKeys))
+		for i := len(storageKeys) - 1; i >= 0; i-- {
+			builder.PrependUOffsetT(storageKeyOffsets[i])
+		}
+		storageKeysVec := builder.EndVector(len(storageKeys))
+
+		txbuffer.AccessListItemStart(builder)
+		txbuffer.AccessListItemAddAddress(builder, addressVec)
+		txbuffer.AccessListItemAddStorageKey(builder, storageKeysVec)
+		accessListOffsets[idx] = txbuffer.AccessListItemEnd(builder)
+		idx++
+	}
+
+	txbuffer.TransactionStartAccessListVector(builder, len(accessListOffsets))
+	for i := len(accessListOffsets) - 1; i >= 0; i-- {
+		builder.PrependUOffsetT(accessListOffsets[i])
+	}
+	accessListOffset := builder.EndVector(len(accessListOffsets))
+	callerOffset := builder.CreateByteVector(transaction.Caller[:])
+	gasPriceOffset := builder.CreateByteVector(transaction.GasPrice[:])
+	transactToOffset := builder.CreateByteVector(transaction.TransactTo[:])
+	valueOffset := builder.CreateByteVector(transaction.Value[:])
+	txDataOffset := builder.CreateByteVector(transaction.Data[:])
+	gasPriorityFeeOffset := builder.CreateByteVector(transaction.GasPriorityFee[:])
+
+	txbuffer.TransactionStart(builder)
+	txbuffer.TransactionAddCaller(builder, callerOffset)                 // 20
+	txbuffer.TransactionAddGasLimit(builder, transaction.GasLimit)       // 32
+	txbuffer.TransactionAddGasPrice(builder, gasPriceOffset)             // 8
+	txbuffer.TransactionAddNonce(builder, transaction.Nonce)             // 8
+	txbuffer.TransactionAddTransactTo(builder, transactToOffset)         // 20
+	txbuffer.TransactionAddValue(builder, valueOffset)                   // 32
+	txbuffer.TransactionAddData(builder, txDataOffset)                   //
+	txbuffer.TransactionAddGasPriorityFee(builder, gasPriorityFeeOffset) // 32
+	txbuffer.TransactionAddAccessList(builder, accessListOffset)         //
+	offset := txbuffer.TransactionEnd(builder)
+	builder.Finish(offset)
+	return builder.FinishedBytes()
 }

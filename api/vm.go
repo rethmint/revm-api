@@ -31,16 +31,16 @@ func InitVM(SPEC_ID uint8) VM {
 func ExecuteTx(
 	vm VM,
 	store KVStore,
-	block []byte,
-	tx []byte,
+	block *[]byte,
+	tx *[]byte,
 ) (types.ExecutionResult, error) {
 	var err error
 
 	dbState := buildDBState(store)
 	db := buildDB(&dbState)
-	blockBytesSliceView := makeView(block)
+	blockBytesSliceView := makeView(*block)
 	defer runtime.KeepAlive(blockBytesSliceView)
-	txByteSliceView := makeView(tx)
+	txByteSliceView := makeView(*tx)
 	defer runtime.KeepAlive(txByteSliceView)
 
 	errmsg := uninitializedUnmanagedVector()
@@ -52,23 +52,23 @@ func ExecuteTx(
 	return copyAndDestroyUnmanagedVector(res), err
 }
 
-func Query(
+func QueryTx(
 	vm VM,
 	store KVStore,
-	block []byte,
-	tx []byte,
+	block *[]byte,
+	tx *[]byte,
 ) (types.ExecutionResult, error) {
 	var err error
 
 	dbState := buildDBState(store)
 	db := buildDB(&dbState)
-	blockBytesSliceView := makeView(block)
+	blockBytesSliceView := makeView(*block)
 	defer runtime.KeepAlive(blockBytesSliceView)
-	txByteSliceView := makeView(tx)
+	txByteSliceView := makeView(*tx)
 	defer runtime.KeepAlive(txByteSliceView)
 
 	errmsg := uninitializedUnmanagedVector()
-	res, err := C.query(vm.ptr, db, blockBytesSliceView, txByteSliceView, &errmsg)
+	res, err := C.query_tx(vm.ptr, db, blockBytesSliceView, txByteSliceView, &errmsg)
 	if err != nil && err.(syscall.Errno) != C.Success {
 		return nil, errorWithMessage(err, errmsg)
 	}

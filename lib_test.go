@@ -33,10 +33,11 @@ func Test_e2e(t *testing.T) {
 	require.NoError(t, err)
 	createTx := testutils.DefaultTx(caller, testutils.CreateTransactTo, txData, 0)
 	block := testutils.DefaultBlock(1)
-	res, err := vm.ExecuteTx(kvStore, block, createTx)
+	res, err := vm.ExecuteTx(kvStore, block.ToSerialized(), createTx.ToSerialized())
 	require.NoError(t, err)
-
-	createRes, ok := res.(types.Success)
+	result, err := res.ProcessExecutionResult()
+	require.NoError(t, err)
+	createRes, ok := result.(types.Success)
 	require.True(t, ok)
 	deployedAddr := createRes.Output.DeployedAddress
 
@@ -48,10 +49,13 @@ func Test_e2e(t *testing.T) {
 
 	increaseTx := testutils.DefaultTx(caller, deployedAddr, increaseInput, 1)
 	block = testutils.DefaultBlock(2)
-	res, err = vm.ExecuteTx(kvStore, block, increaseTx)
+	res, err = vm.ExecuteTx(kvStore, block.ToSerialized(), increaseTx.ToSerialized())
 	require.NoError(t, err)
 
-	increaseRes, ok := res.(types.Success)
+	result, err = res.ProcessExecutionResult()
+	require.NoError(t, err)
+
+	increaseRes, ok := result.(types.Success)
 	require.True(t, ok)
 	require.Equal(t, types.Success{
 		Reason:      "Stop",
@@ -81,10 +85,13 @@ func Test_e2e(t *testing.T) {
 	require.NoError(t, err)
 	query := testutils.DefaultTx(caller, deployedAddr, countQuery, 2)
 	block = testutils.DefaultBlock(2)
-	res, err = vm.Query(kvStore, block, query)
+	res, err = vm.QueryTx(kvStore, block.ToSerialized(), query.ToSerialized())
 	require.NoError(t, err)
 
-	queryRes, ok := res.(types.Success)
+	result, err = res.ProcessExecutionResult()
+	require.NoError(t, err)
+
+	queryRes, ok := result.(types.Success)
 	require.True(t, ok)
 	require.Equal(t, types.Success{
 		Reason:      "Return",

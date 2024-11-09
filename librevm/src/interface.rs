@@ -1,17 +1,11 @@
-use revm::{
-    handler::register::EvmHandler,
-    specification::hardfork::SpecId,
-    wiring::EthereumWiring,
-    Context,
-    Evm,
-};
+use revm::{handler::register::EvmHandler, primitives::SpecId, Context, Evm};
 
 use crate::{
     db::Db,
     error::set_error,
     gstorage::GoStorage,
-    memory::{ ByteSliceView, UnmanagedVector },
-    utils::{ build_flat_buffer, set_evm_env },
+    memory::{ByteSliceView, UnmanagedVector},
+    utils::{build_flat_buffer, set_evm_env},
 };
 
 // byte slice view: golang data type
@@ -20,11 +14,11 @@ use crate::{
 #[repr(C)]
 pub struct evm_t {}
 
-pub fn to_evm<'a>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, EthereumWiring<GoStorage<'a>, ()>>> {
+pub fn to_evm<'a>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, (), GoStorage<'a>>> {
     if ptr.is_null() {
         None
     } else {
-        let evm = unsafe { &mut *(ptr as *mut Evm<'a, EthereumWiring<GoStorage<'a>, ()>>) };
+        let evm = unsafe { &mut *(ptr as *mut Evm<'a, (), GoStorage<'a>>) };
         Some(evm)
     }
 }
@@ -33,7 +27,7 @@ pub fn to_evm<'a>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, EthereumWiring<GoSt
 pub extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
     let db = Db::default();
     let go_storage = GoStorage::new(&db);
-    let context = Context::<EthereumWiring<GoStorage, ()>>::new_with_db(go_storage);
+    let context = Context::<(), GoStorage>::new_with_db(go_storage);
     let spec = SpecId::try_from_u8(default_spec_id).unwrap_or(SpecId::CANCUN);
     let handler = EvmHandler::mainnet_with_spec(spec);
     let vm = Box::into_raw(Box::new(Evm::new(context, handler)));
@@ -44,7 +38,7 @@ pub extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
 pub extern "C" fn release_vm(vm: *mut evm_t) {
     if !vm.is_null() {
         // this will free cache when it goes out of scope
-        let _ = unsafe { Box::from_raw(vm as *mut Evm<EthereumWiring<GoStorage, ()>>) };
+        let _ = unsafe { Box::from_raw(vm as *mut Evm<(), GoStorage>) };
     }
 }
 
@@ -55,7 +49,7 @@ pub extern "C" fn execute_tx(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>
+    errmsg: Option<&mut UnmanagedVector>,
 ) -> UnmanagedVector {
     let evm = match to_evm(vm_ptr) {
         Some(vm) => vm,
@@ -83,7 +77,7 @@ pub extern "C" fn query_tx(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>
+    errmsg: Option<&mut UnmanagedVector>,
 ) -> UnmanagedVector {
     let evm = match to_evm(vm_ptr) {
         Some(vm) => vm,

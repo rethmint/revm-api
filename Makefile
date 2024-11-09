@@ -36,10 +36,6 @@ build-rust-debug:
 	cp -fp target/debug/$(SHARED_LIB_SRC) api/$(SHARED_LIB_DST)
 	make update-bindings
 
-# use release build to actually ship - smaller and much faster
-#
-# See https://github.com/CosmWasm/wasmvm/issues/222#issuecomment-880616953 for two approaches to
-# enable stripping through cargo (if that is desired).
 build-rust-release:
 	cargo build --release
 	rm -f api/$(SHARED_LIB_DST)
@@ -67,12 +63,10 @@ release-build-alpine:
 
 # Creates a release build in a containerized build environment of the shared library for glibc Linux (.so)
 release-build-linux:
-	rm -rf target/release
-	docker run --rm -u $(USER_ID):$(USER_GROUP) \
-		-v $(shell pwd):/code/ \
-		$(BUILDERS_PREFIX)-centos7
-	cp artifacts/librevmapi.x86_64.so api
-	cp artifacts/librevmapi.aarch64.so api
+	docker run --rm -v $(shell pwd)/librevmapi:/code $(BUILDERS_PREFIX)-debian build_gnu_x86_64.sh
+	docker run --rm -v $(shell pwd)/librevmapi:/code $(BUILDERS_PREFIX)-debian build_gnu_aarch64.sh
+	cp librevmapi/artifacts/librevmapi.x86_64.so internal/api
+	cp librevmapi/artifacts/librevmapi.aarch64.so internal/api
 	make update-bindings
 
 # Creates a release build in a containerized build environment of the shared library for macOS (.dylib)
@@ -83,6 +77,12 @@ release-build-macos:
 		-v $(shell pwd):/code/ \
 		$(BUILDERS_PREFIX)-cross build_macos.sh
 	cp artifacts/librevmapi.dylib api
+	make update-bindings
+
+# Creates a release build in a containerized build environment of the shared library for Windows (.dll)
+release-build-windows:
+	docker run --rm -v $(shell pwd)/librevmapi:/code $(BUILDERS_PREFIX)-cross build_windows.sh
+	cp librevmapi/artifacts/revmapi.dll internal/api
 	make update-bindings
 
 release-build:

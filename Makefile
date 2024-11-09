@@ -52,7 +52,6 @@ clean:
 
 # Creates a release build in a containerized build environment of the shared library for glibc Linux (.so)
 release-build-linux:
-	mkdir -p artifacts
 	docker run --rm -v $(shell pwd):/code $(BUILDERS_PREFIX)-debian build_gnu_x86_64.sh
 	docker run --rm -v $(shell pwd):/code $(BUILDERS_PREFIX)-debian build_gnu_aarch64.sh
 	cp librevmapi/artifacts/librevmapi.x86_64.so internal/api
@@ -61,7 +60,6 @@ release-build-linux:
 
 # Creates a release build in a containerized build environment of the shared library for macOS (.dylib)
 release-build-macos:
-	mkdir -p artifacts
 	rm -rf target/x86_64-apple-darwin/release
 	rm -rf target/aarch64-apple-darwin/release
 	docker run --rm -u $(USER_ID):$(USER_GROUP) \
@@ -72,7 +70,6 @@ release-build-macos:
 
 release-build:
 	# Write like this because those must not run in parallel
-	make release-build-alpine
 	make release-build-linux
 	make release-build-macos
 

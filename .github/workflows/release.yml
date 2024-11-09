@@ -1,10 +1,12 @@
-name: Release rust librevmapi
+name: Release rust librevm
 on:
   workflow_dispatch:
   push:
     tags:
-      - "*"
-
+      - '*'
+  pull_request:
+    branches:
+      - main
 jobs:
   build-linux-glibc:
     name: Linux glibc
@@ -17,7 +19,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: librevmapi-linux-glibc
+          name: librevm-linux-glibc
           path: api/*.so
 
   build-linux-muslc:
@@ -32,7 +34,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: librevmapi-linux-muslc
+          name: librevm-linux-muslc
           path: api/*.a
 
   build-macos:
@@ -46,7 +48,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: librevmapi-macos
+          name: librevm-macos
           path: api/*.dylib
 
   release:
@@ -57,17 +59,17 @@ jobs:
       - name: Get linux-glibc artifacts
         uses: actions/download-artifact@v4
         with:
-          name: librevmapi-linux-glibc
+          name: librevm-linux-glibc
 
       - name: Get linux-muslc artifacts
         uses: actions/download-artifact@v4
         with:
-          name: librevmapi-linux-muslc
+          name: librevm-linux-muslc
 
       - name: Get macos artifacts
         uses: actions/download-artifact@v4
         with:
-          name: librevmapi-macos
+          name: librevm-macos
 
       - name: Release
         uses: softprops/action-gh-release@v1

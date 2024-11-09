@@ -1,6 +1,6 @@
 #!/bin/bash
 set -o errexit -o nounset -o pipefail
-
+mkdir -p artifacts
 export CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
 
 # No stripping implemented (see https://github.com/CosmWasm/wasmvm/issues/222#issuecomment-2260007943).

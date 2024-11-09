@@ -1,5 +1,6 @@
 #!/bin/bash
 set -o errexit -o nounset -o pipefail
+mkdir -p artifacts
 
 export CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
 

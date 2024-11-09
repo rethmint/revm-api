@@ -1,4 +1,7 @@
 #!/bin/bash
+# create artifacts directory
+mkdir -p artifacts
+
 set -o errexit -o nounset -o pipefail
 
 export CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
@@ -11,12 +14,14 @@ export LIBZ_SYS_STATIC=1
 echo "Starting aarch64-apple-darwin build"
 export CC=aarch64-apple-darwin20.4-clang
 export CXX=aarch64-apple-darwin20.4-clang++
-cargo build --release --target aarch64-apple-darwin
+
+cd librevm && cargo build --release --target aarch64-apple-darwin
 
 echo "Starting x86_64-apple-darwin build"
 export CC=o64-clang
 export CXX=o64-clang++
-cargo build --release --target x86_64-apple-darwin
+
+cd librevm && cargo build --release --target x86_64-apple-darwin
 
 # Create a universal library with both archs
 lipo -output artifacts/librevmapi.dylib -create \

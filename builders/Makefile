@@ -10,15 +10,11 @@ docker-image-debian:
 docker-image-cross:
 	docker build --pull . -t $(BUILDERS_PREFIX)-cross -f ./Dockerfile.cross
 
-.PHONY: docker-image-alpine
-docker-image-alpine:
-	docker build --pull . -t $(BUILDERS_PREFIX)-alpine -f ./Dockerfile.alpine
 
 .PHONY: docker-images
-docker-images: docker-image-debian docker-image-cross docker-image-alpine
+docker-images: docker-image-cross docker-image-debian
 
 .PHONY: docker-publish
 docker-publish: docker-images
 	docker push $(BUILDERS_PREFIX)-cross
 	docker push $(BUILDERS_PREFIX)-debian
-	docker push $(BUILDERS_PREFIX)-alpine

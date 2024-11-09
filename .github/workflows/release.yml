@@ -56,5 +56,4 @@ jobs:
         with:
           files: |
             *.so
-            *.dll
             *.dylib

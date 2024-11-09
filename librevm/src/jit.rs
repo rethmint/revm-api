@@ -2,67 +2,70 @@ mod cfg;
 
 use std::{path::PathBuf, str::FromStr};
 
-use alloy_primitives::{address, hex, U256};
-use cfg::RuntimeJitCfg;
+use alloy_primitives::{address, U256};
+pub use cfg::*;
 use color_eyre::Result;
 use revm::primitives::{Env, SpecId, TransactTo};
-use revmc::{eyre::ensure, EvmCompiler, EvmCompilerFn, EvmLlvmBackend};
+use revmc::{eyre::ensure, EvmCompiler, EvmLlvmBackend};
 
 pub struct RuntimeJit {
-    pub unit: CompileUnit,
+    pub unit: JitUnit,
+    pub cfg: JitCfg,
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct CompileUnit {
+pub struct JitUnit {
     pub name: &'static str,
     pub bytecode: Vec<u8>,
     pub calldata: Vec<u8>,
     pub stack_input: Vec<U256>,
 }
 
-impl RuntimeJit {
-    pub fn compile(&self, cfg: RuntimeJitCfg) -> Result<EvmCompilerFn> {
-        if std::env::var_os("RUST_BACKTRACE").is_none() {
-            std::env::set_var("RUST_BACKTRACE", "1");
+impl JitUnit {
+    pub fn new(name: &'static str, bytecode: Vec<u8>, stack_input_size: u64) -> Self {
+        Self {
+            name,
+            bytecode,
+            calldata: Vec::new(),
+            stack_input: vec![U256::from(stack_input_size)],
         }
+    }
+}
+
+impl RuntimeJit {
+    pub fn new(unit: JitUnit, cfg: JitCfg) -> Self {
+        Self { unit, cfg }
+    }
+
+    pub fn compile(&self) -> Result<()> {
         let _ = color_eyre::install();
 
         // Build the compiler.
         let context = revmc::llvm::inkwell::context::Context::create();
-        let target = revmc::Target::new(cfg.target, cfg.target_cpu, cfg.target_features);
-        let backend = EvmLlvmBackend::new_for_target(&context, cfg.aot, cfg.opt_level, &target)?;
+        let target = revmc::Target::new(
+            self.cfg.target,
+            self.cfg.target_cpu.clone(),
+            self.cfg.target_features.clone(),
+        );
+        let backend =
+            EvmLlvmBackend::new_for_target(&context, self.cfg.aot, self.cfg.opt_level, &target)?;
         let mut compiler = EvmCompiler::new(backend);
-        let out_pathbuf = PathBuf::from_str(cfg.out_dir)?;
+        let out_pathbuf = PathBuf::from_str(self.cfg.out_dir)?;
         compiler.set_dump_to(Some(out_pathbuf));
-        compiler.gas_metering(cfg.no_gas);
-        unsafe { compiler.stack_bound_checks(cfg.no_len_checks) };
+        compiler.gas_metering(self.cfg.no_gas);
+        unsafe { compiler.stack_bound_checks(self.cfg.no_len_checks) };
         compiler.frame_pointers(true);
-        compiler.debug_assertions(cfg.debug_assertions);
-        compiler.validate_eof(cfg.no_validate);
+        compiler.debug_assertions(self.cfg.debug_assertions);
+        compiler.validate_eof(self.cfg.no_validate);
 
-        let CompileUnit {
-            name,
-            bytecode,
-            calldata,
-            stack_input,
-        } = CompileUnit {
-            name: "fibonacci",
-            bytecode: hex!(
-                "5f355f60015b8215601a578181019150909160019003916005565b9150505f5260205ff3"
-            )
-            .to_vec(),
-            stack_input: vec![U256::from(69)],
-            ..Default::default()
-        };
+        compiler.set_module_name(self.unit.name);
 
-        compiler.set_module_name(name);
-
-        let calldata = if let Some(calldata) = cfg.calldata {
+        let calldata = if let Some(calldata) = &self.cfg.calldata {
             revmc::primitives::hex::decode(calldata)?.into()
         } else {
-            calldata.into()
+            self.unit.calldata.clone().into()
         };
-        let gas_limit = cfg.gas_limit;
+        let gas_limit = self.cfg.gas_limit;
 
         let mut env = Env::default();
         env.tx.caller = address!("0000000000000000000000000000000000000001");
@@ -72,28 +75,28 @@ impl RuntimeJit {
 
         let bytecode =
             revm::interpreter::analysis::to_analysed(revm::primitives::Bytecode::new_raw(
-                revm::primitives::Bytes::copy_from_slice(&bytecode),
+                revm::primitives::Bytes::copy_from_slice(&self.unit.bytecode),
             ));
         let contract = revm::interpreter::Contract::new_env(&env, bytecode, None);
 
         let bytecode = contract.bytecode.original_byte_slice();
 
-        let spec_id = if cfg.eof {
+        let spec_id = if self.cfg.eof {
             SpecId::OSAKA
         } else {
-            cfg.spec_id.into()
+            self.cfg.spec_id.into()
         };
-        if !stack_input.is_empty() {
+        if !self.unit.stack_input.is_empty() {
             compiler.inspect_stack_length(true);
         }
 
-        let f_id = compiler.translate(name, bytecode, spec_id)?;
+        let f_id = compiler.translate(self.unit.name, bytecode, spec_id)?;
 
-        if cfg.aot {
+        if self.cfg.aot {
             let out_dir = if let Some(out_dir) = compiler.out_dir() {
-                out_dir.join(cfg.bench_name)
+                out_dir.join(self.unit.name)
             } else {
-                let dir = std::env::temp_dir().join("revmc-cli").join(cfg.bench_name);
+                let dir = std::env::temp_dir().join("revmc-cli").join(self.unit.name);
                 std::fs::create_dir_all(&dir)?;
                 dir
             };
@@ -105,7 +108,7 @@ impl RuntimeJit {
             eprintln!("Compiled object file to {}", obj.display());
 
             // Link.
-            if !cfg.no_link {
+            if !self.cfg.no_link {
                 let so = out_dir.join("a.so");
                 let linker = revmc::Linker::new();
                 linker.link(&so, [obj.to_str().unwrap()])?;
@@ -114,7 +117,6 @@ impl RuntimeJit {
             }
         }
 
-        let f = unsafe { compiler.jit_function(f_id)? };
-        Ok(f)
+        Ok(())
     }
 }

@@ -1,7 +1,7 @@
 use revm::primitives::SpecId;
 use revmc::OptimizationLevel;
 
-pub struct RuntimeJitCfg {
+pub struct JitCfg {
     pub target: &'static str,
     pub target_cpu: Option<String>,
     pub target_features: Option<String>,
@@ -16,19 +16,18 @@ pub struct RuntimeJitCfg {
     pub gas_limit: u64,
     pub eof: bool,
     pub spec_id: SpecId,
-    pub bench_name: &'static str,
     pub no_link: bool,
 }
 
-impl Default for RuntimeJitCfg {
+impl Default for JitCfg {
     fn default() -> Self {
-        RuntimeJitCfg {
+        JitCfg {
             target: "native",
             target_cpu: None,
             target_features: None,
             aot: true,
             opt_level: OptimizationLevel::Aggressive,
-            out_dir: "out",
+            out_dir: "librevm/out",
             no_gas: false,
             no_len_checks: false,
             debug_assertions: true,
@@ -37,8 +36,7 @@ impl Default for RuntimeJitCfg {
             gas_limit: 1_000_000_000,
             eof: true,
             spec_id: SpecId::OSAKA,
-            bench_name: "Fibonacci",
-            no_link: false,
+            no_link: true,
         }
     }
 }

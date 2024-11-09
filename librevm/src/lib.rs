@@ -1,6 +1,6 @@
 mod db;
 mod error;
-mod ext;
+pub mod ext;
 mod gstorage;
 mod interface;
 mod leveldb;

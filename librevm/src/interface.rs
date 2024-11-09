@@ -1,11 +1,12 @@
-use revm::{ handler::register::EvmHandler, primitives::SpecId, Context, Evm };
+use revm::{primitives::SpecId, Context, Evm, EvmBuilder};
 
 use crate::{
     db::Db,
     error::set_error,
+    ext::{register_handler, ExternalContext},
     gstorage::GoStorage,
-    memory::{ ByteSliceView, UnmanagedVector },
-    utils::{ build_flat_buffer, set_evm_env },
+    memory::{ByteSliceView, UnmanagedVector},
+    utils::{build_flat_buffer, set_evm_env},
 };
 
 // byte slice view: golang data type
@@ -27,10 +28,18 @@ pub fn to_evm<'a>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, (), GoStorage<'a>>>
 pub extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
     let db = Db::default();
     let go_storage = GoStorage::new(&db);
-    let context = Context::<(), GoStorage>::new_with_db(go_storage);
     let spec = SpecId::try_from_u8(default_spec_id).unwrap_or(SpecId::CANCUN);
-    let handler = EvmHandler::mainnet_with_spec(spec);
-    let vm = Box::into_raw(Box::new(Evm::new(context, handler)));
+
+    let builder = EvmBuilder::default();
+    let evm = builder
+        .with_db(go_storage)
+        .with_spec_id(spec)
+        .with_external_context(ExternalContext::new())
+        .append_handler_register(register_handler)
+        .build();
+
+    let vm = Box::into_raw(Box::new(evm));
+
     vm as *mut evm_t
 }
 
@@ -49,7 +58,7 @@ pub extern "C" fn execute_tx(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>
+    errmsg: Option<&mut UnmanagedVector>,
 ) -> UnmanagedVector {
     let evm = match to_evm(vm_ptr) {
         Some(vm) => vm,
@@ -77,7 +86,7 @@ pub extern "C" fn query_tx(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>
+    errmsg: Option<&mut UnmanagedVector>,
 ) -> UnmanagedVector {
     let evm = match to_evm(vm_ptr) {
         Some(vm) => vm,

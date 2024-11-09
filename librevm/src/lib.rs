@@ -3,6 +3,6 @@ mod error;
 mod gstorage;
 mod interface;
 mod memory;
-mod utils;
 mod storeutils;
+mod utils;
 pub use interface::*;

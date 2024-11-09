@@ -1,0 +1,57 @@
+name: Release rust librevm
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build-linux-glibc:
+    name: Linux glibc
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build
+        run: make release-build-linux
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: librevm-linux-glibc
+          path: api/*.so
+
+  build-macos:
+    name: MacOS glibc
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build
+        run: make release-build-macos
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: librevm-macos
+          path: api/*.dylib
+
+  release:
+    name: Release shared libraries
+    needs: [build-linux-glibc, build-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get linux-glibc artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: librevm-linux-glibc
+
+      - name: Get macos artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: librevm-macos
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            *.so
+            *.dylib

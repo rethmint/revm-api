@@ -1,0 +1,49 @@
+name: Build rust librevmapi
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - "release/*"
+    paths:
+      - "crates/**"
+      - "librevm/**"
+      - "Cargo.toml"
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-linux-glibc:
+    name: Linux glibc
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build
+        run: make release-build-linux
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: librevmapi-linux-glibc
+          path: api/*.so
+
+  build-macos:
+    name: MacOS glibc
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build
+        run: make release-build-macos
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: librevmapi-macos
+          path: api/*.dylib
+
+  

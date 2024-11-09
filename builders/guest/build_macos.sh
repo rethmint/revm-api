@@ -1,8 +1,7 @@
 #!/bin/bash
+set -o errexit -o nounset -o pipefail
 # create artifacts directory
 mkdir -p artifacts
-
-set -o errexit -o nounset -o pipefail
 
 export CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
 

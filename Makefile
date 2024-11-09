@@ -52,8 +52,7 @@ clean:
 
 # Creates a release build in a containerized build environment of the shared library for glibc Linux (.so)
 release-build-linux:
-	docker run --rm -v $(shell pwd):/code $(BUILDERS_PREFIX)-debian build_gnu_x86_64.sh
-	docker run --rm -v $(shell pwd):/code $(BUILDERS_PREFIX)-debian build_gnu_aarch64.sh
+	docker run --rm -v $(shell pwd):/code/ $(BUILDERS_PREFIX)-debian
 	cp librevmapi/artifacts/librevmapi.x86_64.so internal/api
 	cp librevmapi/artifacts/librevmapi.aarch64.so internal/api
 	make update-bindings

@@ -22,20 +22,6 @@ jobs:
           name: librevm-linux-glibc
           path: api/*.so
 
-  build-windows:
-    name: Windows
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Build
-        run: make release-build-windows
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: librevm-window
-          path: api/*.dll
-
   build-macos:
     name: MacOS glibc
     runs-on: ubuntu-latest
@@ -52,18 +38,13 @@ jobs:
 
   release:
     name: Release shared libraries
-    needs: [build-linux-glibc, build-windows, build-macos]
+    needs: [build-linux-glibc, build-macos]
     runs-on: ubuntu-latest
     steps:
       - name: Get linux-glibc artifacts
         uses: actions/download-artifact@v4
         with:
           name: librevm-linux-glibc
-
-      - name: Get windows artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: librevm-windows
 
       - name: Get macos artifacts
         uses: actions/download-artifact@v4

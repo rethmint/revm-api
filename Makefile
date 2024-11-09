@@ -51,47 +51,34 @@ clean:
 	@echo cleaned.
 
 # Creates a release build in a containerized build environment of the static library for Alpine Linux (.a)
-release-build-alpine:
-	rm -rf target/release
-	# build the muslc *.a file
-	mkdir -p artifacts
-	docker run --rm -u $(USER_ID):$(USER_GROUP)  \
-		-v $(shell pwd):/code/ \
-		$(BUILDERS_PREFIX)-alpine
-	cp artifacts/librevmapi_muslc.x86_64.a api
-	cp artifacts/librevmapi_muslc.aarch64.a api
-	make update-bindings
+# release-build-alpine:
+# 	rm -rf target/release
+# 	# build the muslc *.a file
+# 	docker run --rm -u $(USER_ID):$(USER_GROUP)  \
+# 		-v $(shell pwd):/code/ \
+# 		$(BUILDERS_PREFIX)-alpine
+# 	cp artifacts/librevmapi_muslc.x86_64.a api
+# 	cp artifacts/librevmapi_muslc.aarch64.a api
+# 	make update-bindings
 
 # Creates a release build in a containerized build environment of the shared library for glibc Linux (.so)
 release-build-linux:
-	mkdir -p artifacts
-	docker run --rm -v $(shell pwd)/librevmapi:/code $(BUILDERS_PREFIX)-debian build_gnu_x86_64.sh
-	docker run --rm -v $(shell pwd)/librevmapi:/code $(BUILDERS_PREFIX)-debian build_gnu_aarch64.sh
+	docker run --rm -u $(USER_ID):$(USER_GROUP) -v $(shell pwd):/code $(BUILDERS_PREFIX)-debian build_gnu_x86_64.sh
+	docker run --rm -u $(USER_ID):$(USER_GROUP) -v $(shell pwd):/code $(BUILDERS_PREFIX)-debian build_gnu_aarch64.sh
 	cp librevmapi/artifacts/librevmapi.x86_64.so internal/api
 	cp librevmapi/artifacts/librevmapi.aarch64.so internal/api
 	make update-bindings
 
 # Creates a release build in a containerized build environment of the shared library for macOS (.dylib)
 release-build-macos:
-	mkdir -p artifacts
 	rm -rf target/x86_64-apple-darwin/release
 	rm -rf target/aarch64-apple-darwin/release
-	docker run --rm -u $(USER_ID):$(USER_GROUP) \
-		-v $(shell pwd):/code/ \
-		$(BUILDERS_PREFIX)-cross build_macos.sh
+	docker run --rm -u $(USER_ID):$(USER_GROUP) -v $(shell pwd):/code/ $(BUILDERS_PREFIX)-cross build_macos.sh
 	cp artifacts/librevmapi.dylib api
-	make update-bindings
-
-# Creates a release build in a containerized build environment of the shared library for Windows (.dll)
-release-build-windows:
-	mkdir -p artifacts
-	docker run --rm -v $(shell pwd)/librevmapi:/code $(BUILDERS_PREFIX)-cross build_windows.sh
-	cp librevmapi/artifacts/revmapi.dll internal/api
 	make update-bindings
 
 release-build:
 	# Write like this because those must not run in parallel
-	make release-build-alpine
 	make release-build-linux
 	make release-build-macos
 

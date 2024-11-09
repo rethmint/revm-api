@@ -1,9 +1,7 @@
 .PHONY: all build build-rust build-go test precompile
 
 # Builds the Rust library librevm
-BUILDERS_PREFIX := initia/go-ext-builder:0001
-# Contains a full Go dev environment in order to run Go tests on the built library
-ALPINE_TESTER := initia/go-ext-builder:0001-alpine
+BUILDERS_PREFIX := rethmint/librevm-builder:0001
 CONTRACTS_DIR = ./contracts
 USER_ID := $(shell id -u)
 USER_GROUP = $(shell id -g)
@@ -34,13 +32,8 @@ update-bindings:
 # Use debug build for quick testing.
 # In order to use "--features backtraces" here we need a Rust nightly toolchain, which we don't have by default
 build-rust-debug:
-	# cargo build -p revm
-	# cargo build -p compiler
 	cargo build
-
-	# cp -fp target/debug/$(SHARED_LIB_SRC) api/$(SHARED_LIB_DST)
 	cp -fp target/debug/$(SHARED_LIB_SRC) api/$(SHARED_LIB_DST)
-	# cp -fp target/debug/librevm.dylib api/librevm.dylib
 	make update-bindings
 
 # use release build to actually ship - smaller and much faster
@@ -48,12 +41,9 @@ build-rust-debug:
 # See https://github.com/CosmWasm/wasmvm/issues/222#issuecomment-880616953 for two approaches to
 # enable stripping through cargo (if that is desired).
 build-rust-release:
-	cargo build -p revm --release
-	cargo build -p compiler --release
+	cargo build --release
 	rm -f api/$(SHARED_LIB_DST)
-	rm -f api/$(COMPILER_SHARED_LIB_DST)
 	cp -fp target/release/$(SHARED_LIB_SRC) api/$(SHARED_LIB_DST)
-	cp -fp target/release/$(COMPILER_SHARED_LIB_SRC) api/$(COMPILER_SHARED_LIB_DST)
 	make update-bindings
 	@ #this pulls out ELF symbols, 80% size reduction!
 
@@ -74,10 +64,6 @@ release-build-alpine:
 	cp artifacts/librevmapi_muslc.x86_64.a api
 	cp artifacts/librevmapi_muslc.aarch64.a api
 	make update-bindings
-	# try running go tests using this lib with muslc
-	# docker run --rm -u $(USER_ID):$(USER_GROUP) -v $(shell pwd):/mnt/testrun -w /mnt/testrun $(ALPINE_TESTER) go build -tags muslc ./...
-	# Use package list mode to include all subdirectores. The -count=1 turns off caching.
-	# docker run --rm -u $(USER_ID):$(USER_GROUP) -v $(shell pwd):/mnt/testrun -w /mnt/testrun $(ALPINE_TESTER) go test -tags muslc -count=1 ./...
 
 # Creates a release build in a containerized build environment of the shared library for glibc Linux (.so)
 release-build-linux:

@@ -1,46 +1,24 @@
-use alloy_primitives::{ Address, Bytes, FixedBytes, TxKind, B256, U256 };
+use alloy_primitives::{Address, Bytes, FixedBytes, TxKind, B256, U256};
 use flatbuffer_types::{
     block::Block,
     result::{
-        finish_evm_result_buffer,
-        EvmResult,
-        EvmResultArgs,
-        ExResult,
-        Halt,
-        HaltArgs,
-        HaltReasonEnum,
-        Log,
-        LogArgs,
-        LogData,
-        LogDataArgs,
-        Revert,
-        RevertArgs,
-        Success,
-        SuccessArgs,
-        SuccessReasonEnum,
-        Topic,
-        TopicArgs,
+        finish_evm_result_buffer, EvmResult, EvmResultArgs, ExResult, Halt, HaltArgs,
+        HaltReasonEnum, Log, LogArgs, LogData, LogDataArgs, Revert, RevertArgs, Success,
+        SuccessArgs, SuccessReasonEnum, Topic, TopicArgs,
     },
-    transaction::{ Transaction, TransactionType },
+    transaction::Transaction,
 };
 use revm::{
-    specification::{ eip2930::{ AccessList, AccessListItem }, eip7702::AuthorizationList },
-    wiring::{
-        block::BlobExcessGasAndPrice,
-        default::{ block::BlockEnv, TxEnv },
-        result::{ ExecutionResult, HaltReason, OutOfGasError, SuccessReason },
-        EthereumWiring,
+    primitives::{
+        AccessList, AccessListItem, BlobExcessGasAndPrice, BlockEnv, ExecutionResult, HaltReason,
+        OutOfGasError, SuccessReason, TxEnv,
     },
     Evm,
 };
 
-use crate::{ gstorage::GoStorage, memory::ByteSliceView };
+use crate::{gstorage::GoStorage, memory::ByteSliceView};
 
-pub fn set_evm_env(
-    evm: &mut Evm<EthereumWiring<GoStorage, ()>>,
-    block: ByteSliceView,
-    tx: ByteSliceView
-) {
+pub fn set_evm_env(evm: &mut Evm<(), GoStorage>, block: ByteSliceView, tx: ByteSliceView) {
     let block_bytes = block.read().unwrap();
     let block = flatbuffers::root::<Block>(block_bytes).unwrap();
     let block_env = BlockEnv {
@@ -57,14 +35,6 @@ pub fn set_evm_env(
     let tx_bytes = tx.read().unwrap();
     let tx = flatbuffers::root::<Transaction>(tx_bytes).unwrap();
     let tx_env = TxEnv {
-        tx_type: match tx.tx_type() {
-            TransactionType::Legacy => revm::wiring::TransactionType::Legacy,
-            TransactionType::Eip1559 => revm::wiring::TransactionType::Eip1559,
-            TransactionType::Eip2930 => revm::wiring::TransactionType::Eip2930,
-            TransactionType::Eip7702 => revm::wiring::TransactionType::Eip7702,
-            TransactionType::Custom => revm::wiring::TransactionType::Custom,
-            _ => revm::wiring::TransactionType::Custom, // Handle other cases
-        },
         caller: Address::from_slice(tx.caller().unwrap().bytes()),
         gas_price: U256::from_be_slice(tx.gas_price().unwrap().bytes()),
         gas_limit: tx.gas_limit(),
@@ -76,10 +46,9 @@ pub fn set_evm_env(
             Address::ZERO => TxKind::Create,
             address => TxKind::Call(address),
         },
-        nonce: tx.nonce(),
+        nonce: Some(tx.nonce()),
         access_list: AccessList::from(
-            tx
-                .access_list()
+            tx.access_list()
                 .unwrap()
                 .into_iter()
                 .filter_map(|al| {
@@ -95,20 +64,27 @@ pub fn set_evm_env(
                         })
                     })
                 })
-                .collect::<Vec<AccessListItem>>()
-        ),
+                .collect::<Vec<AccessListItem>>(),
+        )
+        .to_vec(),
         blob_hashes: Vec::new(),
         max_fee_per_blob_gas: None,
-        authorization_list: AuthorizationList::default(),
+        authorization_list: None,
     };
     evm.context.evm.inner.env.block = block_env;
     evm.context.evm.inner.env.tx = tx_env;
 }
 
-pub fn build_flat_buffer(result: ExecutionResult<HaltReason>) -> Vec<u8> {
+pub fn build_flat_buffer(result: ExecutionResult) -> Vec<u8> {
     let mut builder = flatbuffers::FlatBufferBuilder::with_capacity(300);
     let args = match result {
-        ExecutionResult::Success { reason, gas_used, gas_refunded, logs, output } => {
+        ExecutionResult::Success {
+            reason,
+            gas_used,
+            gas_refunded,
+            logs,
+            output,
+        } => {
             let reason = match reason {
                 SuccessReason::Stop => SuccessReasonEnum::Stop,
                 SuccessReason::Return => SuccessReasonEnum::Return,
@@ -130,15 +106,13 @@ pub fn build_flat_buffer(result: ExecutionResult<HaltReason>) -> Vec<u8> {
                 };
                 let data = LogData::create(&mut builder, &log_data_args);
                 let address = builder.create_vector(log.address.as_ref());
-                logs_buffer.push(
-                    Log::create(
-                        &mut builder,
-                        &(LogArgs {
-                            address: Some(address),
-                            data: Some(data),
-                        })
-                    )
-                );
+                logs_buffer.push(Log::create(
+                    &mut builder,
+                    &(LogArgs {
+                        address: Some(address),
+                        data: Some(data),
+                    }),
+                ));
             }
             let logs = Some(builder.create_vector(&logs_buffer));
 
@@ -155,7 +129,7 @@ pub fn build_flat_buffer(result: ExecutionResult<HaltReason>) -> Vec<u8> {
                     logs,
                     deployed_address: deployed_address_vec,
                     output: output_data_vec,
-                })
+                }),
             );
 
             EvmResult::create(
@@ -163,7 +137,7 @@ pub fn build_flat_buffer(result: ExecutionResult<HaltReason>) -> Vec<u8> {
                 &(EvmResultArgs {
                     result_type: ExResult::Success,
                     result: Some(success_offset.as_union_value()),
-                })
+                }),
             )
         }
         ExecutionResult::Revert { gas_used, output } => {
@@ -173,7 +147,7 @@ pub fn build_flat_buffer(result: ExecutionResult<HaltReason>) -> Vec<u8> {
                 &(RevertArgs {
                     gas_used,
                     output: Some(output_offset),
-                })
+                }),
             );
 
             EvmResult::create(
@@ -181,20 +155,18 @@ pub fn build_flat_buffer(result: ExecutionResult<HaltReason>) -> Vec<u8> {
                 &(EvmResultArgs {
                     result_type: ExResult::Revert,
                     result: Some(revert_offset.as_union_value()),
-                })
+                }),
             )
         }
         ExecutionResult::Halt { reason, gas_used } => {
             let halt_reason = match reason {
-                HaltReason::OutOfGas(out_of_gas_error) =>
-                    match out_of_gas_error {
-                        OutOfGasError::Basic => HaltReasonEnum::OutOfGasBasic,
-                        OutOfGasError::MemoryLimit => HaltReasonEnum::OutOfGasMemoryLimit,
-                        OutOfGasError::Memory => HaltReasonEnum::OutOfGasMemory,
-                        OutOfGasError::Precompile => HaltReasonEnum::OutOfGasPrecompile,
-                        OutOfGasError::InvalidOperand => HaltReasonEnum::OutOfGasInvalidOperand,
-                        OutOfGasError::ReentrancySentry => HaltReasonEnum::OutOfGasReentrancySentry,
-                    }
+                HaltReason::OutOfGas(out_of_gas_error) => match out_of_gas_error {
+                    OutOfGasError::Basic => HaltReasonEnum::OutOfGasBasic,
+                    OutOfGasError::MemoryLimit => HaltReasonEnum::OutOfGasMemoryLimit,
+                    OutOfGasError::Memory => HaltReasonEnum::OutOfGasMemory,
+                    OutOfGasError::Precompile => HaltReasonEnum::OutOfGasPrecompile,
+                    OutOfGasError::InvalidOperand => HaltReasonEnum::OutOfGasInvalidOperand,
+                },
                 HaltReason::OpcodeNotFound => HaltReasonEnum::OpcodeNotFound,
                 HaltReason::InvalidFEOpcode => HaltReasonEnum::InvalidFEOpcode,
                 HaltReason::InvalidJump => HaltReasonEnum::InvalidJump,
@@ -229,14 +201,14 @@ pub fn build_flat_buffer(result: ExecutionResult<HaltReason>) -> Vec<u8> {
                 &(HaltArgs {
                     gas_used,
                     reason: halt_reason,
-                })
+                }),
             );
             EvmResult::create(
                 &mut builder,
                 &(EvmResultArgs {
                     result_type: ExResult::Halt,
                     result: Some(halt_offset.as_union_value()),
-                })
+                }),
             )
         }
     };

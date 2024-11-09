@@ -59,7 +59,7 @@ func Test_e2e(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, types.Success{
 		Reason:      "Stop",
-		GasUsed:     45410,
+		GasUsed:     49710,
 		GasRefunded: 0,
 		Logs: []types.Log{
 			{
@@ -95,7 +95,7 @@ func Test_e2e(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, types.Success{
 		Reason:      "Return",
-		GasUsed:     23466,
+		GasUsed:     27766,
 		GasRefunded: 0,
 		Logs:        []types.Log{},
 		Output: types.Output{

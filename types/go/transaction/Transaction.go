@@ -41,20 +41,8 @@ func (rcv *Transaction) Table() flatbuffers.Table {
 	return rcv._tab
 }
 
-func (rcv *Transaction) TxType() TransactionType {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(4))
-	if o != 0 {
-		return TransactionType(rcv._tab.GetInt8(o + rcv._tab.Pos))
-	}
-	return 0
-}
-
-func (rcv *Transaction) MutateTxType(n TransactionType) bool {
-	return rcv._tab.MutateInt8Slot(4, int8(n))
-}
-
 func (rcv *Transaction) Caller(j int) byte {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(6))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(4))
 	if o != 0 {
 		a := rcv._tab.Vector(o)
 		return rcv._tab.GetByte(a + flatbuffers.UOffsetT(j*1))
@@ -63,7 +51,7 @@ func (rcv *Transaction) Caller(j int) byte {
 }
 
 func (rcv *Transaction) CallerLength() int {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(6))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(4))
 	if o != 0 {
 		return rcv._tab.VectorLen(o)
 	}
@@ -71,7 +59,7 @@ func (rcv *Transaction) CallerLength() int {
 }
 
 func (rcv *Transaction) CallerBytes() []byte {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(6))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(4))
 	if o != 0 {
 		return rcv._tab.ByteVector(o + rcv._tab.Pos)
 	}
@@ -79,7 +67,7 @@ func (rcv *Transaction) CallerBytes() []byte {
 }
 
 func (rcv *Transaction) MutateCaller(j int, n byte) bool {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(6))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(4))
 	if o != 0 {
 		a := rcv._tab.Vector(o)
 		return rcv._tab.MutateByte(a+flatbuffers.UOffsetT(j*1), n)
@@ -88,7 +76,7 @@ func (rcv *Transaction) MutateCaller(j int, n byte) bool {
 }
 
 func (rcv *Transaction) GasLimit() uint64 {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(8))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(6))
 	if o != 0 {
 		return rcv._tab.GetUint64(o + rcv._tab.Pos)
 	}
@@ -96,11 +84,11 @@ func (rcv *Transaction) GasLimit() uint64 {
 }
 
 func (rcv *Transaction) MutateGasLimit(n uint64) bool {
-	return rcv._tab.MutateUint64Slot(8, n)
+	return rcv._tab.MutateUint64Slot(6, n)
 }
 
 func (rcv *Transaction) GasPrice(j int) byte {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(10))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(8))
 	if o != 0 {
 		a := rcv._tab.Vector(o)
 		return rcv._tab.GetByte(a + flatbuffers.UOffsetT(j*1))
@@ -109,7 +97,7 @@ func (rcv *Transaction) GasPrice(j int) byte {
 }
 
 func (rcv *Transaction) GasPriceLength() int {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(10))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(8))
 	if o != 0 {
 		return rcv._tab.VectorLen(o)
 	}
@@ -117,7 +105,7 @@ func (rcv *Transaction) GasPriceLength() int {
 }
 
 func (rcv *Transaction) GasPriceBytes() []byte {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(10))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(8))
 	if o != 0 {
 		return rcv._tab.ByteVector(o + rcv._tab.Pos)
 	}
@@ -125,7 +113,7 @@ func (rcv *Transaction) GasPriceBytes() []byte {
 }
 
 func (rcv *Transaction) MutateGasPrice(j int, n byte) bool {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(10))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(8))
 	if o != 0 {
 		a := rcv._tab.Vector(o)
 		return rcv._tab.MutateByte(a+flatbuffers.UOffsetT(j*1), n)
@@ -134,7 +122,7 @@ func (rcv *Transaction) MutateGasPrice(j int, n byte) bool {
 }
 
 func (rcv *Transaction) Nonce() uint64 {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(12))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(10))
 	if o != 0 {
 		return rcv._tab.GetUint64(o + rcv._tab.Pos)
 	}
@@ -142,11 +130,11 @@ func (rcv *Transaction) Nonce() uint64 {
 }
 
 func (rcv *Transaction) MutateNonce(n uint64) bool {
-	return rcv._tab.MutateUint64Slot(12, n)
+	return rcv._tab.MutateUint64Slot(10, n)
 }
 
 func (rcv *Transaction) TransactTo(j int) byte {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(14))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(12))
 	if o != 0 {
 		a := rcv._tab.Vector(o)
 		return rcv._tab.GetByte(a + flatbuffers.UOffsetT(j*1))
@@ -155,7 +143,7 @@ func (rcv *Transaction) TransactTo(j int) byte {
 }
 
 func (rcv *Transaction) TransactToLength() int {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(14))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(12))
 	if o != 0 {
 		return rcv._tab.VectorLen(o)
 	}
@@ -163,7 +151,7 @@ func (rcv *Transaction) TransactToLength() int {
 }
 
 func (rcv *Transaction) TransactToBytes() []byte {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(14))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(12))
 	if o != 0 {
 		return rcv._tab.ByteVector(o + rcv._tab.Pos)
 	}
@@ -171,7 +159,7 @@ func (rcv *Transaction) TransactToBytes() []byte {
 }
 
 func (rcv *Transaction) MutateTransactTo(j int, n byte) bool {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(14))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(12))
 	if o != 0 {
 		a := rcv._tab.Vector(o)
 		return rcv._tab.MutateByte(a+flatbuffers.UOffsetT(j*1), n)
@@ -180,7 +168,7 @@ func (rcv *Transaction) MutateTransactTo(j int, n byte) bool {
 }
 
 func (rcv *Transaction) Value(j int) byte {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(16))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(14))
 	if o != 0 {
 		a := rcv._tab.Vector(o)
 		return rcv._tab.GetByte(a + flatbuffers.UOffsetT(j*1))
@@ -189,7 +177,7 @@ func (rcv *Transaction) Value(j int) byte {
 }
 
 func (rcv *Transaction) ValueLength() int {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(16))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(14))
 	if o != 0 {
 		return rcv._tab.VectorLen(o)
 	}
@@ -197,7 +185,7 @@ func (rcv *Transaction) ValueLength() int {
 }
 
 func (rcv *Transaction) ValueBytes() []byte {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(16))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(14))
 	if o != 0 {
 		return rcv._tab.ByteVector(o + rcv._tab.Pos)
 	}
@@ -205,7 +193,7 @@ func (rcv *Transaction) ValueBytes() []byte {
 }
 
 func (rcv *Transaction) MutateValue(j int, n byte) bool {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(16))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(14))
 	if o != 0 {
 		a := rcv._tab.Vector(o)
 		return rcv._tab.MutateByte(a+flatbuffers.UOffsetT(j*1), n)
@@ -214,7 +202,7 @@ func (rcv *Transaction) MutateValue(j int, n byte) bool {
 }
 
 func (rcv *Transaction) Data(j int) byte {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(18))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(16))
 	if o != 0 {
 		a := rcv._tab.Vector(o)
 		return rcv._tab.GetByte(a + flatbuffers.UOffsetT(j*1))
@@ -223,7 +211,7 @@ func (rcv *Transaction) Data(j int) byte {
 }
 
 func (rcv *Transaction) DataLength() int {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(18))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(16))
 	if o != 0 {
 		return rcv._tab.VectorLen(o)
 	}
@@ -231,7 +219,7 @@ func (rcv *Transaction) DataLength() int {
 }
 
 func (rcv *Transaction) DataBytes() []byte {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(18))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(16))
 	if o != 0 {
 		return rcv._tab.ByteVector(o + rcv._tab.Pos)
 	}
@@ -239,7 +227,7 @@ func (rcv *Transaction) DataBytes() []byte {
 }
 
 func (rcv *Transaction) MutateData(j int, n byte) bool {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(18))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(16))
 	if o != 0 {
 		a := rcv._tab.Vector(o)
 		return rcv._tab.MutateByte(a+flatbuffers.UOffsetT(j*1), n)
@@ -248,7 +236,7 @@ func (rcv *Transaction) MutateData(j int, n byte) bool {
 }
 
 func (rcv *Transaction) GasPriorityFee(j int) byte {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(20))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(18))
 	if o != 0 {
 		a := rcv._tab.Vector(o)
 		return rcv._tab.GetByte(a + flatbuffers.UOffsetT(j*1))
@@ -257,7 +245,7 @@ func (rcv *Transaction) GasPriorityFee(j int) byte {
 }
 
 func (rcv *Transaction) GasPriorityFeeLength() int {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(20))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(18))
 	if o != 0 {
 		return rcv._tab.VectorLen(o)
 	}
@@ -265,7 +253,7 @@ func (rcv *Transaction) GasPriorityFeeLength() int {
 }
 
 func (rcv *Transaction) GasPriorityFeeBytes() []byte {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(20))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(18))
 	if o != 0 {
 		return rcv._tab.ByteVector(o + rcv._tab.Pos)
 	}
@@ -273,7 +261,7 @@ func (rcv *Transaction) GasPriorityFeeBytes() []byte {
 }
 
 func (rcv *Transaction) MutateGasPriorityFee(j int, n byte) bool {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(20))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(18))
 	if o != 0 {
 		a := rcv._tab.Vector(o)
 		return rcv._tab.MutateByte(a+flatbuffers.UOffsetT(j*1), n)
@@ -282,7 +270,7 @@ func (rcv *Transaction) MutateGasPriorityFee(j int, n byte) bool {
 }
 
 func (rcv *Transaction) AccessList(obj *AccessListItem, j int) bool {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(22))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(20))
 	if o != 0 {
 		x := rcv._tab.Vector(o)
 		x += flatbuffers.UOffsetT(j) * 4
@@ -294,7 +282,7 @@ func (rcv *Transaction) AccessList(obj *AccessListItem, j int) bool {
 }
 
 func (rcv *Transaction) AccessListLength() int {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(22))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(20))
 	if o != 0 {
 		return rcv._tab.VectorLen(o)
 	}
@@ -302,55 +290,52 @@ func (rcv *Transaction) AccessListLength() int {
 }
 
 func TransactionStart(builder *flatbuffers.Builder) {
-	builder.StartObject(10)
-}
-func TransactionAddTxType(builder *flatbuffers.Builder, txType TransactionType) {
-	builder.PrependInt8Slot(0, int8(txType), 0)
+	builder.StartObject(9)
 }
 func TransactionAddCaller(builder *flatbuffers.Builder, caller flatbuffers.UOffsetT) {
-	builder.PrependUOffsetTSlot(1, flatbuffers.UOffsetT(caller), 0)
+	builder.PrependUOffsetTSlot(0, flatbuffers.UOffsetT(caller), 0)
 }
 func TransactionStartCallerVector(builder *flatbuffers.Builder, numElems int) flatbuffers.UOffsetT {
 	return builder.StartVector(1, numElems, 1)
 }
 func TransactionAddGasLimit(builder *flatbuffers.Builder, gasLimit uint64) {
-	builder.PrependUint64Slot(2, gasLimit, 0)
+	builder.PrependUint64Slot(1, gasLimit, 0)
 }
 func TransactionAddGasPrice(builder *flatbuffers.Builder, gasPrice flatbuffers.UOffsetT) {
-	builder.PrependUOffsetTSlot(3, flatbuffers.UOffsetT(gasPrice), 0)
+	builder.PrependUOffsetTSlot(2, flatbuffers.UOffsetT(gasPrice), 0)
 }
 func TransactionStartGasPriceVector(builder *flatbuffers.Builder, numElems int) flatbuffers.UOffsetT {
 	return builder.StartVector(1, numElems, 1)
 }
 func TransactionAddNonce(builder *flatbuffers.Builder, nonce uint64) {
-	builder.PrependUint64Slot(4, nonce, 0)
+	builder.PrependUint64Slot(3, nonce, 0)
 }
 func TransactionAddTransactTo(builder *flatbuffers.Builder, transactTo flatbuffers.UOffsetT) {
-	builder.PrependUOffsetTSlot(5, flatbuffers.UOffsetT(transactTo), 0)
+	builder.PrependUOffsetTSlot(4, flatbuffers.UOffsetT(transactTo), 0)
 }
 func TransactionStartTransactToVector(builder *flatbuffers.Builder, numElems int) flatbuffers.UOffsetT {
 	return builder.StartVector(1, numElems, 1)
 }
 func TransactionAddValue(builder *flatbuffers.Builder, value flatbuffers.UOffsetT) {
-	builder.PrependUOffsetTSlot(6, flatbuffers.UOffsetT(value), 0)
+	builder.PrependUOffsetTSlot(5, flatbuffers.UOffsetT(value), 0)
 }
 func TransactionStartValueVector(builder *flatbuffers.Builder, numElems int) flatbuffers.UOffsetT {
 	return builder.StartVector(1, numElems, 1)
 }
 func TransactionAddData(builder *flatbuffers.Builder, data flatbuffers.UOffsetT) {
-	builder.PrependUOffsetTSlot(7, flatbuffers.UOffsetT(data), 0)
+	builder.PrependUOffsetTSlot(6, flatbuffers.UOffsetT(data), 0)
 }
 func TransactionStartDataVector(builder *flatbuffers.Builder, numElems int) flatbuffers.UOffsetT {
 	return builder.StartVector(1, numElems, 1)
 }
 func TransactionAddGasPriorityFee(builder *flatbuffers.Builder, gasPriorityFee flatbuffers.UOffsetT) {
-	builder.PrependUOffsetTSlot(8, flatbuffers.UOffsetT(gasPriorityFee), 0)
+	builder.PrependUOffsetTSlot(7, flatbuffers.UOffsetT(gasPriorityFee), 0)
 }
 func TransactionStartGasPriorityFeeVector(builder *flatbuffers.Builder, numElems int) flatbuffers.UOffsetT {
 	return builder.StartVector(1, numElems, 1)
 }
 func TransactionAddAccessList(builder *flatbuffers.Builder, accessList flatbuffers.UOffsetT) {
-	builder.PrependUOffsetTSlot(9, flatbuffers.UOffsetT(accessList), 0)
+	builder.PrependUOffsetTSlot(8, flatbuffers.UOffsetT(accessList), 0)
 }
 func TransactionStartAccessListVector(builder *flatbuffers.Builder, numElems int) flatbuffers.UOffsetT {
 	return builder.StartVector(4, numElems, 4)

@@ -15,113 +15,6 @@ pub mod transaction {
   extern crate flatbuffers;
   use self::flatbuffers::{EndianScalar, Follow};
 
-#[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MIN_TRANSACTION_TYPE: i8 = 0;
-#[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-pub const ENUM_MAX_TRANSACTION_TYPE: i8 = 5;
-#[deprecated(since = "2.0.0", note = "Use associated constants instead. This will no longer be generated in 2021.")]
-#[allow(non_camel_case_types)]
-pub const ENUM_VALUES_TRANSACTION_TYPE: [TransactionType; 6] = [
-  TransactionType::Legacy,
-  TransactionType::Eip2930,
-  TransactionType::Eip1559,
-  TransactionType::Eip4844,
-  TransactionType::Eip7702,
-  TransactionType::Custom,
-];
-
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
-#[repr(transparent)]
-pub struct TransactionType(pub i8);
-#[allow(non_upper_case_globals)]
-impl TransactionType {
-  /// Legacy transaction type.
-  pub const Legacy: Self = Self(0);
-  /// EIP-2930 Access List transaction type.
-  pub const Eip2930: Self = Self(1);
-  /// EIP-1559 Fee market change transaction type.
-  pub const Eip1559: Self = Self(2);
-  /// EIP-4844 Blob transaction type.
-  pub const Eip4844: Self = Self(3);
-  /// EIP-7702 Set EOA account code transaction type.
-  pub const Eip7702: Self = Self(4);
-  /// Custom type means that transaction trait was extend and have custom types.
-  pub const Custom: Self = Self(5);
-
-  pub const ENUM_MIN: i8 = 0;
-  pub const ENUM_MAX: i8 = 5;
-  pub const ENUM_VALUES: &'static [Self] = &[
-    Self::Legacy,
-    Self::Eip2930,
-    Self::Eip1559,
-    Self::Eip4844,
-    Self::Eip7702,
-    Self::Custom,
-  ];
-  /// Returns the variant's name or "" if unknown.
-  pub fn variant_name(self) -> Option<&'static str> {
-    match self {
-      Self::Legacy => Some("Legacy"),
-      Self::Eip2930 => Some("Eip2930"),
-      Self::Eip1559 => Some("Eip1559"),
-      Self::Eip4844 => Some("Eip4844"),
-      Self::Eip7702 => Some("Eip7702"),
-      Self::Custom => Some("Custom"),
-      _ => None,
-    }
-  }
-}
-impl core::fmt::Debug for TransactionType {
-  fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-    if let Some(name) = self.variant_name() {
-      f.write_str(name)
-    } else {
-      f.write_fmt(format_args!("<UNKNOWN {:?}>", self.0))
-    }
-  }
-}
-impl<'a> flatbuffers::Follow<'a> for TransactionType {
-  type Inner = Self;
-  #[inline]
-  unsafe fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
-    let b = flatbuffers::read_scalar_at::<i8>(buf, loc);
-    Self(b)
-  }
-}
-
-impl flatbuffers::Push for TransactionType {
-    type Output = TransactionType;
-    #[inline]
-    unsafe fn push(&self, dst: &mut [u8], _written_len: usize) {
-        flatbuffers::emplace_scalar::<i8>(dst, self.0);
-    }
-}
-
-impl flatbuffers::EndianScalar for TransactionType {
-  type Scalar = i8;
-  #[inline]
-  fn to_little_endian(self) -> i8 {
-    self.0.to_le()
-  }
-  #[inline]
-  #[allow(clippy::wrong_self_convention)]
-  fn from_little_endian(v: i8) -> Self {
-    let b = i8::from_le(v);
-    Self(b)
-  }
-}
-
-impl<'a> flatbuffers::Verifiable for TransactionType {
-  #[inline]
-  fn run_verifier(
-    v: &mut flatbuffers::Verifier, pos: usize
-  ) -> Result<(), flatbuffers::InvalidFlatbuffer> {
-    use self::flatbuffers::Verifiable;
-    i8::run_verifier(v, pos)
-  }
-}
-
-impl flatbuffers::SimpleToVerifyInSlice for TransactionType {}
 pub enum StorageKeyOffset {}
 #[derive(Copy, Clone, PartialEq)]
 
@@ -349,16 +242,15 @@ impl<'a> flatbuffers::Follow<'a> for Transaction<'a> {
 }
 
 impl<'a> Transaction<'a> {
-  pub const VT_TX_TYPE: flatbuffers::VOffsetT = 4;
-  pub const VT_CALLER: flatbuffers::VOffsetT = 6;
-  pub const VT_GAS_LIMIT: flatbuffers::VOffsetT = 8;
-  pub const VT_GAS_PRICE: flatbuffers::VOffsetT = 10;
-  pub const VT_NONCE: flatbuffers::VOffsetT = 12;
-  pub const VT_TRANSACT_TO: flatbuffers::VOffsetT = 14;
-  pub const VT_VALUE: flatbuffers::VOffsetT = 16;
-  pub const VT_DATA: flatbuffers::VOffsetT = 18;
-  pub const VT_GAS_PRIORITY_FEE: flatbuffers::VOffsetT = 20;
-  pub const VT_ACCESS_LIST: flatbuffers::VOffsetT = 22;
+  pub const VT_CALLER: flatbuffers::VOffsetT = 4;
+  pub const VT_GAS_LIMIT: flatbuffers::VOffsetT = 6;
+  pub const VT_GAS_PRICE: flatbuffers::VOffsetT = 8;
+  pub const VT_NONCE: flatbuffers::VOffsetT = 10;
+  pub const VT_TRANSACT_TO: flatbuffers::VOffsetT = 12;
+  pub const VT_VALUE: flatbuffers::VOffsetT = 14;
+  pub const VT_DATA: flatbuffers::VOffsetT = 16;
+  pub const VT_GAS_PRIORITY_FEE: flatbuffers::VOffsetT = 18;
+  pub const VT_ACCESS_LIST: flatbuffers::VOffsetT = 20;
 
   #[inline]
   pub unsafe fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
@@ -379,18 +271,10 @@ impl<'a> Transaction<'a> {
     if let Some(x) = args.transact_to { builder.add_transact_to(x); }
     if let Some(x) = args.gas_price { builder.add_gas_price(x); }
     if let Some(x) = args.caller { builder.add_caller(x); }
-    builder.add_tx_type(args.tx_type);
     builder.finish()
   }
 
 
-  #[inline]
-  pub fn tx_type(&self) -> TransactionType {
-    // Safety:
-    // Created from valid Table for this object
-    // which contains a valid value in this slot
-    unsafe { self._tab.get::<TransactionType>(Transaction::VT_TX_TYPE, Some(TransactionType::Legacy)).unwrap()}
-  }
   #[inline]
   pub fn caller(&self) -> Option<flatbuffers::Vector<'a, u8>> {
     // Safety:
@@ -463,7 +347,6 @@ impl flatbuffers::Verifiable for Transaction<'_> {
   ) -> Result<(), flatbuffers::InvalidFlatbuffer> {
     use self::flatbuffers::Verifiable;
     v.visit_table(pos)?
-     .visit_field::<TransactionType>("tx_type", Self::VT_TX_TYPE, false)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, u8>>>("caller", Self::VT_CALLER, false)?
      .visit_field::<u64>("gas_limit", Self::VT_GAS_LIMIT, false)?
      .visit_field::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'_, u8>>>("gas_price", Self::VT_GAS_PRICE, false)?
@@ -478,7 +361,6 @@ impl flatbuffers::Verifiable for Transaction<'_> {
   }
 }
 pub struct TransactionArgs<'a> {
-    pub tx_type: TransactionType,
     pub caller: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, u8>>>,
     pub gas_limit: u64,
     pub gas_price: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a, u8>>>,
@@ -493,7 +375,6 @@ impl<'a> Default for TransactionArgs<'a> {
   #[inline]
   fn default() -> Self {
     TransactionArgs {
-      tx_type: TransactionType::Legacy,
       caller: None,
       gas_limit: 0,
       gas_price: None,
@@ -512,10 +393,6 @@ pub struct TransactionBuilder<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> {
   start_: flatbuffers::WIPOffset<flatbuffers::TableUnfinishedWIPOffset>,
 }
 impl<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> TransactionBuilder<'a, 'b, A> {
-  #[inline]
-  pub fn add_tx_type(&mut self, tx_type: TransactionType) {
-    self.fbb_.push_slot::<TransactionType>(Transaction::VT_TX_TYPE, tx_type, TransactionType::Legacy);
-  }
   #[inline]
   pub fn add_caller(&mut self, caller: flatbuffers::WIPOffset<flatbuffers::Vector<'b , u8>>) {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Transaction::VT_CALLER, caller);
@@ -570,7 +447,6 @@ impl<'a: 'b, 'b, A: flatbuffers::Allocator + 'a> TransactionBuilder<'a, 'b, A> {
 impl core::fmt::Debug for Transaction<'_> {
   fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
     let mut ds = f.debug_struct("Transaction");
-      ds.field("tx_type", &self.tx_type());
       ds.field("caller", &self.caller());
       ds.field("gas_limit", &self.gas_limit());
       ds.field("gas_price", &self.gas_price());

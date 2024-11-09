@@ -54,6 +54,7 @@ clean:
 release-build-alpine:
 	rm -rf target/release
 	# build the muslc *.a file
+	mkdir -p artifacts
 	docker run --rm -u $(USER_ID):$(USER_GROUP)  \
 		-v $(shell pwd):/code/ \
 		$(BUILDERS_PREFIX)-alpine
@@ -63,6 +64,7 @@ release-build-alpine:
 
 # Creates a release build in a containerized build environment of the shared library for glibc Linux (.so)
 release-build-linux:
+	mkdir -p artifacts
 	docker run --rm -v $(shell pwd)/librevmapi:/code $(BUILDERS_PREFIX)-debian build_gnu_x86_64.sh
 	docker run --rm -v $(shell pwd)/librevmapi:/code $(BUILDERS_PREFIX)-debian build_gnu_aarch64.sh
 	cp librevmapi/artifacts/librevmapi.x86_64.so internal/api
@@ -71,6 +73,7 @@ release-build-linux:
 
 # Creates a release build in a containerized build environment of the shared library for macOS (.dylib)
 release-build-macos:
+	mkdir -p artifacts
 	rm -rf target/x86_64-apple-darwin/release
 	rm -rf target/aarch64-apple-darwin/release
 	docker run --rm -u $(USER_ID):$(USER_GROUP) \
@@ -81,6 +84,7 @@ release-build-macos:
 
 # Creates a release build in a containerized build environment of the shared library for Windows (.dll)
 release-build-windows:
+	mkdir -p artifacts
 	docker run --rm -v $(shell pwd)/librevmapi:/code $(BUILDERS_PREFIX)-cross build_windows.sh
 	cp librevmapi/artifacts/revmapi.dll internal/api
 	make update-bindings

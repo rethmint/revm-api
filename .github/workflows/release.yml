@@ -4,9 +4,7 @@ on:
   push:
     tags:
       - '*'
-  pull_request:
-    branches:
-      - main
+
 jobs:
   build-linux-glibc:
     name: Linux glibc

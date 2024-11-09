@@ -3,6 +3,7 @@ mod error;
 pub mod ext;
 mod gstorage;
 mod interface;
+mod jit;
 mod leveldb;
 mod memory;
 mod storeutils;

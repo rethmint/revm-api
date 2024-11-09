@@ -31,6 +31,9 @@ alloy-primitives = { version = "0.8.2", default-features = false, features = [
 # state = { workspace = true }
 revm = { workspace = true }
 revmc = { workspace = true }
+leveldb = "0.8.6"
+tempdir = "0.3.7"
+color-eyre = "0.6"
 
 [build-dependencies]
 cbindgen = { workspace = true }

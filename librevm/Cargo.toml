@@ -30,7 +30,7 @@ alloy-primitives = { version = "0.8.2", default-features = false, features = [
 ] }
 # state = { workspace = true }
 revm = { workspace = true }
-
+revmc = { workspace = true }
 
 [build-dependencies]
 cbindgen = { workspace = true }

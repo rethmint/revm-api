@@ -71,4 +71,10 @@ func Test_ERC20_Benchmark(t *testing.T) {
 	transferData, _ := erc20abi.Methods["transfer"].Inputs.Pack(recipientAddr, big.NewInt(100))
 	_, _, err = evm.Call(vm.AccountRef(callerAddr), contractAddress, transferData, gaslimit, new(uint256.Int))
 	require.NoError(t, err)
+
+	// ERC20 BalanceOf
+	balanceOfData, _ := erc20abi.Methods["balanceOf"].Inputs.Pack(recipientAddr)
+	_, _, err = evm.StaticCall(vm.AccountRef(callerAddr), contractAddress, balanceOfData, gaslimit)
+	require.NoError(t, err)
+
 }

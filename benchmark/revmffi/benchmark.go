@@ -57,4 +57,15 @@ func Test_ERC20_Benchmark(t *testing.T) {
 	_, ok = res.(types.Success)
 	require.True(t, ok)
 
+	// ERC20 BalanceOf
+	balanceOfData, _ := erc20abi.Methods["balanceOf"].Inputs.Pack(recipientAddr)
+	txcontext = testutils.MockTx(callerAddr, erc20Addr, balanceOfData, 3)
+	result, _ = evm.QueryTx(kvstore, block.ToSerialized(), txcontext.ToSerialized())
+	res, err = result.ProcessExecutionResult()
+	require.NoError(t, err)
+	queryRes, ok := res.(types.Success)
+	require.True(t, ok)
+	balance := new(big.Int).SetBytes(queryRes.Output.Output).Uint64()
+	require.Equal(t, uint64(100), balance)
+
 }

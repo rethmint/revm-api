@@ -7,17 +7,23 @@ use revmc::EvmCompilerFn;
 
 use crate::jit::LevelDB;
 
-pub struct ExternalContext<'a> {
-    database: LevelDB<'a, i32>,
-}
+pub struct ExternalContext {}
+
+//pub struct ExternalContext<'a> {
+//    database: LevelDB<'a, i32>,
+//}
 
 revmc::extern_revmc! {
     fn fibonacci;
 }
 
-impl<'a> ExternalContext<'a> {
-    pub fn new_with_db(database: LevelDB<'a, i32>) -> Self {
-        Self { database }
+impl ExternalContext {
+    //pub fn new_with_db(database: LevelDB<'a, i32>) -> Self {
+    //    Self { database }
+    //}
+
+    pub fn new() -> Self {
+        Self {}
     }
 
     fn get_function(&self, bytecode_hash: B256) -> Option<EvmCompilerFn> {
@@ -30,17 +36,17 @@ impl<'a> ExternalContext<'a> {
         None
     }
 
-    fn inc_hash_count(&self, bytecode_hash: B256) -> Option<EvmCompilerFn> {
-        let key = bytecode_hash.as_slice().get_i32();
-        let current_count = self.database.get(key).unwrap_or(None);
-        let count = current_count.map_or(1, |v| {
-            let bytes: [u8; 4] = v.as_slice().try_into().unwrap_or([0, 0, 0, 0]);
-            i32::from_be_bytes(bytes) + 1
-        });
-
-        self.database.put(123, &count.to_be_bytes(), false).unwrap();
-        None
-    }
+    //fn inc_hash_count(&self, bytecode_hash: B256) -> Option<EvmCompilerFn> {
+    //    let key = bytecode_hash.as_slice().get_i32();
+    //    let current_count = self.database.get(key).unwrap_or(None);
+    //    let count = current_count.map_or(1, |v| {
+    //        let bytes: [u8; 4] = v.as_slice().try_into().unwrap_or([0, 0, 0, 0]);
+    //        i32::from_be_bytes(bytes) + 1
+    //    });
+    //
+    //    self.database.put(123, &count.to_be_bytes(), false).unwrap();
+    //    None
+    //}
 }
 
 // This `+ 'static` bound is only necessary here because of an internal cfg feature.

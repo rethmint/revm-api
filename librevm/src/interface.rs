@@ -41,7 +41,8 @@ pub extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
     let leveldb = LevelDB::init();
     initiate_cron_job(leveldb.clone());
 
-    let ext = ExternalContext::new_with_db(leveldb);
+    //let ext = ExternalContext::new_with_db(leveldb);
+    let ext = ExternalContext::new();
     let builder = EvmBuilder::default();
     let evm = builder
         .with_db(go_storage)

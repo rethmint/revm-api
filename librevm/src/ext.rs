@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use alloy_primitives::{hex, B256};
+use bytes::Buf;
 use revm::{handler::register::EvmHandler, Database};
 use revmc::EvmCompilerFn;
 
@@ -26,6 +27,18 @@ impl<'a> ExternalContext<'a> {
             panic!();
         }
 
+        None
+    }
+
+    fn inc_hash_count(&self, bytecode_hash: B256) -> Option<EvmCompilerFn> {
+        let key = bytecode_hash.as_slice().get_i32();
+        let current_count = self.database.get(key).unwrap_or(None);
+        let count = current_count.map_or(1, |v| {
+            let bytes: [u8; 4] = v.as_slice().try_into().unwrap_or([0, 0, 0, 0]);
+            i32::from_be_bytes(bytes) + 1
+        });
+
+        self.database.put(123, &count.to_be_bytes(), false).unwrap();
         None
     }
 }

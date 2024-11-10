@@ -7,7 +7,7 @@ use crate::jit::{JitCfg, JitUnit, RuntimeJit};
 use super::LevelDB;
 
 pub struct Cronner {
-    // unix
+    // ms
     interval: u64,
     database: LevelDB<'static, i32>,
 }
@@ -18,14 +18,15 @@ impl Cronner {
     }
 
     pub fn start_routine(&self) -> JoinHandle<()> {
+        let interval = self.interval.clone();
         let leveldb = self.database.clone();
         tokio::spawn(async move {
-            let cron_future = Cronner::cron(leveldb);
+            let cron_future = Cronner::cron(interval, leveldb);
             let _ = tokio::join!(cron_future);
         })
     }
 
-    pub async fn cron(leveldb: LevelDB<'static, i32>) {}
+    pub async fn cron(interval: u64, leveldb: LevelDB<'static, i32>) {}
 
     pub fn jit(&self, bytecode: &[u8], bytecode_hash: B256) -> Result<()> {
         println!("Setting function {:#?}", bytecode_hash);

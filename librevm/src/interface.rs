@@ -38,8 +38,8 @@ pub extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
     let go_storage = GoStorage::new(&db);
     let spec = SpecId::try_from_u8(default_spec_id).unwrap_or(SpecId::CANCUN);
 
-    let leveldb = LevelDB::init();
-    initiate_cron_job(leveldb.clone());
+    //let leveldb = LevelDB::init();
+    //initiate_cron_job(leveldb.clone());
 
     //let ext = ExternalContext::new_with_db(leveldb);
     let ext = ExternalContext::new();
@@ -87,7 +87,9 @@ pub extern "C" fn execute_tx(
         }
     };
     let go_storage = GoStorage::new(&db);
-    evm.context = Context::new_with_db(go_storage);
+
+    evm.context.evm.db = go_storage;
+
     set_evm_env(evm, block, tx);
     let result = evm.transact_commit();
     let data = match result {

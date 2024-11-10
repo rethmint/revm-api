@@ -43,8 +43,7 @@ impl Cronner {
         let db_bytecode = self.db_bytecode.clone();
 
         tokio::spawn(async move {
-            let cron_future = Cronner::cron(interval, db_count, db_label, db_bytecode);
-            let _ = tokio::join!(cron_future);
+            Cronner::cron(interval, db_count, db_label, db_bytecode).await;
         })
     }
 
@@ -59,8 +58,10 @@ impl Cronner {
 
         loop {
             interval.tick().await;
+            println!("Cron loop...");
 
             for key in db_count.key_iterator().into_iter() {
+                println!("Key: {key:#?}");
                 let count_bytes = db_count.get(key).unwrap_or(None);
                 let count = count_bytes.as_ref().map_or(1, |v| {
                     let bytes: [u8; 4] = v.as_slice().try_into().unwrap_or([0, 0, 0, 0]);

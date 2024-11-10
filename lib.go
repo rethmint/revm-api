@@ -10,6 +10,19 @@ type VM struct {
 	Inner api.VM
 }
 
+type Cron struct {
+	Inner api.Cron
+}
+
+func NewCron() Cron {
+	inner := api.InitCron()
+	return Cron{inner}
+}
+
+func (cron *Cron) Destroy() {
+	api.ReleaseCron(cron.Inner)
+}
+
 // NewVm return VM instance
 // handler
 func NewVM(SPEC_ID uint8) VM {

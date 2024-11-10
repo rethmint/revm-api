@@ -18,6 +18,9 @@ const CANCUN uint8 = 17
 func setupTest(t *testing.T) (revm.VM, *testutils.MockKVStore, common.Address) {
 	kvStore := testutils.NewMockKVStore()
 	vm := revm.NewVM(CANCUN)
+	cron := revm.NewCron()
+	cron.Destroy()
+
 	t.Cleanup(func() {
 		vm.Destroy()
 	})

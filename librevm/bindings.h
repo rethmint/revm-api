@@ -150,6 +150,10 @@ typedef struct {
   size_t len;
 } ByteSliceView;
 
+typedef struct {
+
+} cron_t;
+
 void destroy_unmanaged_vector(UnmanagedVector v);
 
 UnmanagedVector execute_tx(evm_t *vm_ptr,
@@ -158,7 +162,11 @@ UnmanagedVector execute_tx(evm_t *vm_ptr,
                            ByteSliceView tx,
                            UnmanagedVector *errmsg);
 
+cron_t *init_cron_job(void);
+
 evm_t *init_vm(uint8_t default_spec_id);
+
+void join_cron(cron_t *cron_ptr);
 
 UnmanagedVector new_unmanaged_vector(bool nil, const uint8_t *ptr, size_t length);
 
@@ -167,6 +175,8 @@ UnmanagedVector query_tx(evm_t *vm_ptr,
                          ByteSliceView block,
                          ByteSliceView tx,
                          UnmanagedVector *errmsg);
+
+void release_cron(cron_t *cron);
 
 void release_vm(evm_t *vm);
 

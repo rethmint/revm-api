@@ -1,0 +1,21 @@
+# Use the official Golang image as the base image
+FROM golang:1.22
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy the entire project directory
+COPY . /app
+
+# Download dependencies
+RUN go mod tidy
+
+# Download dependencies for the benchmark directory
+WORKDIR /app/benchmark/gevm
+RUN go mod tidy
+
+# Set the working directory back to the root of the project
+WORKDIR /app
+
+# Run the tests and measure memory usage and speed
+CMD /usr/bin/time -v go test -v ./benchmark/gevm

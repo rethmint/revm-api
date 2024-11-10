@@ -7,12 +7,12 @@ use std::marker::PhantomData;
 use std::path::Path;
 use std::sync::Arc;
 
-pub fn init_db() -> Arc<Database<i32>> {
-    let db_path = "Path";
-    let db = LevelDB::<i32>::connect(db_path).unwrap();
+pub fn init_db(path: &str) -> Arc<Database<i32>> {
+    let db = LevelDB::<i32>::connect(path).unwrap();
     Arc::new(db)
 }
 
+// phantom data to use lifetime parameter
 pub struct LevelDB<'a, K>
 where
     K: 'a + Key,
@@ -29,26 +29,15 @@ where
         let mut options = Options::new();
         options.create_if_missing = true;
 
-        let db = match Database::open(Path::new(path), options) {
-            Ok(db) => db,
-            Err(_) => {
-                panic!();
-            }
-        };
-
-        let write_opts = WriteOptions::new();
-        match db.put(write_opts, 1, &[1]) {
-            Ok(_) => (),
-            Err(e) => {
-                panic!()
-            }
-        };
-
-        Ok(db)
+        Database::open(Path::new(path), options).map_err(|e| eyre::Report::new(e))
     }
 
-    pub fn put(&self, key: K, value: &[u8]) -> Result<()> {
-        let write_options = WriteOptions::new();
+    pub fn put(&self, key: K, value: &[u8], sync: bool) -> Result<()> {
+        let mut write_options = WriteOptions::new();
+        if sync {
+            write_options.sync = true;
+        }
+
         self.db
             .put(write_options, key, value)
             .map_err(|e| eyre::Report::new(e))

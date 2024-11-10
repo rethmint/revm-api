@@ -7,7 +7,7 @@ use std::marker::PhantomData;
 use std::path::Path;
 use std::sync::Arc;
 
-const LEVELDB_PATH: &str = "librevm/data";
+pub const LEVELDB_PATH: &str = "librevm/data";
 
 // phantom data to use lifetime parameter
 pub struct LevelDB<'a, K>

@@ -16,9 +16,12 @@ Cargo.lock
 # MacOS
 .DS_Store
 
-# no static libraries (35MB+)
+# No static libraries (35MB+)
 lib*.a
 lib*.dylib
+
+# No native database
+librevm/data
 
 # Added by cargo
 **/target

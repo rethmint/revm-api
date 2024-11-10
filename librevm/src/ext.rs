@@ -5,7 +5,7 @@ use bytes::Buf;
 use revm::{handler::register::EvmHandler, Database};
 use revmc::{eyre::Result, EvmCompilerFn};
 
-use crate::jit::LevelDB;
+use crate::jit::{LevelDB, LEVELDB_PATH};
 
 pub struct ExternalContext {}
 
@@ -31,7 +31,20 @@ impl ExternalContext {
         key |= 1 << 9;
 
         let maybe_f = leveldb.get(key).unwrap_or(None);
-        if let Some(f) = maybe_f {}
+        if let Some(f) = maybe_f {
+            let fn_name = String::from_utf8(f).unwrap();
+
+            let lib;
+            let f = {
+                lib = unsafe { libloading::Library::new(LEVELDB_PATH) }
+                    .expect("Should've loaded linked library");
+                let f: libloading::Symbol<'_, revmc::EvmCompilerFn> =
+                    unsafe { lib.get(fn_name.as_bytes()).expect("Should've got library") };
+                *f
+            };
+
+            return Some(f);
+        }
 
         None
     }

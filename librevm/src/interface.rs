@@ -11,6 +11,7 @@ use crate::{
     gstorage::GoStorage,
     jit::{Cronner, LevelDB},
     memory::{ByteSliceView, UnmanagedVector},
+    paths::{LEVELDB_BYTECODE_PATH, LEVELDB_COUNT_PATH, LEVELDB_LABEL_PATH},
     utils::{build_flat_buffer, set_evm_env},
 };
 
@@ -39,8 +40,7 @@ pub async extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
     let go_storage = GoStorage::new(&db);
     let spec = SpecId::try_from_u8(default_spec_id).unwrap_or(SpecId::CANCUN);
 
-    let leveldb = LevelDB::init();
-    initiate_cron_job(leveldb);
+    initiate_cron_job();
 
     let ext = ExternalContext::new();
     let builder = EvmBuilder::default();
@@ -56,9 +56,12 @@ pub async extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
     vm as *mut evm_t
 }
 
-fn initiate_cron_job(leveldb: LevelDB<'static, i32>) {
+fn initiate_cron_job() {
+    let leveldb_count = LevelDB::init(LEVELDB_COUNT_PATH);
+    let leveldb_label = LevelDB::init(LEVELDB_LABEL_PATH);
+    let leveldb_bytecode = LevelDB::init(LEVELDB_BYTECODE_PATH);
     let interval_ms = 10_000;
-    let cronner = Cronner::new_with_db(interval_ms, leveldb.clone());
+    let cronner = Cronner::new_with_db(interval_ms, leveldb_count, leveldb_label, leveldb_bytecode);
     let cron_handle = cronner.start_routine();
     *CRON_HANDLE.lock().unwrap() = Some(cron_handle);
 }

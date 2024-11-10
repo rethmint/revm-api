@@ -5,6 +5,7 @@ mod gstorage;
 mod interface;
 mod jit;
 mod memory;
+mod paths;
 mod storeutils;
 mod utils;
 pub use interface::*;

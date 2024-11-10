@@ -5,7 +5,10 @@ use bytes::Buf;
 use revm::{handler::register::EvmHandler, Database};
 use revmc::{eyre::Result, EvmCompilerFn};
 
-use crate::jit::{LevelDB, LEVELDB_PATH};
+use crate::{
+    jit::LevelDB,
+    paths::{LEVELDB_BYTECODE_PATH, LEVELDB_COUNT_PATH, LEVELDB_LABEL_PATH},
+};
 
 pub struct ExternalContext {}
 
@@ -20,7 +23,7 @@ impl ExternalContext {
 
     fn get_function(&self, bytecode_hash: B256) -> Option<EvmCompilerFn> {
         // TODO: Restrain from initializing db every get function call
-        let leveldb = LevelDB::init();
+        let leveldb = LevelDB::init(LEVELDB_LABEL_PATH);
         let mut key = bytecode_hash.as_slice().get_i32();
 
         println!("checking bytecode hash {:#?}", bytecode_hash);
@@ -38,7 +41,7 @@ impl ExternalContext {
 
             let lib;
             let f = {
-                lib = unsafe { libloading::Library::new(LEVELDB_PATH) }
+                lib = unsafe { libloading::Library::new(LEVELDB_BYTECODE_PATH) }
                     .expect("Should've loaded linked library");
                 let f: libloading::Symbol<'_, revmc::EvmCompilerFn> =
                     unsafe { lib.get(fn_name.as_bytes()).expect("Should've got library") };
@@ -53,7 +56,7 @@ impl ExternalContext {
 
     fn inc_hash_count(&self, bytecode_hash: B256) -> Result<()> {
         // TODO: Restrain from initializing db every inc call
-        let leveldb = LevelDB::init();
+        let leveldb = LevelDB::init(LEVELDB_COUNT_PATH);
         let key = bytecode_hash.as_slice().get_i32();
 
         let count = leveldb.get(key).unwrap_or(None);

@@ -7,11 +7,6 @@ use std::marker::PhantomData;
 use std::path::Path;
 use std::sync::Arc;
 
-pub fn init_db(path: &str) -> Arc<Database<i32>> {
-    let db = LevelDB::<i32>::connect(path).unwrap();
-    Arc::new(db)
-}
-
 // phantom data to use lifetime parameter
 pub struct LevelDB<'a, K>
 where
@@ -25,7 +20,15 @@ impl<'a, K> LevelDB<'a, K>
 where
     K: 'a + Key,
 {
-    pub fn connect(path: &str) -> Result<Database<i32>> {
+    pub fn init(path: &str) -> Self {
+        let db = LevelDB::connect(path).unwrap();
+        Self {
+            db: Arc::new(db),
+            _marker: PhantomData,
+        }
+    }
+
+    fn connect(path: &str) -> Result<Database<K>> {
         let mut options = Options::new();
         options.create_if_missing = true;
 

@@ -5,6 +5,7 @@ use crate::{
     error::set_error,
     ext::{register_handler, ExternalContext},
     gstorage::GoStorage,
+    jit::{Cronner, LevelDB},
     memory::{ByteSliceView, UnmanagedVector},
     utils::{build_flat_buffer, set_evm_env},
 };
@@ -37,6 +38,10 @@ pub extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
         .with_external_context(ExternalContext::new())
         .append_handler_register(register_handler)
         .build();
+
+    let leveldb = LevelDB::init("Base");
+    let interval_unix = 1_000_000;
+    let conner = Cronner::new_with_db(interval_unix, leveldb);
 
     let vm = Box::into_raw(Box::new(evm));
 

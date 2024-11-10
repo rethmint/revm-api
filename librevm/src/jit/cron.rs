@@ -1,20 +1,31 @@
 use alloy_primitives::B256;
 use revmc::eyre::{Context, Result};
+use tokio::task::JoinHandle;
 
 use crate::jit::{JitCfg, JitUnit, RuntimeJit};
 
 use super::LevelDB;
 
-pub struct Cronner<'a> {
+pub struct Cronner {
     // unix
     interval: u64,
-    database: LevelDB<'a, i32>,
+    database: LevelDB<'static, i32>,
 }
 
-impl<'a> Cronner<'a> {
-    pub fn new_with_db(interval: u64, database: LevelDB<'a, i32>) -> Self {
+impl Cronner {
+    pub fn new_with_db(interval: u64, database: LevelDB<'static, i32>) -> Self {
         Self { interval, database }
     }
+
+    pub fn start_routine(&self) -> JoinHandle<()> {
+        let leveldb = self.database.clone();
+        tokio::spawn(async move {
+            let cron_future = Cronner::cron(leveldb);
+            let _ = tokio::join!(cron_future);
+        })
+    }
+
+    pub async fn cron(leveldb: LevelDB<'static, i32>) {}
 
     pub fn jit(&self, bytecode: &[u8], bytecode_hash: B256) -> Result<()> {
         println!("Setting function {:#?}", bytecode_hash);

@@ -4,22 +4,27 @@ use alloy_primitives::{hex, B256};
 use revm::{handler::register::EvmHandler, Database};
 use revmc::EvmCompilerFn;
 
-pub struct ExternalContext;
+use crate::jit::LevelDB;
+
+pub struct ExternalContext<'a> {
+    database: LevelDB<'a, i32>,
+}
 
 revmc::extern_revmc! {
     fn fibonacci;
 }
 
-impl ExternalContext {
-    pub fn new() -> Self {
-        Self
+impl<'a> ExternalContext<'a> {
+    pub fn new_with_db(database: LevelDB<'a, i32>) -> Self {
+        Self { database }
     }
 
     fn get_function(&self, bytecode_hash: B256) -> Option<EvmCompilerFn> {
-        //if bytecode_hash == hex!("ab1ad1211002e1ddb8d9a4ef58a902224851f6a0273ee3e87276a8d21e649ce8")
-        //{
-        //    return Some(EvmCompilerFn::new(fibonacci));
-        //}
+        if bytecode_hash == hex!("ab1ad1211002e1ddb8d9a4ef58a902224851f6a0273ee3e87276a8d21e649ce8")
+        {
+            //return Some(EvmCompilerFn::new(fibonacci));
+            panic!();
+        }
 
         None
     }

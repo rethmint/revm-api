@@ -1,6 +1,5 @@
-use std::sync::Arc;
-
 use alloy_primitives::B256;
+use revmc::eyre::{Context, Result};
 
 use crate::jit::{JitCfg, JitUnit, RuntimeJit};
 
@@ -17,10 +16,10 @@ impl<'a> Cronner<'a> {
         Self { interval, database }
     }
 
-    pub fn jit(&self, bytecode: &[u8], bytecode_hash: B256) {
+    pub fn jit(&self, bytecode: &[u8], bytecode_hash: B256) -> Result<()> {
         println!("Setting function {:#?}", bytecode_hash);
         let unit = JitUnit::new("Fibonacci", bytecode.to_vec(), 70);
         let runtime_jit = RuntimeJit::new(unit, JitCfg::default());
-        runtime_jit.compile().unwrap()
+        runtime_jit.compile().wrap_err("Compilation fail")
     }
 }

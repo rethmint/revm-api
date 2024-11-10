@@ -31,17 +31,18 @@ pub extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
     let go_storage = GoStorage::new(&db);
     let spec = SpecId::try_from_u8(default_spec_id).unwrap_or(SpecId::CANCUN);
 
+    let leveldb = LevelDB::init();
+    let interval_unix = 1_000_000;
+    let cronner = Cronner::new_with_db(interval_unix, leveldb.clone());
+
+    let ext = ExternalContext::new_with_db(leveldb);
     let builder = EvmBuilder::default();
     let evm = builder
         .with_db(go_storage)
         .with_spec_id(spec)
-        .with_external_context(ExternalContext::new())
+        .with_external_context(ext)
         .append_handler_register(register_handler)
         .build();
-
-    let leveldb = LevelDB::init("Base");
-    let interval_unix = 1_000_000;
-    let conner = Cronner::new_with_db(interval_unix, leveldb);
 
     let vm = Box::into_raw(Box::new(evm));
 

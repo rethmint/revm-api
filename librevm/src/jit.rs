@@ -94,7 +94,7 @@ impl RuntimeJit {
             compiler.inspect_stack_length(true);
         }
 
-        let f_id = compiler.translate(self.unit.name, bytecode, spec_id)?;
+        let _f_id = compiler.translate(self.unit.name, bytecode, spec_id)?;
 
         if self.cfg.aot {
             let out_dir = if let Some(out_dir) = compiler.out_dir() {

@@ -24,27 +24,20 @@ impl ExternalContext {
     fn get_function(&self, bytecode_hash: B256) -> Option<EvmCompilerFn> {
         // TODO: Restrain from initializing db every get function call
         let leveldb = LevelDB::init(LEVELDB_LABEL_PATH);
-        let mut key = bytecode_hash.as_slice().get_i32();
+        let key = bytecode_hash.as_slice().get_i32();
 
-        println!("checking bytecode hash {:#?}", bytecode_hash);
+        println!("Checking bytecode hash {:#?}", bytecode_hash);
 
-        // [ count key ]
-        // 0x000000000000001
-        // [ fn key ]
-        // 0x000001000000001
-        // 10th bit from the right is set
-        key |= 1 << 9;
-
-        let maybe_f = leveldb.get(key).unwrap_or(None);
-        if let Some(f) = maybe_f {
-            let fn_name = String::from_utf8(f).unwrap();
+        let maybe_label = leveldb.get(key).unwrap_or(None);
+        if let Some(label) = maybe_label {
+            let fn_label = String::from_utf8(label).unwrap();
 
             let lib;
             let f = {
                 lib = unsafe { libloading::Library::new(LEVELDB_BYTECODE_PATH) }
                     .expect("Should've loaded linked library");
                 let f: libloading::Symbol<'_, revmc::EvmCompilerFn> =
-                    unsafe { lib.get(fn_name.as_bytes()).expect("Should've got library") };
+                    unsafe { lib.get(fn_label.as_bytes()).expect("Should've got library") };
                 *f
             };
 
@@ -54,18 +47,27 @@ impl ExternalContext {
         None
     }
 
-    fn inc_hash_count(&self, bytecode_hash: B256) -> Result<()> {
+    fn update_bytecode_reference(&self, bytecode: &[u8], bytecode_hash: B256) -> Result<()> {
         // TODO: Restrain from initializing db every inc call
-        let leveldb = LevelDB::init(LEVELDB_COUNT_PATH);
+        let db_count = LevelDB::init(LEVELDB_COUNT_PATH);
         let key = bytecode_hash.as_slice().get_i32();
 
-        let count = leveldb.get(key).unwrap_or(None);
+        let count = db_count.get(key).unwrap_or(None);
         let new_count = count.as_ref().map_or(1, |v| {
             let bytes: [u8; 4] = v.as_slice().try_into().unwrap_or([0, 0, 0, 0]);
             i32::from_be_bytes(bytes) + 1
         });
 
-        leveldb.put(key, &new_count.to_be_bytes(), false).unwrap();
+        db_count.put(key, &new_count.to_be_bytes(), false).unwrap();
+
+        // 9 cause 10 can cause unexpected behavior
+        if new_count > 9 {
+            let db_label = LevelDB::init(LEVELDB_LABEL_PATH);
+            if let None = db_label.get(key).unwrap_or(None) {
+                let db_bytecode = LevelDB::init(LEVELDB_BYTECODE_PATH);
+                db_bytecode.put(key, bytecode, false).unwrap();
+            }
+        }
         Ok(())
     }
 }
@@ -76,9 +78,11 @@ pub fn register_handler<DB: Database>(handler: &mut EvmHandler<'_, ExternalConte
     handler.execution.execute_frame = Arc::new(move |frame, memory, tables, context| {
         let interpreter = frame.interpreter_mut();
         let bytecode_hash = interpreter.contract.hash.unwrap_or_default();
+        let bytecode = interpreter.contract.bytecode.original_byte_slice();
+
         context
             .external
-            .inc_hash_count(bytecode_hash)
+            .update_bytecode_reference(bytecode, bytecode_hash)
             .expect("increment failed");
 
         if let Some(f) = context.external.get_function(bytecode_hash) {

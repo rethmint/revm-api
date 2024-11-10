@@ -1,74 +1,32 @@
 package types
 
 import (
-	"encoding/hex"
-	"errors"
-	"math/big"
-	"strings"
-
+	"github.com/ethereum/go-ethereum/common"
 	flatbuffers "github.com/google/flatbuffers/go"
 	blockbuffer "github.com/rethmint/revm-api/types/go/block"
 	txbuffer "github.com/rethmint/revm-api/types/go/transaction"
 )
 
-type AccountAddress [20]uint8
-
-func NewAccountAddress(s string) (AccountAddress, error) {
-	if !strings.HasPrefix(s, "0x") {
-		return AccountAddress{}, errors.New("address must start with 0x")
-	}
-	if len(s) != 42 {
-		return AccountAddress{}, errors.New("address must be 20 bytes long")
-	}
-	bytes, err := hex.DecodeString(s[2:])
-	if err != nil {
-		return AccountAddress{}, err
-	}
-	var address AccountAddress
-	copy(address[:], bytes)
-	return address, nil
-}
-func ZeroAddress() AccountAddress {
-	var zero AccountAddress
-	return zero
-}
-
-type U256 [32]byte
-
-func NewU256(b *big.Int) U256 {
-	var u U256
-	bytes := b.Bytes()
-	if len(bytes) > 32 {
-		panic("input exceeds 32 bytes")
-	}
-	copy(u[32-len(bytes):], bytes)
-	return u
-}
-
-func (u U256) String() string {
-	return "0x" + hex.EncodeToString(u[:])
-}
-
 type BlockEnv struct {
 	/// The number of ancestor blocks of this block (block height).
-	Number U256
+	Number common.Hash
 	/// Coinbase or miner or address that created and signed the block.
 	///
 	/// This is the receiver address of all the gas spent in the block.
-	Coinbase AccountAddress
+	Coinbase common.Address
 
 	/// The timestamp of the block in seconds since the UNIX epoch.
-	Timestamp U256
+	Timestamp common.Hash
 	/// The gas limit of the block.
-	GasLimit U256
+	GasLimit common.Hash
 	/// The base fee per gas added in the London upgrade with [EIP-1559].
 	///
 	/// [EIP-1559]: https://eips.ethereum.org/EIPS/eip-1559
-	Basefee U256
+	Basefee common.Hash
 	/// The difficulty of the block.
 	///
 	/// Unused after the Paris (AKA the merge) upgrade and replaced by `prevrandao`.
-	// difficulty: U256
+	// difficulty: common.Hash
 	// /// The output of the randomness beacon provided by the beacon chain.
 	// ///
 	// /// Replaces `difficulty` after the Paris (AKA the merge) upgrade with [EIP-4399].
@@ -107,19 +65,19 @@ func (block BlockEnv) ToSerialized() SerializedBlock {
 }
 
 // address =>  []storageKey
-type AccessList map[AccountAddress][]U256
+type AccessList map[common.Address][]common.Hash
 
 type TransactionEnv struct {
 	/// Caller aka Author aka transaction signer.
-	Caller AccountAddress
+	Caller common.Address
 	/// The gas limit of the transaction.
 	GasLimit uint64
 	/// The gas price of the transaction.
-	GasPrice U256
+	GasPrice common.Hash
 	/// The destination of the transaction.
-	TransactTo AccountAddress
+	TransactTo common.Address
 	/// The value sent to `transact_to`.
-	Value U256
+	Value common.Hash
 
 	Data []byte
 	/// The nonce of the transaction.
@@ -145,7 +103,7 @@ type TransactionEnv struct {
 	///
 	/// [EIP-1559] https://eips.ethereum.org/EIPS/eip-1559
 	// 	optinal
-	GasPriorityFee U256
+	GasPriorityFee common.Hash
 
 	/// The list of blob versioned hashes. Per EIP there should be at least
 	/// one blob present if [`Self::max_fee_per_blob_gas`] is `Some`.
@@ -160,7 +118,7 @@ type TransactionEnv struct {
 	/// Incorporated as part of the Cancun upgrade via [EIP-4844].
 	///
 	/// [EIP-4844] https://eips.ethereum.org/EIPS/eip-4844
-	// max_fee_per_blob_gas Option<U256>
+	// max_fee_per_blob_gas Option<common.Hash>
 
 	/// List of authorizations that contains the signature that authorizes this
 	/// caller to place the code to signer account.

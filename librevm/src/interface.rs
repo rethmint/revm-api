@@ -1,4 +1,8 @@
+use std::sync::Mutex;
+
+use once_cell::sync::Lazy;
 use revm::{primitives::SpecId, Context, Evm, EvmBuilder};
+use tokio::task::JoinHandle;
 
 use crate::{
     db::Db,
@@ -9,6 +13,8 @@ use crate::{
     memory::{ByteSliceView, UnmanagedVector},
     utils::{build_flat_buffer, set_evm_env},
 };
+
+static CRON_HANDLE: Lazy<Mutex<Option<JoinHandle<()>>>> = Lazy::new(|| Mutex::new(None));
 
 // byte slice view: golang data type
 // unamangedvector: ffi safe vector data type compliants with rust's ownership and data types, for returning optional error value
@@ -24,6 +30,7 @@ pub fn to_evm<'a>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, (), GoStorage<'a>>>
         Some(evm)
     }
 }
+
 // initialize vm instance with handler
 #[no_mangle]
 pub extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
@@ -32,8 +39,7 @@ pub extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
     let spec = SpecId::try_from_u8(default_spec_id).unwrap_or(SpecId::CANCUN);
 
     let leveldb = LevelDB::init();
-    let interval_unix = 1_000_000;
-    let cronner = Cronner::new_with_db(interval_unix, leveldb.clone());
+    initiate_cron_job(leveldb.clone());
 
     let ext = ExternalContext::new_with_db(leveldb);
     let builder = EvmBuilder::default();
@@ -47,6 +53,13 @@ pub extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
     let vm = Box::into_raw(Box::new(evm));
 
     vm as *mut evm_t
+}
+
+fn initiate_cron_job(leveldb: LevelDB<'static, i32>) {
+    let interval_ms = 1_000_000;
+    let cronner = Cronner::new_with_db(interval_ms, leveldb.clone());
+    let cron_handle = cronner.start_routine();
+    *CRON_HANDLE.lock().unwrap() = Some(cron_handle);
 }
 
 #[no_mangle]

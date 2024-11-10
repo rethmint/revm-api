@@ -23,6 +23,8 @@ impl ExternalContext {
         let leveldb = LevelDB::init();
         let mut key = bytecode_hash.as_slice().get_i32();
 
+        println!("checking bytecode hash {:#?}", bytecode_hash);
+
         // [ count key ]
         // 0x000000000000001
         // [ fn key ]

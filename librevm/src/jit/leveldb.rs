@@ -1,5 +1,6 @@
 use db_key::Key;
 use leveldb::database::Database;
+use leveldb::iterator::{Iterable, KeyIterator};
 use leveldb::kv::KV;
 use leveldb::options::{Options, ReadOptions, WriteOptions};
 use revmc::eyre::{self, Result};
@@ -53,6 +54,13 @@ where
         self.db
             .get(read_options, key)
             .map_err(|e| eyre::Report::new(e))
+    }
+
+    pub fn key_iterator(&self) -> KeyIterator<K> {
+        let read_options = ReadOptions::new();
+        let keys_iter = self.db.keys_iter(read_options);
+
+        keys_iter
     }
 }
 

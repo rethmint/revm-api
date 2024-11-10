@@ -32,16 +32,16 @@ pub fn to_evm<'a>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, (), GoStorage<'a>>>
 }
 
 // initialize vm instance with handler
+#[tokio::main]
 #[no_mangle]
-pub extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
+pub async extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
     let db = Db::default();
     let go_storage = GoStorage::new(&db);
     let spec = SpecId::try_from_u8(default_spec_id).unwrap_or(SpecId::CANCUN);
 
-    //let leveldb = LevelDB::init();
-    //initiate_cron_job(leveldb.clone());
+    let leveldb = LevelDB::init();
+    initiate_cron_job(leveldb);
 
-    //let ext = ExternalContext::new_with_db(leveldb);
     let ext = ExternalContext::new();
     let builder = EvmBuilder::default();
     let evm = builder
@@ -57,7 +57,7 @@ pub extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
 }
 
 fn initiate_cron_job(leveldb: LevelDB<'static, i32>) {
-    let interval_ms = 1_000_000;
+    let interval_ms = 10_000;
     let cronner = Cronner::new_with_db(interval_ms, leveldb.clone());
     let cron_handle = cronner.start_routine();
     *CRON_HANDLE.lock().unwrap() = Some(cron_handle);

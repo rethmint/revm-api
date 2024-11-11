@@ -19,7 +19,7 @@ import (
 )
 
 const caller = "0x10"
-const gaslimit = 1000000
+const gaslimit = 3000000
 
 func Test_ERC20_Benchmark(t *testing.T) {
 	erc20abi, _ := erc20.Erc20MetaData.GetAbi()

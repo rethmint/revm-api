@@ -6,8 +6,8 @@ toolchain go1.23.0
 
 require (
 	github.com/ethereum/go-ethereum v1.14.11
+	github.com/rethmint/revm-api v0.0.8
 	github.com/stretchr/testify v1.9.0
-    github.com/rethmint/revm-api v0.0.7
 )
 
 require (
@@ -74,10 +74,7 @@ require (
 
 require (
 	github.com/holiman/uint256 v1.3.1 // indirect
-	
+
 )
 
-replace (
-
-	github.com/stretchr/testify => github.com/stretchr/testify v1.7.0
-)
+replace github.com/stretchr/testify => github.com/stretchr/testify v1.7.0

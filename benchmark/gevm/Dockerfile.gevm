@@ -1,15 +1,12 @@
 # Use the official Golang image as the base image
 FROM golang:1.22
 
+RUN apt-get update && apt-get install -y time
 # Set the working directory inside the container
 WORKDIR /app
 
 # Copy the entire project directory
-COPY contracts /app/contracts
-COPY types /app/types
-COPY benchmark/gevm /app/benchmark/gevm
-COPY go.mod /app/
-COPY lib.go /app/
+COPY  . /app
 # Download dependencies
 RUN go mod tidy
 

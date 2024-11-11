@@ -57,7 +57,7 @@ impl ExternalContext {
         });
 
         sled_db
-            .put(*count_key.as_inner(), &new_count.to_be_bytes(), false)
+            .put(*count_key.as_inner(), &new_count.to_be_bytes(), true)
             .unwrap();
 
         // 9 cause 10 can cause unexpected behavior
@@ -66,7 +66,7 @@ impl ExternalContext {
             if let None = sled_db.get(*label_key.as_inner()).unwrap_or(None) {
                 let bytecode_key = QueryKey::with_prefix(bytecode_hash, KeyPrefix::Bytecode);
                 sled_db
-                    .put(*bytecode_key.as_inner(), bytecode, false)
+                    .put(*bytecode_key.as_inner(), bytecode, true)
                     .unwrap();
             }
         }

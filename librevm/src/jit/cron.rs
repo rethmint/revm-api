@@ -50,12 +50,12 @@ impl Cronner {
                 })
                 .into_iter()
             {
-                println!("Count Key: {key:#?}");
                 let count_bytes = sled_db.get(*key.as_inner()).unwrap_or(None);
                 let count = count_bytes.as_ref().map_or(1, |v| {
                     let bytes: [u8; 4] = v.to_vec().as_slice().try_into().unwrap_or([0, 0, 0, 0]);
                     i32::from_be_bytes(bytes)
                 });
+                println!("Count Key: {key:#?}, count: {count:#?}");
 
                 if count > JIT_THRESHOLD {
                     println!("Over threshold for key: {:#?}, count: {:#?}", key, count);
@@ -67,7 +67,12 @@ impl Cronner {
 
                         key.update_prefix(KeyPrefix::Label);
                         if let None = sled_db.get(*key.as_inner()).unwrap_or(None) {
-                            Cronner::jit(label, &bytecode, bytecode_hash).unwrap();
+                            match Cronner::jit(label, &bytecode, bytecode_hash) {
+                                Ok(_) => sled_db
+                                    .put(*key.as_inner(), label.as_bytes(), true)
+                                    .unwrap(),
+                                Err(err) => println!("While jit: {:#?}", err),
+                            }
                         }
                     }
                     continue;

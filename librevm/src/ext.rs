@@ -1,11 +1,11 @@
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
 
 use alloy_primitives::B256;
 use revm::{handler::register::EvmHandler, Database};
 use revmc::{eyre::Result, EvmCompilerFn};
 
 use crate::{
-    jit::{KeyPrefix, QueryKey, QueryKeySlice, SledDB, SLEDDB_PATH},
+    jit::{KeyPrefix, QueryKey, QueryKeySlice, SledDB, JIT_OUT_PATH, JIT_THRESHOLD},
     SLED_DB,
 };
 
@@ -25,6 +25,12 @@ impl ExternalContext {
         let sled_db = SLED_DB.get_or_init(|| Arc::new(SledDB::<QueryKeySlice>::init()));
         let label_key = QueryKey::with_prefix(bytecode_hash, KeyPrefix::Label);
 
+        let prefix_zeros = &bytecode_hash[0..10];
+        if prefix_zeros.iter().all(|&byte| byte == 0) {
+            // Skip processing if it starts with 10 zeros
+            return None;
+        }
+
         println!("Checking count for bytecode hash {:#?}", bytecode_hash);
         let maybe_label = sled_db.get(*label_key.as_inner()).unwrap_or(None);
         if let Some(label) = maybe_label {
@@ -32,7 +38,10 @@ impl ExternalContext {
 
             let lib;
             let f = {
-                lib = unsafe { libloading::Library::new(SLEDDB_PATH) }
+                let jit_out_path = Path::new(JIT_OUT_PATH);
+                let so_path = jit_out_path.join(&fn_label).join("a.so");
+
+                lib = unsafe { libloading::Library::new(so_path) }
                     .expect("Should've loaded linked library");
                 let f: libloading::Symbol<'_, revmc::EvmCompilerFn> =
                     unsafe { lib.get(fn_label.as_bytes()).expect("Should've got library") };
@@ -41,7 +50,7 @@ impl ExternalContext {
 
             return Some(f);
         }
-
+        //
         None
     }
 
@@ -61,7 +70,7 @@ impl ExternalContext {
             .unwrap();
 
         // 9 cause 10 can cause unexpected behavior
-        if new_count > 9 {
+        if new_count > JIT_THRESHOLD - 1 {
             let label_key = QueryKey::with_prefix(bytecode_hash, KeyPrefix::Label);
             if let None = sled_db.get(*label_key.as_inner()).unwrap_or(None) {
                 let bytecode_key = QueryKey::with_prefix(bytecode_hash, KeyPrefix::Bytecode);
@@ -85,9 +94,10 @@ pub fn register_handler<DB: Database>(handler: &mut EvmHandler<'_, ExternalConte
         context
             .external
             .update_bytecode_reference(bytecode, bytecode_hash)
-            .expect("update failed");
+            .expect("Update failed");
 
         if let Some(f) = context.external.get_function(bytecode_hash) {
+            println!("Calling extern function on hash: {bytecode_hash:#?}");
             Ok(unsafe { f.call_with_interpreter_and_memory(interpreter, memory, context) })
         } else {
             prev(frame, memory, tables, context)

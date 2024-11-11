@@ -14,6 +14,8 @@ pub use cron::*;
 pub use key::*;
 pub use sled::*;
 
+pub const JIT_OUT_PATH: &str = "librevm/out";
+
 pub struct RuntimeJit {
     pub unit: JitUnit,
     pub cfg: JitCfg,
@@ -102,7 +104,7 @@ impl RuntimeJit {
             let out_dir = if let Some(out_dir) = compiler.out_dir() {
                 out_dir.join(self.unit.name)
             } else {
-                let dir = std::env::temp_dir().join("revmc-cli").join(self.unit.name);
+                let dir = std::env::temp_dir().join(JIT_OUT_PATH).join(self.unit.name);
                 std::fs::create_dir_all(&dir)?;
                 dir
             };

@@ -36,7 +36,7 @@ impl Default for JitCfg {
             gas_limit: 1_000_000_000,
             eof: true,
             spec_id: SpecId::OSAKA,
-            no_link: true,
+            no_link: false,
         }
     }
 }

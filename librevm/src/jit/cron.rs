@@ -1,13 +1,12 @@
 use std::{future::Future, sync::Arc, time};
 
-use alloy_primitives::B256;
 use revmc::eyre::{Context, Result};
 use tokio::time::{interval_at, Instant};
 
 use super::{QueryKeySlice, SledDB};
 use crate::jit::{JitCfg, JitUnit, KeyPrefix, QueryKey, RuntimeJit};
 
-const JIT_THRESHOLD: i32 = 10;
+pub const JIT_THRESHOLD: i32 = 10;
 
 pub struct Cronner {
     // ms
@@ -35,7 +34,6 @@ impl Cronner {
 
         loop {
             interval.tick().await;
-            println!("Cron loop...");
 
             for mut key in sled_db
                 .key_iterator()
@@ -55,10 +53,8 @@ impl Cronner {
                     let bytes: [u8; 4] = v.to_vec().as_slice().try_into().unwrap_or([0, 0, 0, 0]);
                     i32::from_be_bytes(bytes)
                 });
-                println!("Count Key: {key:#?}, count: {count:#?}");
 
                 if count > JIT_THRESHOLD {
-                    println!("Over threshold for key: {:#?}, count: {:#?}", key, count);
                     key.update_prefix(KeyPrefix::Bytecode);
                     if let Some(bytecode) = sled_db.get(*key.as_inner()).unwrap_or(None) {
                         let bytecode_hash = key.to_b256();
@@ -67,10 +63,14 @@ impl Cronner {
 
                         key.update_prefix(KeyPrefix::Label);
                         if let None = sled_db.get(*key.as_inner()).unwrap_or(None) {
-                            match Cronner::jit(label, &bytecode, bytecode_hash) {
-                                Ok(_) => sled_db
-                                    .put(*key.as_inner(), label.as_bytes(), true)
-                                    .unwrap(),
+                            match Cronner::jit(label, &bytecode) {
+                                Ok(_) => {
+                                    println!("Success jit!");
+
+                                    sled_db
+                                        .put(*key.as_inner(), label.as_bytes(), true)
+                                        .unwrap()
+                                }
                                 Err(err) => println!("While jit: {:#?}", err),
                             }
                         }
@@ -81,8 +81,7 @@ impl Cronner {
         }
     }
 
-    pub fn jit(label: &'static str, bytecode: &[u8], bytecode_hash: B256) -> Result<()> {
-        println!("Jit in progress for hash {:#?}...", bytecode_hash);
+    pub fn jit(label: &'static str, bytecode: &[u8]) -> Result<()> {
         let unit = JitUnit::new(label, bytecode.to_vec(), 70);
         let runtime_jit = RuntimeJit::new(unit, JitCfg::default());
         runtime_jit.compile().wrap_err("Compilation fail")

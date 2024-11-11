@@ -6,6 +6,13 @@ pub type QueryKeySlice = [u8; 33];
 #[derive(Debug, Clone, Copy)]
 pub struct QueryKey(QueryKeySlice);
 
+/*
+* Prefix
+* 0x0...[u8;32] -> Count
+* 0x1...[u8;32] -> Label
+* 0x2...[u8;32] -> Bytecode
+*/
+
 impl QueryKey {
     pub fn with_prefix(key: B256, prefix: KeyPrefix) -> Self {
         let mut prefixed = [0u8; 33];

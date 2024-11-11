@@ -14,6 +14,8 @@
 #include <stdlib.h>
 
 
+#define JIT_THRESHOLD 1
+
 enum ErrnoValue {
   Success = 0,
   Other = 1,

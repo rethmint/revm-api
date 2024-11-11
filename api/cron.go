@@ -12,12 +12,12 @@ func ReleaseCron(cron Cron) {
 	C.release_cron(cron.ptr)
 }
 
-func InitCron() Cron {
+func InitCronner() Cron {
 	return Cron{
-		ptr: C.init_cron_job(),
+		ptr: C.init_cronner(),
 	}
 }
 
-func JoinCron(cron Cron) {
-	C.join_cron(cron.ptr)
+func StartCronJob(cron Cron) {
+	C.start_cron_job(cron.ptr)
 }

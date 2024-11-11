@@ -1,15 +1,11 @@
-use std::time;
+use std::{future::Future, time};
 
 use alloy_primitives::B256;
 use revmc::eyre::{Context, Result};
-use tokio::{
-    task::JoinHandle,
-    time::{interval_at, Instant},
-};
-
-use crate::jit::{JitCfg, JitUnit, RuntimeJit};
+use tokio::time::{interval_at, Instant};
 
 use super::LevelDB;
+use crate::jit::{JitCfg, JitUnit, RuntimeJit};
 
 const JIT_THRESHOLD: i32 = 10;
 
@@ -36,15 +32,15 @@ impl Cronner {
         }
     }
 
-    pub fn start_routine(&self) -> JoinHandle<()> {
+    pub fn routine_fn(&self) -> impl Future<Output = ()> + Send + 'static {
         let interval = self.interval.clone();
         let db_count = self.db_count.clone();
         let db_label = self.db_label.clone();
         let db_bytecode = self.db_bytecode.clone();
 
-        tokio::spawn(async move {
+        async move {
             Cronner::cron(interval, db_count, db_label, db_bytecode).await;
-        })
+        }
     }
 
     pub async fn cron(
@@ -69,16 +65,16 @@ impl Cronner {
                 });
 
                 if count > JIT_THRESHOLD {
-                    let bytecode_hash_slice = key.to_be_bytes();
-                    if let Some(bytecode) = db_bytecode.get(key).unwrap_or(None) {
-                        let bytecode_hash = B256::from_slice(&bytecode_hash_slice);
-                        // leak for cast to static
-                        let label = Cronner::mangle_hex(bytecode_hash.as_slice()).leak();
-
-                        if let None = db_label.get(key).unwrap_or(None) {
-                            Cronner::jit(label, &bytecode, bytecode_hash).unwrap();
-                        }
-                    }
+                    //let bytecode_hash_slice = key.to_be_bytes();
+                    //if let Some(bytecode) = db_bytecode.get(key).unwrap_or(None) {
+                    //    let bytecode_hash = B256::from_slice(&bytecode_hash_slice);
+                    //    // leak for cast to static
+                    //    let label = Cronner::mangle_hex(bytecode_hash.as_slice()).leak();
+                    //
+                    //    if let None = db_label.get(key).unwrap_or(None) {
+                    //        Cronner::jit(label, &bytecode, bytecode_hash).unwrap();
+                    //    }
+                    //}
                     continue;
                 }
             }

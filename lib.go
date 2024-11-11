@@ -10,20 +10,20 @@ type VM struct {
 	Inner api.VM
 }
 
-type Cron struct {
+type Cronner struct {
 	Inner api.Cron
 }
 
-func NewCron() Cron {
-	inner := api.InitCron()
-	return Cron{inner}
+func NewCronner() Cronner {
+	inner := api.InitCronner()
+	return Cronner{inner}
 }
 
-func (cron *Cron) Join() {
-	api.JoinCron(cron.Inner)
+func (cron *Cronner) Start() {
+	api.StartCronJob(cron.Inner)
 }
 
-func (cron *Cron) Destroy() {
+func (cron *Cronner) Destroy() {
 	api.ReleaseCron(cron.Inner)
 }
 

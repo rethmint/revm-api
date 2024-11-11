@@ -1,5 +1,4 @@
 use revm::{primitives::SpecId, Context, Evm, EvmBuilder};
-use tokio::{runtime::Runtime, sync::OnceCell, task::JoinHandle};
 
 use crate::{
     db::Db,
@@ -11,8 +10,6 @@ use crate::{
     paths::{LEVELDB_BYTECODE_PATH, LEVELDB_COUNT_PATH, LEVELDB_LABEL_PATH},
     utils::{build_flat_buffer, set_evm_env},
 };
-
-static RUNTIME: OnceCell<Runtime> = OnceCell::const_new();
 
 // byte slice view: golang data type
 // unamangedvector: ffi safe vector data type compliants with rust's ownership and data types, for returning optional error value
@@ -33,11 +30,11 @@ pub fn to_evm<'a>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, (), GoStorage<'a>>>
     }
 }
 
-pub fn to_cron<'a>(ptr: *mut cron_t) -> Option<&'a mut JoinHandle<()>> {
+pub fn to_cron<'a>(ptr: *mut cron_t) -> Option<&'a mut Cronner> {
     if ptr.is_null() {
         None
     } else {
-        let cron = unsafe { &mut *(ptr as *mut JoinHandle<()>) };
+        let cron = unsafe { &mut *(ptr as *mut Cronner) };
         Some(cron)
     }
 }
@@ -66,7 +63,7 @@ pub async extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
 
 #[tokio::main]
 #[no_mangle]
-pub async extern "C" fn init_cron_job() -> *mut cron_t {
+pub async extern "C" fn init_cronner() -> *mut cron_t {
     let leveldb_count = LevelDB::init(LEVELDB_COUNT_PATH);
     let leveldb_label = LevelDB::init(LEVELDB_LABEL_PATH);
     let leveldb_bytecode = LevelDB::init(LEVELDB_BYTECODE_PATH);
@@ -74,9 +71,9 @@ pub async extern "C" fn init_cron_job() -> *mut cron_t {
     let interval_ms = 1_000;
 
     let cronner = Cronner::new_with_db(interval_ms, leveldb_count, leveldb_label, leveldb_bytecode);
-    let cron_handle = cronner.start_routine();
+    //let cron_handle = cronner.routine_fn();
 
-    let cron = Box::into_raw(Box::new(cron_handle));
+    let cron = Box::into_raw(Box::new(cronner));
     cron as *mut cron_t
 }
 
@@ -92,7 +89,7 @@ pub extern "C" fn release_vm(vm: *mut evm_t) {
 pub extern "C" fn release_cron(cron: *mut cron_t) {
     if !cron.is_null() {
         // this will free cache when it goes out of scope
-        let _ = unsafe { Box::from_raw(cron as *mut JoinHandle<()>) };
+        let _ = unsafe { Box::from_raw(cron as *mut Cronner) };
     }
 }
 
@@ -162,7 +159,7 @@ pub extern "C" fn query_tx(
 
 #[tokio::main]
 #[no_mangle]
-pub async extern "C" fn join_cron(cron_ptr: *mut cron_t) {
+pub async extern "C" fn start_cron_job(cron_ptr: *mut cron_t) {
     let cron = match to_cron(cron_ptr) {
         Some(cron) => cron,
         None => {
@@ -170,10 +167,6 @@ pub async extern "C" fn join_cron(cron_ptr: *mut cron_t) {
         }
     };
 
-    match cron.await {
-        Ok(_) => (),
-        Err(err) => {
-            println!("Error while joining cron, err: {err:#?}");
-        }
-    }
+    let routine = cron.routine_fn();
+    routine.await;
 }

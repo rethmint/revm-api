@@ -18,11 +18,12 @@ const CANCUN uint8 = 17
 func setupTest(t *testing.T) (revm.VM, *testutils.MockKVStore, common.Address) {
 	kvStore := testutils.NewMockKVStore()
 	vm := revm.NewVM(CANCUN)
-	cron := revm.NewCronner()
-	cron.Start()
+	cronner := revm.NewCronner()
+
+	go cronner.Start()
 
 	t.Cleanup(func() {
-		cron.Destroy()
+		cronner.Destroy()
 		vm.Destroy()
 	})
 	caller := common.HexToAddress("0xe100713fc15400d1e94096a545879e7c647001e0")

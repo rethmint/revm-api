@@ -1,11 +1,11 @@
-use revm::{handler::register::EvmHandler, primitives::SpecId, Context, Evm};
+use revm::{ handler::register::EvmHandler, primitives::SpecId, Context, Evm };
 
 use crate::{
     db::Db,
     error::set_error,
     gstorage::GoStorage,
-    memory::{ByteSliceView, UnmanagedVector},
-    utils::{build_flat_buffer, set_evm_env},
+    memory::{ ByteSliceView, UnmanagedVector },
+    utils::{ build_flat_buffer, set_evm_env },
 };
 
 // byte slice view: golang data type
@@ -49,7 +49,7 @@ pub extern "C" fn execute_tx(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>,
+    errmsg: Option<&mut UnmanagedVector>
 ) -> UnmanagedVector {
     let evm = match to_evm(vm_ptr) {
         Some(vm) => vm,
@@ -77,7 +77,7 @@ pub extern "C" fn query_tx(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>,
+    errmsg: Option<&mut UnmanagedVector>
 ) -> UnmanagedVector {
     let evm = match to_evm(vm_ptr) {
         Some(vm) => vm,

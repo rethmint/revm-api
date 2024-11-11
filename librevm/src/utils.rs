@@ -159,6 +159,8 @@ pub fn build_flat_buffer(result: ExecutionResult) -> Vec<u8> {
             )
         }
         ExecutionResult::Halt { reason, gas_used } => {
+            println!("Reason: {:?}", reason);
+            println!("Gas Used: {:?}", gas_used);
             let halt_reason = match reason {
                 HaltReason::OutOfGas(out_of_gas_error) => match out_of_gas_error {
                     OutOfGasError::Basic => HaltReasonEnum::OutOfGasBasic,

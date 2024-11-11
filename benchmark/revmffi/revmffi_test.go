@@ -1,8 +1,8 @@
 package revmffi_test
 
 import (
-	"fmt"
 	"math/big"
+	// "math/big"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -33,7 +33,8 @@ func Test_ERC20_Benchmark(t *testing.T) {
 	require.NoError(t, err)
 	res, err := result.ProcessExecutionResult()
 	require.NoError(t, err)
-	success, _ := res.(types.Success)
+	success, ok := res.(types.Success)
+	require.True(t, ok)
 	erc20Addr := success.Output.DeployedAddress
 	// ERC20 Mint
 	mintData, _ := erc20abi.Pack("mint", callerAddr, big.NewInt(1000))
@@ -42,8 +43,7 @@ func Test_ERC20_Benchmark(t *testing.T) {
 	require.NoError(t, err)
 	res, err = result.ProcessExecutionResult()
 	require.NoError(t, err)
-	ret, ok := res.(types.Success)
-	fmt.Println(ret)
+	_, ok = res.(types.Success)
 	require.True(t, ok)
 
 	// ERC20 Transfer

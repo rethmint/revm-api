@@ -19,9 +19,10 @@ func setupTest(t *testing.T) (revm.VM, *testutils.MockKVStore, common.Address) {
 	kvStore := testutils.NewMockKVStore()
 	vm := revm.NewVM(CANCUN)
 	cron := revm.NewCron()
-	cron.Destroy()
+	cron.Join()
 
 	t.Cleanup(func() {
+		cron.Destroy()
 		vm.Destroy()
 	})
 	caller := common.HexToAddress("0xe100713fc15400d1e94096a545879e7c647001e0")

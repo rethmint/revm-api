@@ -19,6 +19,10 @@ func NewCron() Cron {
 	return Cron{inner}
 }
 
+func (cron *Cron) Join() {
+	api.JoinCron(cron.Inner)
+}
+
 func (cron *Cron) Destroy() {
 	api.ReleaseCron(cron.Inner)
 }

@@ -17,3 +17,7 @@ func InitCron() Cron {
 		ptr: C.init_cron_job(),
 	}
 }
+
+func JoinCron(cron Cron) {
+	C.join_cron(cron.ptr)
+}

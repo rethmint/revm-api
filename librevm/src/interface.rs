@@ -1,5 +1,5 @@
 use revm::{primitives::SpecId, Context, Evm, EvmBuilder};
-use tokio::task::JoinHandle;
+use tokio::{runtime::Runtime, sync::OnceCell, task::JoinHandle};
 
 use crate::{
     db::Db,
@@ -12,7 +12,7 @@ use crate::{
     utils::{build_flat_buffer, set_evm_env},
 };
 
-//static CRON_HANDLE: Lazy<Mutex<Option<JoinHandle<()>>>> = Lazy::new(|| Mutex::new(None));
+static RUNTIME: OnceCell<Runtime> = OnceCell::const_new();
 
 // byte slice view: golang data type
 // unamangedvector: ffi safe vector data type compliants with rust's ownership and data types, for returning optional error value
@@ -170,5 +170,10 @@ pub async extern "C" fn join_cron(cron_ptr: *mut cron_t) {
         }
     };
 
-    cron.await.expect("Failed to join cron");
+    match cron.await {
+        Ok(_) => (),
+        Err(err) => {
+            println!("Error while joining cron, err: {err:#?}");
+        }
+    }
 }

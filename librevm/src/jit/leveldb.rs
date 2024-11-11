@@ -8,6 +8,8 @@ use std::marker::PhantomData;
 use std::path::Path;
 use std::sync::Arc;
 
+pub const LEVELDB_PATH: &str = "librevm/data";
+
 // phantom data to use lifetime parameter
 pub struct LevelDB<'a, K>
 where
@@ -21,8 +23,8 @@ impl<'a, K> LevelDB<'a, K>
 where
     K: 'a + Key,
 {
-    pub fn init(path: &'a str) -> Self {
-        let db = LevelDB::connect(path).unwrap();
+    pub fn init() -> Self {
+        let db = LevelDB::connect(LEVELDB_PATH).unwrap();
         Self {
             db: Arc::new(db),
             _marker: PhantomData,

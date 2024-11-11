@@ -1,5 +1,6 @@
 mod cfg;
 mod cron;
+mod key;
 mod leveldb;
 
 use alloy_primitives::{address, U256};
@@ -10,6 +11,7 @@ use std::{path::PathBuf, str::FromStr};
 
 pub use cfg::*;
 pub use cron::*;
+pub use key::*;
 pub use leveldb::*;
 
 pub struct RuntimeJit {

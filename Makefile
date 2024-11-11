@@ -30,6 +30,11 @@ fmt:
 update-bindings:
 	cp librevm/bindings.h api
 
+lib-test:
+	make build-rust-debug
+	go clean -testcache
+	go test -v .
+
 # Use debug build for quick testing.
 # In order to use "--features backtraces" here we need a Rust nightly toolchain, which we don't have by default
 build-rust-debug:

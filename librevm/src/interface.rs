@@ -7,7 +7,6 @@ use crate::{
     gstorage::GoStorage,
     jit::{Cronner, LevelDB},
     memory::{ByteSliceView, UnmanagedVector},
-    paths::{LEVELDB_BYTECODE_PATH, LEVELDB_COUNT_PATH, LEVELDB_LABEL_PATH},
     utils::{build_flat_buffer, set_evm_env},
 };
 
@@ -64,13 +63,11 @@ pub async extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
 #[tokio::main]
 #[no_mangle]
 pub async extern "C" fn init_cronner() -> *mut cron_t {
-    let leveldb_count = LevelDB::init(LEVELDB_COUNT_PATH);
-    let leveldb_label = LevelDB::init(LEVELDB_LABEL_PATH);
-    let leveldb_bytecode = LevelDB::init(LEVELDB_BYTECODE_PATH);
+    let leveldb = LevelDB::init();
 
     let interval_ms = 1_000;
 
-    let cronner = Cronner::new_with_db(interval_ms, leveldb_count, leveldb_label, leveldb_bytecode);
+    let cronner = Cronner::new_with_db(interval_ms, leveldb);
     //let cron_handle = cronner.routine_fn();
 
     let cron = Box::into_raw(Box::new(cronner));

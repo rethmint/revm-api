@@ -78,6 +78,7 @@ require (
 )
 
 replace (
+	github.com/rethmint/revm-api/testutils => ../../testutils
 	github.com/rethmint/revm-api => ../../../revm-api
 	github.com/stretchr/testify => github.com/stretchr/testify v1.7.0
 )

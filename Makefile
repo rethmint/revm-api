@@ -78,7 +78,7 @@ flatbuffer-gen:
 	@bash ./scripts/flatbuffer-gen.sh
 	cargo fix --allow-dirty
 	
-contracts-gen: ./benchmark/contract/*
+contracts-gen:
 	@bash ./scripts/contractsgen.sh
 
 

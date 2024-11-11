@@ -1,5 +1,5 @@
 BUILD_DIR=build
-CONTRACTS_DIR=benchmark/contracts
+CONTRACTS_DIR=contracts
 for CONTRACT_HOME in $CONTRACTS_DIR/*; do
     if [ -d "$CONTRACT_HOME" ]; then
         PKG_NAME=$(basename $CONTRACT_HOME)

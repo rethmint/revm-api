@@ -1,4 +1,4 @@
-package gevm
+package gevm_test
 
 import (
 	"math/big"
@@ -62,18 +62,18 @@ func Test_ERC20_Benchmark(t *testing.T) {
 	require.NoError(t, err)
 
 	// ERC20 Mint
-	mintData, _ := erc20abi.Methods["mint"].Inputs.Pack(callerAddr, big.NewInt(1000))
+	mintData, _ := erc20abi.Pack("mint", callerAddr, big.NewInt(1000))
 	_, _, err = evm.Call(vm.AccountRef(callerAddr), contractAddress, mintData, gaslimit, new(uint256.Int))
 	require.NoError(t, err)
 
 	// ERC20 Transfer
 	recipientAddr := common.HexToAddress("0x20")
-	transferData, _ := erc20abi.Methods["transfer"].Inputs.Pack(recipientAddr, big.NewInt(100))
+	transferData, _ := erc20abi.Pack("transfer", recipientAddr, big.NewInt(100))
 	_, _, err = evm.Call(vm.AccountRef(callerAddr), contractAddress, transferData, gaslimit, new(uint256.Int))
 	require.NoError(t, err)
 
 	// ERC20 BalanceOf
-	balanceOfData, _ := erc20abi.Methods["balanceOf"].Inputs.Pack(recipientAddr)
+	balanceOfData, _ := erc20abi.Pack("balanceOf", recipientAddr)
 	_, _, err = evm.StaticCall(vm.AccountRef(callerAddr), contractAddress, balanceOfData, gaslimit)
 	require.NoError(t, err)
 

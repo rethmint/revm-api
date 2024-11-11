@@ -2,7 +2,7 @@
 name = "revmapi"
 version = "0.0.1"
 publish = false
-description = "Reth Revm Engine"
+description = "Revm Engine FFI API"
 repository = "https://github.com/rethmint/revm-api"
 exclude = [".gitignore"]
 edition = { workspace = true }

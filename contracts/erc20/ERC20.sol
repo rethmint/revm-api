@@ -352,6 +352,10 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
         return true;
     }
 
+    function mint(address to, uint amount) public {
+        _mint(to, amount);
+    }
+
     /**
      * @dev Moves `amount` of tokens from `from` to `to`.
      *

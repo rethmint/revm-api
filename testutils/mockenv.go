@@ -11,7 +11,7 @@ func MockTx(caller common.Address, transactTo [20]byte, txData []byte, nonce uin
 	return types.TransactionEnv{
 		Caller:         caller,
 		GasLimit:       1000000,
-		GasPrice:       common.BigToHash(big.NewInt(10000)),
+		GasPrice:       common.BigToHash(big.NewInt(0)),
 		TransactTo:     transactTo,
 		Value:          common.BigToHash(big.NewInt(0)),
 		Data:           txData,

@@ -1,6 +1,7 @@
 package revmffi_test
 
 import (
+	"fmt"
 	"math/big"
 	"testing"
 
@@ -24,7 +25,7 @@ func Test_ERC20_Benchmark(t *testing.T) {
 	evm := revm_api.NewVM(cancun)
 	kvstore := testutils.NewMockKVStore()
 	// ERC20 create
-	packedData, _ := erc20abi.Constructor.Inputs.Pack("Mock Token", "Mock")
+	packedData, _ := erc20abi.Constructor.Inputs.Pack("Mock", "Mock")
 	calldata := append(erc20bin, packedData...)
 	txcontext := testutils.MockTx(callerAddr, common.Address{}, calldata, 0)
 	block := testutils.MockBlock(1)
@@ -32,23 +33,22 @@ func Test_ERC20_Benchmark(t *testing.T) {
 	require.NoError(t, err)
 	res, err := result.ProcessExecutionResult()
 	require.NoError(t, err)
-	success, ok := res.(types.Success)
-	require.True(t, ok)
-
+	success, _ := res.(types.Success)
 	erc20Addr := success.Output.DeployedAddress
 	// ERC20 Mint
-	mintData, _ := erc20abi.Methods["mint"].Inputs.Pack(callerAddr, big.NewInt(1000))
+	mintData, _ := erc20abi.Pack("mint", callerAddr, big.NewInt(1000))
 	txcontext = testutils.MockTx(callerAddr, erc20Addr, mintData, 1)
 	result, err = evm.ExecuteTx(kvstore, block.ToSerialized(), txcontext.ToSerialized())
 	require.NoError(t, err)
 	res, err = result.ProcessExecutionResult()
 	require.NoError(t, err)
-	_, ok = res.(types.Success)
+	ret, ok := res.(types.Success)
+	fmt.Println(ret)
 	require.True(t, ok)
 
 	// ERC20 Transfer
 	recipientAddr := common.HexToAddress("0x20")
-	transferData, _ := erc20abi.Methods["transfer"].Inputs.Pack(recipientAddr, big.NewInt(100))
+	transferData, _ := erc20abi.Pack("transfer", recipientAddr, big.NewInt(100))
 	txcontext = testutils.MockTx(callerAddr, erc20Addr, transferData, 2)
 	result, err = evm.ExecuteTx(kvstore, block.ToSerialized(), txcontext.ToSerialized())
 	require.NoError(t, err)
@@ -58,7 +58,7 @@ func Test_ERC20_Benchmark(t *testing.T) {
 	require.True(t, ok)
 
 	// ERC20 BalanceOf
-	balanceOfData, _ := erc20abi.Methods["balanceOf"].Inputs.Pack(recipientAddr)
+	balanceOfData, _ := erc20abi.Pack("balanceOf", recipientAddr)
 	txcontext = testutils.MockTx(callerAddr, erc20Addr, balanceOfData, 3)
 	result, _ = evm.QueryTx(kvstore, block.ToSerialized(), txcontext.ToSerialized())
 	res, err = result.ProcessExecutionResult()

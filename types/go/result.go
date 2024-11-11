@@ -5,21 +5,23 @@ import (
 
 	flatbuffers "github.com/google/flatbuffers/go"
 	resulttype "github.com/rethmint/revm-api/types/go/result"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type Log struct {
-	Address AccountAddress
+	Address common.Address
 	Data    LogData
 }
 type LogData struct {
-	Topics []U256
+	Topics []common.Hash
 	Data   []byte
 }
 
 type OutputType uint8
 
 type Output struct {
-	DeployedAddress [20]byte
+	DeployedAddress common.Address
 	Output          []byte
 }
 
@@ -72,7 +74,7 @@ func (res ExecutionResult) ProcessExecutionResult() (Result, error) {
 			}
 			topicsLen := logData.TopicsLength()
 			var topic resulttype.Topic
-			topics := make([]U256, topicsLen)
+			topics := make([]common.Hash, topicsLen)
 			for j := 0; j < topicsLen; j++ {
 				if !logData.Topics(&topic, j) {
 					return nil, fmt.Errorf("failed to get log data topic at index %d", j)
@@ -82,7 +84,7 @@ func (res ExecutionResult) ProcessExecutionResult() (Result, error) {
 				topics[j] = topic32
 			}
 			logs[i] = Log{
-				Address: AccountAddress(log.AddressBytes()),
+				Address: common.Address(log.AddressBytes()),
 				Data: LogData{
 					Topics: topics,
 					Data:   logData.DataBytes(),

@@ -1,4 +1,4 @@
-/* (c) 2024 initia labs. Licensed under BUSL-1.1 */
+/* (c) Licensed under the MIT License. Created by rethmint. */
 
 #ifndef __LIBREVMAPI__
 #define __LIBREVMAPI__

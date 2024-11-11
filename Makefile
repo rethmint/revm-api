@@ -2,6 +2,7 @@
 
 # Builds the Rust library librevm
 BUILDERS_PREFIX := rethmint/librevm-builder:0001
+BENCHMARK_PREFIX := rethmint/benchmark:0001
 CONTRACTS_DIR = ./contracts
 USER_ID := $(shell id -u)
 USER_GROUP = $(shell id -g)
@@ -77,4 +78,35 @@ flatbuffer-gen:
 	@bash ./scripts/flatbuffer-gen.sh
 	cargo fix --allow-dirty
 	
+contracts-gen:
+	@bash ./scripts/contractsgen.sh
 
+
+BENCHMARK_PREFIX := rethmint/benchmark:0001
+
+.PHONY: docker-image-gevm
+docker-image-gevm:
+	docker build --pull . -t $(BENCHMARK_PREFIX)-gevm -f ./benchmark/gevm/Dockerfile.gevm
+
+.PHONY: docker-image-revmffi
+docker-image-revmffi:
+	docker build --pull . -t $(BENCHMARK_PREFIX)-revmffi -f ./benchmark/revmffi/Dockerfile.revmffi
+
+
+.PHONY: docker-images
+docker-images: docker-image-revmffi docker-image-gevm
+
+.PHONY: docker-publish
+docker-publish: docker-images
+	docker push $(BENCHMARK_PREFIX)-revmffi
+	docker push $(BENCHMARK_PREFIX)-gevm
+
+benchmark:
+	@echo "Running revm ffi benchmark..."
+	docker run --rm -v $(shell pwd):/app/ $(BENCHMARK_PREFIX)-revmffi
+	@echo "Docker container state:"
+	docker stats --no-stream
+	@echo "Running gevm ffi benchmark..."
+	docker run --rm -v $(shell pwd):/app/ $(BENCHMARK_PREFIX)-gevm
+	@echo "Docker container state:"
+	docker stats --no-stream

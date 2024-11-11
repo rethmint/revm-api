@@ -1,4 +1,4 @@
-//go:build darwin && !sys_revm
+//go:build darwin
 
 package api
 

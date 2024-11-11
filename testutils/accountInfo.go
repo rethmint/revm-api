@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"math/big"
 
-	types "github.com/rethmint/revm-api/types/go"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // 72 Byte
@@ -43,10 +43,9 @@ func AccountInfoFromBytes(data []byte) (AccountInfo, error) {
 	return account, nil
 }
 
-func ExtractAccountInfo(kvStore *MockKVStore, caller types.AccountAddress) AccountInfo {
-	accountKey := AddressToAccountAddressKey(caller)
+func ExtractAccountInfo(kvStore *MockKVStore, caller common.Address) AccountInfo {
+	accountKey := append(AccountPrefix, caller.Bytes()...)
 	accountBytes := kvStore.Get(accountKey)
-
 	if accountBytes != nil {
 		accountInfo, _ := AccountInfoFromBytes(accountBytes)
 		return accountInfo

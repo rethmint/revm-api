@@ -6,7 +6,7 @@ use tokio::time::{interval_at, Instant};
 use super::{QueryKeySlice, SledDB};
 use crate::jit::{JitCfg, JitUnit, KeyPrefix, QueryKey, RuntimeJit};
 
-pub const JIT_THRESHOLD: i32 = 10;
+pub const JIT_THRESHOLD: i32 = 1;
 
 pub struct Cronner {
     // ms
@@ -55,6 +55,11 @@ impl Cronner {
                 });
 
                 if count > JIT_THRESHOLD {
+                    let prefix_zeros = &key.to_b256()[0..10];
+                    if prefix_zeros.iter().all(|&byte| byte == 0) {
+                        continue;
+                    }
+
                     key.update_prefix(KeyPrefix::Bytecode);
                     if let Some(bytecode) = sled_db.get(*key.as_inner()).unwrap_or(None) {
                         let bytecode_hash = key.to_b256();

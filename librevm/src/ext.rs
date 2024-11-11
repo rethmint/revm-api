@@ -11,10 +11,6 @@ use crate::{
 
 pub struct ExternalContext {}
 
-revmc::extern_revmc! {
-    fn fibonacci;
-}
-
 impl ExternalContext {
     pub fn new() -> Self {
         Self {}
@@ -25,13 +21,6 @@ impl ExternalContext {
         let sled_db = SLED_DB.get_or_init(|| Arc::new(SledDB::<QueryKeySlice>::init()));
         let label_key = QueryKey::with_prefix(bytecode_hash, KeyPrefix::Label);
 
-        let prefix_zeros = &bytecode_hash[0..10];
-        if prefix_zeros.iter().all(|&byte| byte == 0) {
-            // Skip processing if it starts with 10 zeros
-            return None;
-        }
-
-        println!("Checking count for bytecode hash {:#?}", bytecode_hash);
         let maybe_label = sled_db.get(*label_key.as_inner()).unwrap_or(None);
         if let Some(label) = maybe_label {
             let fn_label = String::from_utf8(label.to_vec()).unwrap();
@@ -74,6 +63,7 @@ impl ExternalContext {
             let label_key = QueryKey::with_prefix(bytecode_hash, KeyPrefix::Label);
             if let None = sled_db.get(*label_key.as_inner()).unwrap_or(None) {
                 let bytecode_key = QueryKey::with_prefix(bytecode_hash, KeyPrefix::Bytecode);
+
                 sled_db
                     .put(*bytecode_key.as_inner(), bytecode, true)
                     .unwrap();
@@ -90,6 +80,9 @@ pub fn register_handler<DB: Database>(handler: &mut EvmHandler<'_, ExternalConte
         let interpreter = frame.interpreter_mut();
         let bytecode_hash = interpreter.contract.hash.unwrap_or_default();
         let bytecode = interpreter.contract.bytecode.original_byte_slice();
+
+        println!("Checking for bytecode hash {:#?}\n", bytecode_hash);
+        //println!("Checking for bytecode {:#?}\n\n", bytecode[0..10]);
 
         context
             .external

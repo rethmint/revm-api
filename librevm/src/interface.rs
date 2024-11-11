@@ -1,5 +1,6 @@
-use std::sync::Arc;
+use std::{sync::Arc, thread};
 
+use alloy_primitives::TxKind;
 use once_cell::sync::OnceCell;
 use revm::{primitives::SpecId, Context, Evm, EvmBuilder};
 
@@ -110,11 +111,17 @@ pub extern "C" fn execute_tx(
             panic!("Failed to get VM");
         }
     };
-    let go_storage = GoStorage::new(&db);
 
+    let go_storage = GoStorage::new(&db);
     evm.context.evm.db = go_storage;
 
     set_evm_env(evm, block, tx);
+
+    //println!("TxKind: {:#?}", evm.tx().transact_to);
+    //if evm.tx().transact_to.is_call() {
+    //    std::thread::sleep(std::time::Duration::from_secs(60));
+    //}
+
     let result = evm.transact_commit();
     let data = match result {
         Ok(res) => build_flat_buffer(res),
@@ -123,8 +130,6 @@ pub extern "C" fn execute_tx(
             Vec::new()
         }
     };
-
-    //std::thread::sleep(std::time::Duration::from_secs(70));
 
     UnmanagedVector::new(Some(data))
 }

@@ -31,13 +31,13 @@ alloy-primitives = { version = "0.8.2", default-features = false, features = [
 # state = { workspace = true }
 revm = { workspace = true }
 revmc = { workspace = true }
-leveldb = "0.8.6"
 tempdir = "0.3.7"
 color-eyre = "0.6"
 db-key = "0.0.5"
 tokio = { version = "1.41.1", features = ["full"] }
 once_cell = "1.20.2"
 libloading = "0.8"
+sled = "0.34.7"
 
 [build-dependencies]
 cbindgen = { workspace = true }

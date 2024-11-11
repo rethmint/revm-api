@@ -5,7 +5,7 @@ use crate::{
     error::set_error,
     ext::{register_handler, ExternalContext},
     gstorage::GoStorage,
-    jit::{Cronner, LevelDB},
+    jit::{Cronner, SledDB},
     memory::{ByteSliceView, UnmanagedVector},
     utils::{build_flat_buffer, set_evm_env},
 };
@@ -63,7 +63,7 @@ pub async extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
 #[tokio::main]
 #[no_mangle]
 pub async extern "C" fn init_cronner() -> *mut cron_t {
-    let leveldb = LevelDB::init();
+    let leveldb = SledDB::init();
 
     let interval_ms = 1_000;
 

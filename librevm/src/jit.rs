@@ -1,7 +1,7 @@
 mod cfg;
 mod cron;
 mod key;
-mod leveldb;
+mod sled;
 
 use alloy_primitives::{address, U256};
 use color_eyre::Result;
@@ -12,7 +12,7 @@ use std::{path::PathBuf, str::FromStr};
 pub use cfg::*;
 pub use cron::*;
 pub use key::*;
-pub use leveldb::*;
+pub use sled::*;
 
 pub struct RuntimeJit {
     pub unit: JitUnit,

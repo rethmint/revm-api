@@ -1,5 +1,6 @@
 use alloy_primitives::B256;
 use db_key::Key;
+use sled::IVec;
 
 #[derive(Debug, Clone, Copy)]
 pub struct QueryKey([u8; 33]);
@@ -26,6 +27,14 @@ impl QueryKey {
 
     pub fn to_b256(&self) -> B256 {
         B256::from_slice(&self.0[1..])
+    }
+
+    pub fn from_ivec(ivec: IVec) -> Self {
+        assert!(ivec.len() == 33, "ivec len not 33");
+
+        let mut arr = [0u8; 33];
+        arr.copy_from_slice(&ivec);
+        QueryKey(arr)
     }
 }
 

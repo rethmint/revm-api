@@ -4,32 +4,32 @@ use alloy_primitives::B256;
 use revmc::eyre::{Context, Result};
 use tokio::time::{interval_at, Instant};
 
-use super::{key::QueryKey, LevelDB};
-use crate::jit::{JitCfg, JitUnit, KeyPrefix, RuntimeJit};
+use super::SledDB;
+use crate::jit::{JitCfg, JitUnit, KeyPrefix, QueryKey, RuntimeJit};
 
 const JIT_THRESHOLD: i32 = 10;
 
 pub struct Cronner {
     // ms
     interval: u64,
-    leveldb: LevelDB<'static, QueryKey>,
+    sled_db: SledDB<[u8; 33]>,
 }
 
 impl Cronner {
-    pub fn new_with_db(interval: u64, leveldb: LevelDB<'static, QueryKey>) -> Self {
-        Self { interval, leveldb }
+    pub fn new_with_db(interval: u64, sled_db: SledDB<[u8; 33]>) -> Self {
+        Self { interval, sled_db }
     }
 
     pub fn routine_fn(&self) -> impl Future<Output = ()> + Send + 'static {
         let interval = self.interval.clone();
-        let leveldb = self.leveldb.clone();
+        let sled_db = self.sled_db.clone();
 
         async move {
-            Cronner::cron(interval, leveldb).await;
+            Cronner::cron(interval, sled_db).await;
         }
     }
 
-    pub async fn cron(interval: u64, leveldb: LevelDB<'static, QueryKey>) {
+    pub async fn cron(interval: u64, sled_db: SledDB<[u8; 33]>) {
         let start = Instant::now();
         let mut interval = interval_at(start, time::Duration::from_millis(interval));
 
@@ -37,28 +37,36 @@ impl Cronner {
             interval.tick().await;
             println!("Cron loop...");
 
-            for mut key in leveldb
+            for mut key in sled_db
                 .key_iterator()
-                .filter(|k| k.match_prefix(KeyPrefix::Count))
+                .filter_map(|iv| {
+                    let k = QueryKey::from_ivec(iv);
+
+                    if k.match_prefix(KeyPrefix::Count) {
+                        Some(k)
+                    } else {
+                        None
+                    }
+                })
                 .into_iter()
             {
                 println!("Count Key: {key:#?}");
-                let count_bytes = leveldb.get(key).unwrap_or(None);
+                let count_bytes = sled_db.get(*key.as_inner()).unwrap_or(None);
                 let count = count_bytes.as_ref().map_or(1, |v| {
-                    let bytes: [u8; 4] = v.as_slice().try_into().unwrap_or([0, 0, 0, 0]);
+                    let bytes: [u8; 4] = v.to_vec().as_slice().try_into().unwrap_or([0, 0, 0, 0]);
                     i32::from_be_bytes(bytes)
                 });
 
                 if count > JIT_THRESHOLD {
                     println!("Over threshold for key: {:#?}, count: {:#?}", key, count);
                     key.update_prefix(KeyPrefix::Bytecode);
-                    if let Some(bytecode) = leveldb.get(key).unwrap_or(None) {
+                    if let Some(bytecode) = sled_db.get(*key.as_inner()).unwrap_or(None) {
                         let bytecode_hash = key.to_b256();
                         // leak for cast to static
                         let label = Cronner::mangle_hex(bytecode_hash.as_slice()).leak();
 
                         key.update_prefix(KeyPrefix::Label);
-                        if let None = leveldb.get(key).unwrap_or(None) {
+                        if let None = sled_db.get(*key.as_inner()).unwrap_or(None) {
                             Cronner::jit(label, &bytecode, bytecode_hash).unwrap();
                         }
                     }

@@ -4,7 +4,10 @@ use alloy_primitives::B256;
 use revm::{handler::register::EvmHandler, Database};
 use revmc::{eyre::Result, EvmCompilerFn};
 
-use crate::jit::{KeyPrefix, QueryKey, SledDB, SLEDDB_PATH};
+use crate::{
+    jit::{KeyPrefix, QueryKey, QueryKeySlice, SledDB, SLEDDB_PATH},
+    SLED_DB,
+};
 
 pub struct ExternalContext {}
 
@@ -19,7 +22,7 @@ impl ExternalContext {
 
     fn get_function(&self, bytecode_hash: B256) -> Option<EvmCompilerFn> {
         // TODO: Restrain from initializing db every get function call
-        let sled_db = SledDB::<[u8; 33]>::init();
+        let sled_db = SLED_DB.get_or_init(|| Arc::new(SledDB::<QueryKeySlice>::init()));
         let label_key = QueryKey::with_prefix(bytecode_hash, KeyPrefix::Label);
 
         println!("Checking count for bytecode hash {:#?}", bytecode_hash);
@@ -44,7 +47,7 @@ impl ExternalContext {
 
     fn update_bytecode_reference(&self, bytecode: &[u8], bytecode_hash: B256) -> Result<()> {
         // TODO: Restrain from initializing db every inc call
-        let sled_db = SledDB::<[u8; 33]>::init();
+        let sled_db = SLED_DB.get_or_init(|| Arc::new(SledDB::<QueryKeySlice>::init()));
         let count_key = QueryKey::with_prefix(bytecode_hash, KeyPrefix::Count);
 
         let count = sled_db.get(*count_key.as_inner()).unwrap_or(None);
@@ -82,7 +85,7 @@ pub fn register_handler<DB: Database>(handler: &mut EvmHandler<'_, ExternalConte
         context
             .external
             .update_bytecode_reference(bytecode, bytecode_hash)
-            .expect("increment failed");
+            .expect("update failed");
 
         if let Some(f) = context.external.get_function(bytecode_hash) {
             Ok(unsafe { f.call_with_interpreter_and_memory(interpreter, memory, context) })

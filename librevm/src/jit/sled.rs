@@ -28,6 +28,9 @@ where
     }
 
     fn connect(path: &str) -> Result<sled::Db> {
+        let pid = std::process::id();
+        println!("Process ID: {}", pid);
+
         sled::open(Path::new(path)).map_err(|e| eyre::Report::new(e))
     }
 

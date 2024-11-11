@@ -1,10 +1,10 @@
-use std::{future::Future, time};
+use std::{future::Future, sync::Arc, time};
 
 use alloy_primitives::B256;
 use revmc::eyre::{Context, Result};
 use tokio::time::{interval_at, Instant};
 
-use super::SledDB;
+use super::{QueryKeySlice, SledDB};
 use crate::jit::{JitCfg, JitUnit, KeyPrefix, QueryKey, RuntimeJit};
 
 const JIT_THRESHOLD: i32 = 10;
@@ -12,11 +12,11 @@ const JIT_THRESHOLD: i32 = 10;
 pub struct Cronner {
     // ms
     interval: u64,
-    sled_db: SledDB<[u8; 33]>,
+    sled_db: Arc<SledDB<QueryKeySlice>>,
 }
 
 impl Cronner {
-    pub fn new_with_db(interval: u64, sled_db: SledDB<[u8; 33]>) -> Self {
+    pub fn new_with_db(interval: u64, sled_db: Arc<SledDB<QueryKeySlice>>) -> Self {
         Self { interval, sled_db }
     }
 
@@ -29,7 +29,7 @@ impl Cronner {
         }
     }
 
-    pub async fn cron(interval: u64, sled_db: SledDB<[u8; 33]>) {
+    pub async fn cron(interval: u64, sled_db: Arc<SledDB<QueryKeySlice>>) {
         let start = Instant::now();
         let mut interval = interval_at(start, time::Duration::from_millis(interval));
 

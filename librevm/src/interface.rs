@@ -1,3 +1,6 @@
+use std::sync::Arc;
+
+use once_cell::sync::OnceCell;
 use revm::{primitives::SpecId, Context, Evm, EvmBuilder};
 
 use crate::{
@@ -5,10 +8,12 @@ use crate::{
     error::set_error,
     ext::{register_handler, ExternalContext},
     gstorage::GoStorage,
-    jit::{Cronner, SledDB},
+    jit::{Cronner, QueryKeySlice, SledDB},
     memory::{ByteSliceView, UnmanagedVector},
     utils::{build_flat_buffer, set_evm_env},
 };
+
+pub static SLED_DB: OnceCell<Arc<SledDB<QueryKeySlice>>> = OnceCell::new();
 
 // byte slice view: golang data type
 // unamangedvector: ffi safe vector data type compliants with rust's ownership and data types, for returning optional error value
@@ -63,11 +68,11 @@ pub async extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
 #[tokio::main]
 #[no_mangle]
 pub async extern "C" fn init_cronner() -> *mut cron_t {
-    let leveldb = SledDB::init();
+    let sled_db = SLED_DB.get_or_init(|| Arc::new(SledDB::init()));
 
     let interval_ms = 1_000;
 
-    let cronner = Cronner::new_with_db(interval_ms, leveldb);
+    let cronner = Cronner::new_with_db(interval_ms, Arc::clone(sled_db));
     //let cron_handle = cronner.routine_fn();
 
     let cron = Box::into_raw(Box::new(cronner));

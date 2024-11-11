@@ -1,9 +1,10 @@
 use alloy_primitives::B256;
-use db_key::Key;
 use sled::IVec;
 
+pub type QueryKeySlice = [u8; 33];
+
 #[derive(Debug, Clone, Copy)]
-pub struct QueryKey([u8; 33]);
+pub struct QueryKey(QueryKeySlice);
 
 impl QueryKey {
     pub fn with_prefix(key: B256, prefix: KeyPrefix) -> Self {
@@ -35,23 +36,6 @@ impl QueryKey {
         let mut arr = [0u8; 33];
         arr.copy_from_slice(&ivec);
         QueryKey(arr)
-    }
-}
-
-impl Key for QueryKey {
-    fn from_u8(key: &[u8]) -> Self {
-        assert!(
-            key.len() == 33,
-            "Expected 33 bytes (1 byte prefix + 32 byte key)"
-        );
-
-        let mut array = [0u8; 33];
-        array.copy_from_slice(key);
-        QueryKey(array)
-    }
-
-    fn as_slice<T, F: Fn(&[u8]) -> T>(&self, f: F) -> T {
-        f(&self.0)
     }
 }
 

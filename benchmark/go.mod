@@ -1,4 +1,4 @@
-module github.com/rethmint/revm-api/benchmark/revmffi
+module github.com/rethmint/revm-api/benchmark
 
 go 1.22
 
@@ -7,7 +7,7 @@ toolchain go1.23.0
 require (
 	github.com/ethereum/go-ethereum v1.14.11
 	github.com/holiman/uint256 v1.3.1
-	github.com/rethmint/revm-api v0.0.8
+	github.com/rethmint/revm-api v0.0.9
 	github.com/stretchr/testify v1.9.0
 )
 
@@ -83,7 +83,4 @@ require (
 
 )
 
-replace (
-	github.com/rethmint/revm-api/benchmark/revmffi/contracts/erc20 => ./contracts/erc20
-	github.com/stretchr/testify => github.com/stretchr/testify v1.7.0
-)
+replace github.com/stretchr/testify => github.com/stretchr/testify v1.7.0

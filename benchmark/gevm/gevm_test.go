@@ -14,7 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/triedb"
 	"github.com/holiman/uint256"
-	"github.com/rethmint/revm-api/contracts/erc20"
+	"github.com/rethmint/revm-api/benchmark/revmffi/contracts/erc20"
 	"github.com/stretchr/testify/require"
 )
 

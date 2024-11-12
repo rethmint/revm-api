@@ -86,11 +86,11 @@ BENCHMARK_PREFIX := rethmint/benchmark:0001
 
 .PHONY: docker-image-gevm
 docker-image-gevm:
-	docker build  --pull . -t $(BENCHMARK_PREFIX)-gevm -f ./benchmark/gevm/Dockerfile.gevm
+	docker build  --pull . -t $(BENCHMARK_PREFIX)-gevm -f ./benchmark/Dockerfile.gevm
 
 .PHONY: docker-image-revmffi
 docker-image-revmffi:
-	docker build  --pull . -t $(BENCHMARK_PREFIX)-revmffi -f ./benchmark/revmffi/Dockerfile.revmffi
+	docker build  --pull . -t $(BENCHMARK_PREFIX)-revmffi -f ./benchmark/Dockerfile.revmffi
 
 
 .PHONY: docker-images

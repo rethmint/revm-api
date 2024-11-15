@@ -117,11 +117,6 @@ pub extern "C" fn execute_tx(
 
     set_evm_env(evm, block, tx);
 
-    //println!("TxKind: {:#?}", evm.tx().transact_to);
-    //if evm.tx().transact_to.is_call() {
-    //    std::thread::sleep(std::time::Duration::from_secs(60));
-    //}
-
     let result = evm.transact_commit();
     let data = match result {
         Ok(res) => build_flat_buffer(res),
@@ -130,6 +125,11 @@ pub extern "C" fn execute_tx(
             Vec::new()
         }
     };
+
+    println!("TxKind: {:#?}", evm.tx().transact_to);
+    if evm.tx().transact_to.is_call() {
+        std::thread::sleep(std::time::Duration::from_secs(60));
+    }
 
     UnmanagedVector::new(Some(data))
 }

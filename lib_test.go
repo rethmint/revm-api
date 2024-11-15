@@ -7,7 +7,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	revm "github.com/rethmint/revm-api"
-	testca "github.com/rethmint/revm-api/contracts/Test"
+	fibca "github.com/rethmint/revm-api/contracts/Fibonacci"
+	// testca "github.com/rethmint/revm-api/contracts/Test"
 	testutils "github.com/rethmint/revm-api/testutils"
 	types "github.com/rethmint/revm-api/types/go"
 	"github.com/stretchr/testify/require"
@@ -35,7 +36,7 @@ func setupTest(t *testing.T) (revm.VM, *testutils.MockKVStore, common.Address) {
 func Test_e2e(t *testing.T) {
 	vm, kvStore, caller := setupTest(t)
 	// Deploy Test Contract
-	txData, err := hexutil.Decode(testca.TestBin)
+	txData, err := hexutil.Decode("0x5f355f60015b8215601b57906001018091029160019003916005565b9150505f5260205ff3")
 	require.NoError(t, err)
 	createTx := testutils.MockTx(caller, common.Address{}, txData, 0)
 	block := testutils.MockBlock(1)
@@ -47,10 +48,10 @@ func Test_e2e(t *testing.T) {
 	require.True(t, ok)
 	deployedAddr := createRes.Output.DeployedAddress
 
-	// Call the increase function
-	abi, err := testca.TestMetaData.GetAbi()
+	// Call the fibonacci function
+	abi, err := fibca.FibonacciMetaData.GetAbi()
 	require.NoError(t, err)
-	increaseInput, err := abi.Pack("increase")
+	fibonacciInput, err := abi.Pack("fibonacci", big.NewInt(1000))
 	require.NoError(t, err)
 
 	increaseTx := testutils.MockTx(caller, deployedAddr, increaseInput, 1)
@@ -65,7 +66,7 @@ func Test_e2e(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, types.Success{
 		Reason:      "Stop",
-		GasUsed:     49710,
+		GasUsed:     25516,
 		GasRefunded: 0,
 		Logs: []types.Log{
 			{

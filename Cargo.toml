@@ -71,5 +71,5 @@ base64 = "0.21.7"
 bigdecimal = "0.4"
 bech32 = "0.11"
 triomphe = "0.1.9"
-revm = { path = "../rethmint/revm/crates/revm/" }
+revm = { path = "../rethmint/revm/crates/revm" }
 revmc = { path = "../revmc/crates/revmc" }

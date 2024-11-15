@@ -1,12 +1,15 @@
 use std::{future::Future, sync::Arc, time};
 
-use revmc::eyre::{Context, Result};
+use revmc::{
+    eyre::{Context, Result},
+    U256,
+};
 use tokio::time::{interval_at, Instant};
 
 use super::{QueryKeySlice, SledDB};
 use crate::jit::{JitCfg, JitUnit, KeyPrefix, QueryKey, RuntimeJit};
 
-pub const JIT_THRESHOLD: i32 = 1;
+pub const JIT_THRESHOLD: i32 = 0;
 
 pub struct Cronner {
     // ms
@@ -87,7 +90,12 @@ impl Cronner {
     }
 
     pub fn jit(label: &'static str, bytecode: &[u8]) -> Result<()> {
-        let unit = JitUnit::new(label, bytecode.to_vec(), 70);
+        let unit = JitUnit::new(
+            label,
+            bytecode.to_vec(),
+            70,
+            U256::from(1000).to_be_bytes_vec(),
+        );
         let runtime_jit = RuntimeJit::new(unit, JitCfg::default());
         runtime_jit.compile().wrap_err("Compilation fail")
     }

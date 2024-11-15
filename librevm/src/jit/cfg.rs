@@ -35,7 +35,7 @@ impl Default for JitCfg {
             calldata: None,
             gas_limit: 1_000_000_000,
             eof: true,
-            spec_id: SpecId::OSAKA,
+            spec_id: SpecId::PRAGUE,
             no_link: false,
         }
     }

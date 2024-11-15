@@ -5,7 +5,7 @@ use revm::{handler::register::EvmHandler, Database};
 use revmc::{eyre::Result, EvmCompilerFn};
 
 use crate::{
-    jit::{KeyPrefix, QueryKey, QueryKeySlice, SledDB, JIT_OUT_PATH, JIT_THRESHOLD},
+    jit::{KeyPrefix, QueryKey, QueryKeySlice, SledDB, JIT_OUT_PATH},
     SLED_DB,
 };
 
@@ -21,6 +21,8 @@ impl ExternalContext {
         let sled_db = SLED_DB.get_or_init(|| Arc::new(SledDB::<QueryKeySlice>::init()));
         let label_key = QueryKey::with_prefix(bytecode_hash, KeyPrefix::Label);
 
+        println!("Hey?, {:#?}", bytecode_hash);
+
         let maybe_label = sled_db.get(*label_key.as_inner()).unwrap_or(None);
         if let Some(label) = maybe_label {
             let fn_label = String::from_utf8(label.to_vec()).unwrap();
@@ -28,12 +30,14 @@ impl ExternalContext {
             let lib;
             let f = {
                 let jit_out_path = Path::new(JIT_OUT_PATH);
+
                 let so_path = jit_out_path.join(&fn_label).join("a.so");
 
                 lib = unsafe { libloading::Library::new(so_path) }
                     .expect("Should've loaded linked library");
                 let f: libloading::Symbol<'_, revmc::EvmCompilerFn> =
                     unsafe { lib.get(fn_label.as_bytes()).expect("Should've got library") };
+                println!("f: {f:#?}");
                 *f
             };
 
@@ -43,7 +47,7 @@ impl ExternalContext {
         None
     }
 
-    fn update_bytecode_reference(&self, bytecode: &[u8], bytecode_hash: B256) -> Result<()> {
+    fn update_bytecode_reference(&self, bytecode_hash: B256) -> Result<()> {
         // TODO: Restrain from initializing db every inc call
         let sled_db = SLED_DB.get_or_init(|| Arc::new(SledDB::<QueryKeySlice>::init()));
         let count_key = QueryKey::with_prefix(bytecode_hash, KeyPrefix::Count);
@@ -58,16 +62,20 @@ impl ExternalContext {
             .put(*count_key.as_inner(), &new_count.to_be_bytes(), true)
             .unwrap();
 
-        // 9 cause 10 can cause unexpected behavior
-        if new_count > JIT_THRESHOLD - 1 {
-            let label_key = QueryKey::with_prefix(bytecode_hash, KeyPrefix::Label);
-            if let None = sled_db.get(*label_key.as_inner()).unwrap_or(None) {
-                let bytecode_key = QueryKey::with_prefix(bytecode_hash, KeyPrefix::Bytecode);
+        Ok(())
+    }
 
-                sled_db
-                    .put(*bytecode_key.as_inner(), bytecode, true)
-                    .unwrap();
-            }
+    fn update_bytecode(&self, bytecode: &[u8], bytecode_hash: B256) -> Result<()> {
+        let sled_db = SLED_DB.get_or_init(|| Arc::new(SledDB::<QueryKeySlice>::init()));
+        println!("Who?, {:#?}", bytecode_hash);
+        // 9 cause 10 can cause unexpected behavior
+        let label_key = QueryKey::with_prefix(bytecode_hash, KeyPrefix::Label);
+        if let None = sled_db.get(*label_key.as_inner()).unwrap_or(None) {
+            let bytecode_key = QueryKey::with_prefix(bytecode_hash, KeyPrefix::Bytecode);
+
+            sled_db
+                .put(*bytecode_key.as_inner(), bytecode, true)
+                .unwrap();
         }
         Ok(())
     }
@@ -82,18 +90,33 @@ pub fn register_handler<DB: Database>(handler: &mut EvmHandler<'_, ExternalConte
         let bytecode = interpreter.contract.bytecode.original_byte_slice();
 
         println!("Checking for bytecode hash {:#?}\n", bytecode_hash);
-        //println!("Checking for bytecode {:#?}\n\n", bytecode[0..10]);
+        println!("Checking for bytecode {:#?}\n\n", bytecode);
 
-        context
-            .external
-            .update_bytecode_reference(bytecode, bytecode_hash)
-            .expect("Update failed");
+        match is_create_frame(*bytecode_hash) {
+            true => context
+                .external
+                .update_bytecode(bytecode, interpreter.contract.bytecode.hash_slow())
+                .expect("Update bytecode failed"),
 
-        if let Some(f) = context.external.get_function(bytecode_hash) {
-            println!("Calling extern function on hash: {bytecode_hash:#?}");
-            Ok(unsafe { f.call_with_interpreter_and_memory(interpreter, memory, context) })
-        } else {
-            prev(frame, memory, tables, context)
-        }
+            false => {
+                context
+                    .external
+                    .update_bytecode_reference(bytecode_hash)
+                    .expect("Update bytecode hash failed");
+
+                if let Some(f) = context.external.get_function(bytecode_hash) {
+                    println!("Calling extern function on hash: {f:#?}");
+                    return Ok(unsafe {
+                        f.call_with_interpreter_and_memory(interpreter, memory, context)
+                    });
+                }
+            }
+        };
+
+        prev(frame, memory, tables, context)
     });
+}
+
+fn is_create_frame(bytecode_hash: [u8; 32]) -> bool {
+    bytecode_hash.iter().all(|&byte| byte == 0)
 }

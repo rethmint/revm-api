@@ -35,6 +35,10 @@ lib-test:
 	go clean -testcache
 	go test -v .
 
+go-test:
+	go clean -testcache
+	go test -v .
+
 # Use debug build for quick testing.
 # In order to use "--features backtraces" here we need a Rust nightly toolchain, which we don't have by default
 build-rust-debug:

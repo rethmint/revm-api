@@ -1,6 +1,6 @@
-use std::{path::Path, sync::Arc};
+use std::{io::Read, path::Path, sync::Arc};
 
-use alloy_primitives::B256;
+use alloy_primitives::{Address, B256};
 use revm::{handler::register::EvmHandler, Database};
 use revmc::{eyre::Result, EvmCompilerFn};
 
@@ -16,12 +16,15 @@ impl ExternalContext {
         Self {}
     }
 
-    fn get_function(&self, bytecode_hash: B256) -> Option<EvmCompilerFn> {
+    fn get_function(&self, address: Address) -> Option<EvmCompilerFn> {
         // TODO: Restrain from initializing db every get function call
         let sled_db = SLED_DB.get_or_init(|| Arc::new(SledDB::<QueryKeySlice>::init()));
-        let label_key = QueryKey::with_prefix(bytecode_hash, KeyPrefix::Label);
 
-        println!("Hey?, {:#?}", bytecode_hash);
+        let mut padded = [0u8; 32];
+        padded[..20].copy_from_slice(address.as_slice());
+        let label_key = QueryKey::with_prefix(B256::from_slice(&padded), KeyPrefix::Label);
+
+        println!("Hey?, {:#?}", padded);
 
         let maybe_label = sled_db.get(*label_key.as_inner()).unwrap_or(None);
         if let Some(label) = maybe_label {
@@ -47,10 +50,12 @@ impl ExternalContext {
         None
     }
 
-    fn update_bytecode_reference(&self, bytecode_hash: B256) -> Result<()> {
+    fn update_bytecode_reference(&self, address: Address) -> Result<()> {
         // TODO: Restrain from initializing db every inc call
         let sled_db = SLED_DB.get_or_init(|| Arc::new(SledDB::<QueryKeySlice>::init()));
-        let count_key = QueryKey::with_prefix(bytecode_hash, KeyPrefix::Count);
+        let mut padded = [0u8; 32];
+        padded[..20].copy_from_slice(address.as_slice());
+        let count_key = QueryKey::with_prefix(B256::from_slice(&padded), KeyPrefix::Count);
 
         let count = sled_db.get(*count_key.as_inner()).unwrap_or(None);
         let new_count = count.as_ref().map_or(1, |v| {
@@ -65,13 +70,16 @@ impl ExternalContext {
         Ok(())
     }
 
-    fn update_bytecode(&self, bytecode: &[u8], bytecode_hash: B256) -> Result<()> {
+    fn update_bytecode(&self, bytecode: &[u8], address: Address) -> Result<()> {
         let sled_db = SLED_DB.get_or_init(|| Arc::new(SledDB::<QueryKeySlice>::init()));
-        println!("Who?, {:#?}", bytecode_hash);
+        println!("Who?, {:#?}", address);
         // 9 cause 10 can cause unexpected behavior
-        let label_key = QueryKey::with_prefix(bytecode_hash, KeyPrefix::Label);
+        let mut padded = [0u8; 32];
+        padded[..20].copy_from_slice(address.as_slice());
+        let label_key = QueryKey::with_prefix(B256::from_slice(&padded), KeyPrefix::Label);
         if let None = sled_db.get(*label_key.as_inner()).unwrap_or(None) {
-            let bytecode_key = QueryKey::with_prefix(bytecode_hash, KeyPrefix::Bytecode);
+            let bytecode_key =
+                QueryKey::with_prefix(B256::from_slice(&padded), KeyPrefix::Bytecode);
 
             sled_db
                 .put(*bytecode_key.as_inner(), bytecode, true)
@@ -87,24 +95,26 @@ pub fn register_handler<DB: Database>(handler: &mut EvmHandler<'_, ExternalConte
     handler.execution.execute_frame = Arc::new(move |frame, memory, tables, context| {
         let interpreter = frame.interpreter_mut();
         let bytecode_hash = interpreter.contract.hash.unwrap_or_default();
-        let bytecode = interpreter.contract.bytecode.original_byte_slice();
+        let bytecode = interpreter.contract.bytecode.bytes_slice();
+        let contract_address = interpreter.contract.target_address;
 
-        println!("Checking for bytecode hash {:#?}\n", bytecode_hash);
-        println!("Checking for bytecode {:#?}\n\n", bytecode);
+        println!("Checking for bytecode hash: {:#?}\n", bytecode_hash);
+        println!("Checking for bytecode: {:#?}\n\n", bytecode);
+        println!("Contract address: {:#?}\n", contract_address);
 
         match is_create_frame(*bytecode_hash) {
             true => context
                 .external
-                .update_bytecode(bytecode, interpreter.contract.bytecode.hash_slow())
+                .update_bytecode(bytecode, contract_address)
                 .expect("Update bytecode failed"),
 
             false => {
                 context
                     .external
-                    .update_bytecode_reference(bytecode_hash)
+                    .update_bytecode_reference(contract_address)
                     .expect("Update bytecode hash failed");
 
-                if let Some(f) = context.external.get_function(bytecode_hash) {
+                if let Some(f) = context.external.get_function(contract_address) {
                     println!("Calling extern function on hash: {f:#?}");
                     return Ok(unsafe {
                         f.call_with_interpreter_and_memory(interpreter, memory, context)

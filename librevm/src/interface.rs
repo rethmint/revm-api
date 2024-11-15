@@ -126,10 +126,10 @@ pub extern "C" fn execute_tx(
         }
     };
 
-    println!("TxKind: {:#?}", evm.tx().transact_to);
-    if evm.tx().transact_to.is_call() {
-        std::thread::sleep(std::time::Duration::from_secs(60));
-    }
+    //println!("TxKind: {:#?}", evm.tx().transact_to);
+    //if evm.tx().transact_to.is_call() {
+    //    std::thread::sleep(std::time::Duration::from_secs(60));
+    //}
 
     UnmanagedVector::new(Some(data))
 }

@@ -97,7 +97,7 @@ impl Cronner {
             U256::from(1000).to_be_bytes_vec(),
         );
         let runtime_jit = RuntimeJit::new(unit, JitCfg::default());
-        runtime_jit.compile().wrap_err("Compilation fail")
+        runtime_jit.compile(bytecode).wrap_err("Compilation fail")
     }
 
     fn mangle_hex(hex: &[u8]) -> String {

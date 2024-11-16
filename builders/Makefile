@@ -4,11 +4,11 @@ BUILDERS_PREFIX := rethmint/librevm-builder:0001
 
 .PHONY: docker-image-debian
 docker-image-debian:
-	docker build --pull . -t $(BUILDERS_PREFIX)-debian -f ./Dockerfile.debian
+	docker build --pull . -t $(BUILDERS_PREFIX)-debian -f ./Dockerfile.debian  
 
 .PHONY: docker-image-cross
 docker-image-cross:
-	docker build --pull . -t $(BUILDERS_PREFIX)-cross -f ./Dockerfile.cross
+	docker build --pull . -t $(BUILDERS_PREFIX)-cross -f ./Dockerfile.cross  
 
 
 .PHONY: docker-images

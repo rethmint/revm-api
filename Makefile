@@ -86,11 +86,11 @@ BENCHMARK_PREFIX := rethmint/benchmark:0001
 
 .PHONY: docker-image-gevm
 docker-image-gevm:
-	docker build --pull . -t $(BENCHMARK_PREFIX)-gevm -f ./benchmark/gevm/Dockerfile.gevm
+	docker build  --pull . -t $(BENCHMARK_PREFIX)-gevm -f ./benchmark/Dockerfile.gevm
 
 .PHONY: docker-image-revmffi
 docker-image-revmffi:
-	docker build --pull . -t $(BENCHMARK_PREFIX)-revmffi -f ./benchmark/revmffi/Dockerfile.revmffi
+	docker build  --pull . -t $(BENCHMARK_PREFIX)-revmffi -f ./benchmark/Dockerfile.revmffi
 
 
 .PHONY: docker-images
@@ -101,12 +101,30 @@ docker-publish: docker-images
 	docker push $(BENCHMARK_PREFIX)-revmffi
 	docker push $(BENCHMARK_PREFIX)-gevm
 
+.PHONY: benchmark
 benchmark:
 	@echo "Running revm ffi benchmark..."
-	docker run --rm -v $(shell pwd):/app/ $(BENCHMARK_PREFIX)-revmffi
-	@echo "Docker container state:"
-	docker stats --no-stream
-	@echo "Running gevm ffi benchmark..."
-	docker run --rm -v $(shell pwd):/app/ $(BENCHMARK_PREFIX)-gevm
-	@echo "Docker container state:"
-	docker stats --no-stream
+	@rm -f benchmark/log/revm_container_stats.log
+	$(eval REV_CONTAINER_NAME := revm_benchmark_container)
+
+	# Run the container and track stats
+	@docker run -d --name $(REV_CONTAINER_NAME) -v $(shell pwd):/app/ $(BENCHMARK_PREFIX)-revmffi
+	@echo "Tracking Docker container state for revm ffi benchmark every 50 ms:" >> benchmark/log/revm_container_stats.log
+	@{ while [ "$$(docker ps -q -f name=$(REV_CONTAINER_NAME))" ]; do docker stats --no-stream $(REV_CONTAINER_NAME) >> benchmark/log/revm_container_stats.log; sleep 0.05; done; } &
+
+	# Measure the execution time of the container
+	@{ time docker wait $(REV_CONTAINER_NAME) > /dev/null; } 2>> benchmark/log/revm_container_stats.log
+	@docker rm $(REV_CONTAINER_NAME) > /dev/null
+
+	@echo "Running gevm benchmark..."
+	@rm -f benchmark/log/gevm_container_stats.log
+	$(eval GEV_CONTAINER_NAME := gevm_benchmark_container)
+
+	# Run the container and track stats
+	@docker run -d --name $(GEV_CONTAINER_NAME) -v $(shell pwd):/app/ $(BENCHMARK_PREFIX)-gevm
+	@echo "Tracking Docker container state for gevm ffi benchmark every 50 ms:" >> benchmark/log/gevm_container_stats.log
+	@{ while [ "$$(docker ps -q -f name=$(GEV_CONTAINER_NAME))" ]; do docker stats --no-stream $(GEV_CONTAINER_NAME) >> benchmark/log/gevm_container_stats.log; sleep 0.05; done; } &
+
+	# Measure the execution time of the container
+	@{ time docker wait $(GEV_CONTAINER_NAME) > /dev/null; } 2>> benchmark/log/gevm_container_stats.log
+	@docker rm $(GEV_CONTAINER_NAME) > /dev/null

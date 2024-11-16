@@ -1,0 +1,19 @@
+Tracking Docker container state for revm ffi benchmark every 50 ms:
+CONTAINER ID   NAME                       CPU %     MEM USAGE / LIMIT    MEM %     NET I/O           BLOCK I/O     PIDS
+588b2d377dbc   revm_benchmark_container   51.59%    22.17MiB / 3.84GiB   0.56%     8.55MB / 95.7kB   0B / 36.9kB   11
+CONTAINER ID   NAME                       CPU %     MEM USAGE / LIMIT    MEM %     NET I/O          BLOCK I/O    PIDS
+588b2d377dbc   revm_benchmark_container   260.20%   73.82MiB / 3.84GiB   1.88%     8.56MB / 101kB   0B / 164kB   23
+CONTAINER ID   NAME                       CPU %     MEM USAGE / LIMIT    MEM %     NET I/O          BLOCK I/O        PIDS
+588b2d377dbc   revm_benchmark_container   383.74%   172.5MiB / 3.84GiB   4.39%     8.56MB / 101kB   8.19kB / 590kB   29
+CONTAINER ID   NAME                       CPU %     MEM USAGE / LIMIT   MEM %     NET I/O          BLOCK I/O        PIDS
+588b2d377dbc   revm_benchmark_container   369.08%   203MiB / 3.84GiB    5.16%     8.56MB / 101kB   16.4kB / 146MB   35
+CONTAINER ID   NAME                       CPU %     MEM USAGE / LIMIT    MEM %     NET I/O          BLOCK I/O        PIDS
+588b2d377dbc   revm_benchmark_container   379.29%   266.6MiB / 3.84GiB   6.78%     8.56MB / 101kB   16.4kB / 152MB   26
+CONTAINER ID   NAME                       CPU %     MEM USAGE / LIMIT   MEM %     NET I/O          BLOCK I/O        PIDS
+588b2d377dbc   revm_benchmark_container   371.46%   279MiB / 3.84GiB    7.09%     8.56MB / 101kB   16.4kB / 154MB   26
+CONTAINER ID   NAME                       CPU %     MEM USAGE / LIMIT   MEM %     NET I/O   BLOCK I/O   PIDS
+588b2d377dbc   revm_benchmark_container   0.00%     0B / 0B             0.00%     0B / 0B   0B / 0B     0
+real	0m13.049s
+user	0m0.031s
+sys	0m0.019s
+

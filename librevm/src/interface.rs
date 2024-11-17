@@ -1,6 +1,5 @@
 use std::{sync::Arc, thread};
 
-use alloy_primitives::TxKind;
 use once_cell::sync::OnceCell;
 use revm::{primitives::SpecId, Context, Evm, EvmBuilder};
 
@@ -166,7 +165,8 @@ pub extern "C" fn query_tx(
 
 #[tokio::main]
 #[no_mangle]
-pub async extern "C" fn start_cron_job(cron_ptr: *mut cron_t) {
+pub async extern "C" fn start_cron_job(cron_ptr: *mut cron_t, db: Db) {
+    let kvstore = GoStorage::new(&db);
     let cron = match to_cron(cron_ptr) {
         Some(cron) => cron,
         None => {
@@ -174,6 +174,6 @@ pub async extern "C" fn start_cron_job(cron_ptr: *mut cron_t) {
         }
     };
 
-    let routine = cron.routine_fn();
+    let routine = cron.routine_fn(kvstore);
     routine.await;
 }

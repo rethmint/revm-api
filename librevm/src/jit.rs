@@ -3,11 +3,14 @@ mod cron;
 mod key;
 mod sled;
 
-use alloy_primitives::{address, hex::encode, U256};
+use std::path::PathBuf;
+
+use alloy_primitives::U256;
 use color_eyre::Result;
-use revm::primitives::{Env, SpecId, TransactTo};
+use revm::primitives::SpecId;
 use revmc::{eyre::ensure, EvmCompiler, EvmLlvmBackend};
-use std::{path::PathBuf, str::FromStr};
+use tempdir::TempDir;
+use tokio::fs;
 
 pub use cfg::*;
 pub use cron::*;
@@ -24,22 +27,13 @@ pub struct RuntimeJit {
 #[derive(Clone, Debug, Default)]
 pub struct JitUnit {
     pub name: &'static str,
-    pub bytecode: Vec<u8>,
-    pub calldata: Vec<u8>,
     pub stack_input: Vec<U256>,
 }
 
 impl JitUnit {
-    pub fn new(
-        name: &'static str,
-        bytecode: Vec<u8>,
-        stack_input_size: u64,
-        calldata: Vec<u8>,
-    ) -> Self {
+    pub fn new(name: &'static str, stack_input_size: u64) -> Self {
         Self {
             name,
-            bytecode,
-            calldata,
             stack_input: vec![U256::from(stack_input_size)],
         }
     }
@@ -50,7 +44,7 @@ impl RuntimeJit {
         Self { unit, cfg }
     }
 
-    pub fn compile(&self, bytecode: &[u8]) -> Result<()> {
+    pub async fn compile(&self, bytecode: &[u8]) -> Result<PathBuf> {
         let _ = color_eyre::install();
 
         let context = revmc::llvm::inkwell::context::Context::create();
@@ -66,9 +60,14 @@ impl RuntimeJit {
 
         let mut compiler = EvmCompiler::new(backend);
 
-        let out_pathbuf = PathBuf::from_str(self.cfg.out_dir)?;
+        //let temp_dir = TempDir::new("jit_temp")?;
+        //let temp_path = temp_dir.path();
+        //fs::create_dir_all(&temp_path).await.unwrap();
 
-        compiler.set_dump_to(Some(out_pathbuf));
+        let temp_path = std::path::Path::new(JIT_OUT_PATH);
+        std::fs::create_dir_all(&temp_path).unwrap();
+
+        compiler.set_dump_to(Some(temp_path.to_path_buf()));
         compiler.gas_metering(self.cfg.no_gas);
 
         unsafe { compiler.stack_bound_checks(self.cfg.no_len_checks) };
@@ -76,8 +75,6 @@ impl RuntimeJit {
         compiler.frame_pointers(true);
         compiler.debug_assertions(self.cfg.debug_assertions);
         compiler.set_module_name(self.unit.name);
-
-        let gas_limit = self.cfg.gas_limit;
 
         let spec_id = if self.cfg.eof {
             SpecId::OSAKA
@@ -91,31 +88,24 @@ impl RuntimeJit {
 
         let _f_id = compiler.translate(self.unit.name, bytecode, spec_id)?;
 
-        if self.cfg.aot {
-            let out_dir = if let Some(out_dir) = compiler.out_dir() {
-                out_dir.join(&self.unit.name)
-            } else {
-                let dir = std::env::temp_dir()
-                    .join(JIT_OUT_PATH)
-                    .join(&self.unit.name);
-                std::fs::create_dir_all(&dir)?;
-                dir
-            };
+        let out_dir = std::env::temp_dir()
+            .join(JIT_OUT_PATH)
+            .join(&self.unit.name);
+        std::fs::create_dir_all(&out_dir)?;
 
-            // Compile.
-            let obj = out_dir.join("a.o");
-            compiler.write_object_to_file(&obj)?;
-            ensure!(obj.exists(), "Failed to write object file");
+        // Compile.
+        let obj = out_dir.join("a.o");
+        compiler.write_object_to_file(&obj)?;
+        ensure!(obj.exists(), "Failed to write object file");
 
-            // Link.
-            if !self.cfg.no_link {
-                let so = out_dir.join("a.so");
-                let linker = revmc::Linker::new();
-                linker.link(&so, [obj.to_str().unwrap()])?;
-                ensure!(so.exists(), "Failed to link object file");
-            }
+        // Link.
+        let so_path = out_dir.join("a.so");
+        if !self.cfg.no_link {
+            let linker = revmc::Linker::new();
+            linker.link(&so_path, [obj.to_str().unwrap()])?;
+            ensure!(so_path.exists(), "Failed to link object file");
         }
 
-        Ok(())
+        Ok(so_path)
     }
 }

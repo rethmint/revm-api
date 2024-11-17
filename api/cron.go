@@ -18,6 +18,8 @@ func InitCronner() Cron {
 	}
 }
 
-func StartCronJob(cron Cron) {
-	C.start_cron_job(cron.ptr)
+func StartCronJob(cron Cron, store KVStore) {
+	dbState := buildDBState(store)
+	db := buildDB(&dbState)
+	C.start_cron_job(cron.ptr, db)
 }

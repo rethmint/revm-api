@@ -7,9 +7,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	revm "github.com/rethmint/revm-api"
-	fibca "github.com/rethmint/revm-api/contracts/Fibonacci"
+	// fibca "github.com/rethmint/revm-api/contracts/Fibonacci"
 
-	// testca "github.com/rethmint/revm-api/contracts/Test"
+	testca "github.com/rethmint/revm-api/contracts/Test"
 	testutils "github.com/rethmint/revm-api/testutils"
 	types "github.com/rethmint/revm-api/types/go"
 	"github.com/stretchr/testify/require"
@@ -22,11 +22,14 @@ func setupTest(t *testing.T) (revm.VM, *testutils.MockKVStore, common.Address) {
 	vm := revm.NewVM(CANCUN)
 	cronner := revm.NewCronner()
 
-	go cronner.Start()
+	go cronner.Start(kvStore)
+
+	t.Cleanup(func() {
+		vm.Destroy()
+	})
 
 	t.Cleanup(func() {
 		cronner.Destroy()
-		vm.Destroy()
 	})
 	caller := common.HexToAddress("0xe100713fc15400d1e94096a545879e7c647001e0")
 	testutils.Faucet(kvStore, caller, big.NewInt(1000000000000))
@@ -37,7 +40,7 @@ func setupTest(t *testing.T) (revm.VM, *testutils.MockKVStore, common.Address) {
 func Test_e2e(t *testing.T) {
 	vm, kvStore, caller := setupTest(t)
 	// Deploy Test Contract
-	txData, err := hexutil.Decode(fibca.FibonacciBin)
+	txData, err := hexutil.Decode(testca.TestBin)
 	require.NoError(t, err)
 	createTx := testutils.MockTx(caller, common.Address{}, txData, 0)
 	block := testutils.MockBlock(1)
@@ -49,10 +52,9 @@ func Test_e2e(t *testing.T) {
 	require.True(t, ok)
 	deployedAddr := createRes.Output.DeployedAddress
 
-	// Call the fibonacci function
-	abi, err := fibca.FibonacciMetaData.GetAbi()
+	abi, err := testca.TestMetaData.GetAbi()
 	require.NoError(t, err)
-	fibonacciInput, err := abi.Pack("fibonacci", big.NewInt(1000))
+	testInput, err := abi.Pack("increase")
 	require.NoError(t, err)
 
 	increaseTx := testutils.MockTx(caller, deployedAddr, increaseInput, 1)

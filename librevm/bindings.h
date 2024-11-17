@@ -180,6 +180,6 @@ void release_cron(cron_t *cron);
 
 void release_vm(evm_t *vm);
 
-void start_cron_job(cron_t *cron_ptr);
+void start_cron_job(cron_t *cron_ptr, Db db);
 
 #endif /* __LIBREVMAPI__ */

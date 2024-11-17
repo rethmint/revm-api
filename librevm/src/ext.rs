@@ -1,11 +1,12 @@
-use std::{path::Path, sync::Arc};
+use std::{env, fs::File, io::Write, sync::Arc};
 
 use alloy_primitives::B256;
+use libloading::{Library, Symbol};
 use revm::{handler::register::EvmHandler, Database};
 use revmc::{eyre::Result, EvmCompilerFn};
 
 use crate::{
-    jit::{KeyPrefix, QueryKey, QueryKeySlice, SledDB, JIT_OUT_PATH, JIT_THRESHOLD},
+    jit::{KeyPrefix, QueryKey, QueryKeySlice, SledDB},
     SLED_DB,
 };
 
@@ -17,34 +18,28 @@ impl ExternalContext {
     }
 
     fn get_function(&self, bytecode_hash: B256) -> Option<EvmCompilerFn> {
-        // TODO: Restrain from initializing db every get function call
         let sled_db = SLED_DB.get_or_init(|| Arc::new(SledDB::<QueryKeySlice>::init()));
-        let label_key = QueryKey::with_prefix(bytecode_hash, KeyPrefix::Label);
+        let so_key = QueryKey::with_prefix(bytecode_hash, KeyPrefix::SO);
 
-        let maybe_label = sled_db.get(*label_key.as_inner()).unwrap_or(None);
-        if let Some(label) = maybe_label {
-            let fn_label = String::from_utf8(label.to_vec()).unwrap();
+        if let Some(so_bytes) = sled_db.get(*so_key.as_inner()).unwrap_or(None) {
+            let temp_dir = env::temp_dir();
+            let temp_file_path = temp_dir.join("a.so");
 
-            let lib;
-            let f = {
-                let jit_out_path = Path::new(JIT_OUT_PATH);
-                let so_path = jit_out_path.join(&fn_label).join("a.so");
+            if let Ok(mut file) = File::create(&temp_file_path) {
+                file.write_all(&so_bytes).unwrap();
 
-                lib = unsafe { libloading::Library::new(so_path) }
-                    .expect("Should've loaded linked library");
-                let f: libloading::Symbol<'_, revmc::EvmCompilerFn> =
-                    unsafe { lib.get(fn_label.as_bytes()).expect("Should've got library") };
-                *f
-            };
+                let lib = unsafe { Library::new(&temp_file_path) }.unwrap();
+                let f: Symbol<'_, EvmCompilerFn> = unsafe { lib.get("afn".as_bytes()).unwrap() };
 
-            return Some(f);
+                return Some(*f);
+            } else {
+                eprintln!("Failed to create temporary file");
+            }
         }
-        //
         None
     }
 
-    fn update_bytecode_reference(&self, bytecode: &[u8], bytecode_hash: B256) -> Result<()> {
-        // TODO: Restrain from initializing db every inc call
+    fn update_bytecode_reference(&self, bytecode_hash: B256) -> Result<()> {
         let sled_db = SLED_DB.get_or_init(|| Arc::new(SledDB::<QueryKeySlice>::init()));
         let count_key = QueryKey::with_prefix(bytecode_hash, KeyPrefix::Count);
 
@@ -58,17 +53,6 @@ impl ExternalContext {
             .put(*count_key.as_inner(), &new_count.to_be_bytes(), true)
             .unwrap();
 
-        // 9 cause 10 can cause unexpected behavior
-        if new_count > JIT_THRESHOLD - 1 {
-            let label_key = QueryKey::with_prefix(bytecode_hash, KeyPrefix::Label);
-            if let None = sled_db.get(*label_key.as_inner()).unwrap_or(None) {
-                let bytecode_key = QueryKey::with_prefix(bytecode_hash, KeyPrefix::Bytecode);
-
-                sled_db
-                    .put(*bytecode_key.as_inner(), bytecode, true)
-                    .unwrap();
-            }
-        }
         Ok(())
     }
 }
@@ -79,14 +63,10 @@ pub fn register_handler<DB: Database>(handler: &mut EvmHandler<'_, ExternalConte
     handler.execution.execute_frame = Arc::new(move |frame, memory, tables, context| {
         let interpreter = frame.interpreter_mut();
         let bytecode_hash = interpreter.contract.hash.unwrap_or_default();
-        let bytecode = interpreter.contract.bytecode.original_byte_slice();
-
-        println!("Checking for bytecode hash {:#?}\n", bytecode_hash);
-        println!("Checking for bytecode {:#?}\n\n", &bytecode[0..10]);
 
         context
             .external
-            .update_bytecode_reference(bytecode, bytecode_hash)
+            .update_bytecode_reference(bytecode_hash)
             .expect("Update failed");
 
         if let Some(f) = context.external.get_function(bytecode_hash) {

@@ -19,8 +19,8 @@ func NewCronner() Cronner {
 	return Cronner{inner}
 }
 
-func (cron *Cronner) Start() {
-	api.StartCronJob(cron.Inner)
+func (cron *Cronner) Start(kvstore api.KVStore) {
+	api.StartCronJob(cron.Inner, kvstore)
 }
 
 func (cron *Cronner) Destroy() {

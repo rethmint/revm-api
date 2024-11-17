@@ -48,15 +48,12 @@ impl RuntimeJit {
         let _ = color_eyre::install();
 
         let context = revmc::llvm::inkwell::context::Context::create();
-
-        let target = revmc::Target::new(
-            self.cfg.target,
-            self.cfg.target_cpu.clone(),
-            self.cfg.target_features.clone(),
-        );
-
-        let backend =
-            EvmLlvmBackend::new_for_target(&context, self.cfg.aot, self.cfg.opt_level, &target)?;
+        let backend = EvmLlvmBackend::new_for_target(
+            &context,
+            self.cfg.aot,
+            self.cfg.opt_level,
+            &revmc::Target::Native,
+        )?;
 
         let mut compiler = EvmCompiler::new(backend);
 
@@ -75,6 +72,7 @@ impl RuntimeJit {
         compiler.frame_pointers(true);
         compiler.debug_assertions(self.cfg.debug_assertions);
         compiler.set_module_name(self.unit.name);
+        compiler.validate_eof(true);
 
         let spec_id = if self.cfg.eof {
             SpecId::OSAKA

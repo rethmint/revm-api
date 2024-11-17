@@ -63,6 +63,9 @@ impl<'a> Cronner {
                     if let Ok(bytecode) =
                         kvstore.code_by_hash(FixedBytes::from_slice(&*key.to_b256().as_slice()))
                     {
+                        //println!("Bytecode: {:#02X?}", &bytecode.original_byte_slice()[..10]);
+                        //println!("Bytecode hash, {:#?}", key.to_b256());
+
                         //let bytecode_hash = key.to_b256();
                         //let bytes = hex::decode(bytecode_hash).unwrap();
                         //let label = String::from_utf8(bytes).unwrap().leak();

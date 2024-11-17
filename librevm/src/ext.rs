@@ -10,6 +10,10 @@ use crate::{
     SLED_DB,
 };
 
+revmc::extern_revmc! {
+    fn afn;
+}
+
 pub struct ExternalContext {}
 
 impl ExternalContext {
@@ -63,6 +67,10 @@ pub fn register_handler<DB: Database>(handler: &mut EvmHandler<'_, ExternalConte
     handler.execution.execute_frame = Arc::new(move |frame, memory, tables, context| {
         let interpreter = frame.interpreter_mut();
         let bytecode_hash = interpreter.contract.hash.unwrap_or_default();
+        let bytecode = interpreter.contract.bytecode.original_byte_slice();
+
+        println!("Printing bytecode hash: {:#?}", &bytecode_hash);
+        println!("Printing bytecode: {:#?}", &bytecode[0..10]);
 
         context
             .external

@@ -23,10 +23,10 @@ impl Default for JitCfg {
             target_features: None,
             aot: true,
             opt_level: OptimizationLevel::Aggressive,
-            no_gas: false,
-            no_len_checks: false,
+            no_gas: true,
+            no_len_checks: true,
             debug_assertions: true,
-            eof: true,
+            eof: false,
             spec_id: SpecId::PRAGUE,
             no_link: false,
         }

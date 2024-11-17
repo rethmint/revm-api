@@ -101,30 +101,12 @@ docker-publish: docker-images
 	docker push $(BENCHMARK_PREFIX)-revmffi
 	docker push $(BENCHMARK_PREFIX)-gevm
 
-.PHONY: benchmark
-benchmark:
-	@echo "Running revm ffi benchmark..."
-	@rm -f benchmark/log/revm_container_stats.log
-	$(eval REV_CONTAINER_NAME := revm_benchmark_container)
-
-	# Run the container and track stats
-	@docker run -d --name $(REV_CONTAINER_NAME) -v $(shell pwd):/app/ $(BENCHMARK_PREFIX)-revmffi
-	@echo "Tracking Docker container state for revm ffi benchmark every 50 ms:" >> benchmark/log/revm_container_stats.log
-	@{ while [ "$$(docker ps -q -f name=$(REV_CONTAINER_NAME))" ]; do docker stats --no-stream $(REV_CONTAINER_NAME) >> benchmark/log/revm_container_stats.log; sleep 0.05; done; } &
-
-	# Measure the execution time of the container
-	@{ time docker wait $(REV_CONTAINER_NAME) > /dev/null; } 2>> benchmark/log/revm_container_stats.log
-	@docker rm $(REV_CONTAINER_NAME) > /dev/null
-
-	@echo "Running gevm benchmark..."
-	@rm -f benchmark/log/gevm_container_stats.log
-	$(eval GEV_CONTAINER_NAME := gevm_benchmark_container)
-
-	# Run the container and track stats
-	@docker run -d --name $(GEV_CONTAINER_NAME) -v $(shell pwd):/app/ $(BENCHMARK_PREFIX)-gevm
-	@echo "Tracking Docker container state for gevm ffi benchmark every 50 ms:" >> benchmark/log/gevm_container_stats.log
-	@{ while [ "$$(docker ps -q -f name=$(GEV_CONTAINER_NAME))" ]; do docker stats --no-stream $(GEV_CONTAINER_NAME) >> benchmark/log/gevm_container_stats.log; sleep 0.05; done; } &
-
-	# Measure the execution time of the container
-	@{ time docker wait $(GEV_CONTAINER_NAME) > /dev/null; } 2>> benchmark/log/gevm_container_stats.log
-	@docker rm $(GEV_CONTAINER_NAME) > /dev/null
+.PHONY: profiling
+profiling:
+	@echo "Running Profiling..."
+	@export BENCHMARK_PREFIX=$(BENCHMARK_PREFIX) && \
+	export REV_CONTAINER_NAME=revmffi_container && \
+	export GEV_CONTAINER_NAME=gevm_container && \
+	docker-compose -f ./benchmark/docker-compose.yml up -d
+	docker exec -it revmffi_container sh -c "cd /app/revmffi && go test -v --count 1000"
+	docker exec -it gevm_container sh -c "cd /app/gevm && go test -v --count 1000"

@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    ports:
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+
+  revmffi:
+    image: "${BENCHMARK_PREFIX}-revmffi"
+    container_name: ${REV_CONTAINER_NAME}
+    volumes:
+      - .:/app
+    tty: true
+    stdin_open: true
+  
+  gevm:
+    image: "${BENCHMARK_PREFIX}-gevm"
+    container_name: ${GEV_CONTAINER_NAME}
+    volumes:
+      - .:/app
+    tty: true
+    stdin_open: true

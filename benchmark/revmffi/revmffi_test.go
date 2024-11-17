@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	revm_api "github.com/rethmint/revm-api"
 	"github.com/rethmint/revm-api/benchmark/contracts/erc20"
+	"github.com/rethmint/revm-api/benchmark/revmffi/contracts/erc20"
 	"github.com/rethmint/revm-api/testutils"
 	types "github.com/rethmint/revm-api/types/go"
 	"github.com/stretchr/testify/require"

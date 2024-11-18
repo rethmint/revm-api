@@ -8,8 +8,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	revm "github.com/rethmint/revm-api"
-
-	testca "github.com/rethmint/revm-api/contracts/Test"
+	fibca "github.com/rethmint/revm-api/contracts/Fibonacci"
+	// testca "github.com/rethmint/revm-api/contracts/Test"
 	testutils "github.com/rethmint/revm-api/testutils"
 	types "github.com/rethmint/revm-api/types/go"
 	"github.com/stretchr/testify/require"
@@ -37,11 +37,54 @@ func setupTest(t *testing.T) (revm.VM, *testutils.MockKVStore, common.Address) {
 	return vm, kvStore, caller
 }
 
-func Test_e2e(t *testing.T) {
+// func Test_e2e(t *testing.T) {
+// 	vm, kvStore, caller := setupTest(t)
+//
+// 	// Deploy Test Contract
+// 	txData, err := hexutil.Decode(testca.TestBin)
+// 	require.NoError(t, err)
+// 	createTx := testutils.DefaultTx(caller, testutils.CreateTransactTo, txData, 0)
+// 	block := testutils.DefaultBlock(1)
+// 	res, err := vm.ExecuteTx(kvStore, block.ToSerialized(), createTx.ToSerialized())
+// 	require.NoError(t, err)
+// 	result, err := res.ProcessExecutionResult()
+// 	require.NoError(t, err)
+// 	createRes, ok := result.(types.Success)
+// 	require.True(t, ok)
+// 	deployedAddr := createRes.Output.DeployedAddress
+//
+// 	abi, err := testca.TestMetaData.GetAbi()
+// 	require.NoError(t, err)
+//
+// 	for i := 0; i < 5; i++ {
+// 		testInput, err := abi.Pack("increase")
+// 		require.NoError(t, err)
+//
+// 		start := time.Now()
+//
+// 		testTx := testutils.DefaultTx(caller, deployedAddr, testInput, uint64(i+1))
+// 		block = testutils.DefaultBlock(int64(2 + i))
+// 		res, err = vm.ExecuteTx(kvStore, block.ToSerialized(), testTx.ToSerialized())
+// 		require.NoError(t, err)
+//
+// 		result, err = res.ProcessExecutionResult()
+// 		require.NoError(t, err)
+//
+// 		_, ok := result.(types.Success)
+// 		require.True(t, ok)
+//
+// 		elapsed := time.Since(start)
+// 		t.Logf("Call %d execution time: %v", i+1, elapsed)
+//
+// 		time.Sleep(1 * time.Second)
+// 	}
+// }
+
+func Test_e2e_fib(t *testing.T) {
 	vm, kvStore, caller := setupTest(t)
 
 	// Deploy Test Contract
-	txData, err := hexutil.Decode(testca.TestBin)
+	txData, err := hexutil.Decode(fibca.FibonacciBin)
 	require.NoError(t, err)
 	createTx := testutils.MockTx(caller, common.Address{}, txData, 0)
 	block := testutils.MockBlock(1)
@@ -53,7 +96,7 @@ func Test_e2e(t *testing.T) {
 	require.True(t, ok)
 	deployedAddr := createRes.Output.DeployedAddress
 
-	abi, err := testca.TestMetaData.GetAbi()
+	abi, err := fibca.FibonacciMetaData.GetAbi()
 	require.NoError(t, err)
 	increaseInput, err := abi.Pack("increase")
 	require.NoError(t, err)

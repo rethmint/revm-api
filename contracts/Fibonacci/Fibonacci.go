@@ -31,8 +31,8 @@ var (
 
 // FibonacciMetaData contains all meta data concerning the Fibonacci contract.
 var FibonacciMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"i\",\"type\":\"uint256\"}],\"name\":\"fibonacci\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"}]",
-	Bin: "0x6080604052348015600e575f5ffd5b5060ff8061001b5f395ff3fe6080604052348015600e575f5ffd5b50600436106026575f3560e01c806361047ff414602a575b5f5ffd5b603960353660046079565b604b565b60405190815260200160405180910390f35b5f8060015b83156072579081906060818360a3565b9150606b60018660b9565b9450506050565b5092915050565b5f602082840312156088575f5ffd5b5035919050565b634e487b7160e01b5f52601160045260245ffd5b8082018082111560b35760b3608f565b92915050565b8181038181111560b35760b3608f56fea2646970667358221220f82fe4da25a3392120ffdad92d30047bc098b76cf7d51a69597223851191468864736f6c634300081b0033",
+	ABI: "[{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"number\",\"type\":\"uint256\"}],\"name\":\"fibonacci\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"result\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	Bin: "0x6080604052348015600e575f5ffd5b5061010c8061001c5f395ff3fe6080604052348015600e575f5ffd5b50600436106026575f3560e01c806361047ff414602a575b5f5ffd5b60396035366004608c565b604b565b60405190815260200160405180910390f35b5f815f03605957505f919050565b81600103606857506001919050565b6073603560028460b6565b607e603560018560b6565b6086919060c6565b92915050565b5f60208284031215609b575f5ffd5b5035919050565b634e487b7160e01b5f52601160045260245ffd5b81810381811115608657608660a2565b80820180821115608657608660a256fea264697066735822122075f2b7835a429cbebf20df7d12b06806472a0714419b9b29eac058b3a7f6d80c64736f6c634300081b0033",
 }
 
 // FibonacciABI is the input ABI used to generate the binding from.
@@ -202,33 +202,23 @@ func (_Fibonacci *FibonacciTransactorRaw) Transact(opts *bind.TransactOpts, meth
 	return _Fibonacci.Contract.contract.Transact(opts, method, params...)
 }
 
-// Fibonacci is a free data retrieval call binding the contract method 0x61047ff4.
+// Fibonacci is a paid mutator transaction binding the contract method 0x61047ff4.
 //
-// Solidity: function fibonacci(uint256 i) pure returns(uint256)
-func (_Fibonacci *FibonacciCaller) Fibonacci(opts *bind.CallOpts, i *big.Int) (*big.Int, error) {
-	var out []interface{}
-	err := _Fibonacci.contract.Call(opts, &out, "fibonacci", i)
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
+// Solidity: function fibonacci(uint256 number) returns(uint256 result)
+func (_Fibonacci *FibonacciTransactor) Fibonacci(opts *bind.TransactOpts, number *big.Int) (*types.Transaction, error) {
+	return _Fibonacci.contract.Transact(opts, "fibonacci", number)
 }
 
-// Fibonacci is a free data retrieval call binding the contract method 0x61047ff4.
+// Fibonacci is a paid mutator transaction binding the contract method 0x61047ff4.
 //
-// Solidity: function fibonacci(uint256 i) pure returns(uint256)
-func (_Fibonacci *FibonacciSession) Fibonacci(i *big.Int) (*big.Int, error) {
-	return _Fibonacci.Contract.Fibonacci(&_Fibonacci.CallOpts, i)
+// Solidity: function fibonacci(uint256 number) returns(uint256 result)
+func (_Fibonacci *FibonacciSession) Fibonacci(number *big.Int) (*types.Transaction, error) {
+	return _Fibonacci.Contract.Fibonacci(&_Fibonacci.TransactOpts, number)
 }
 
-// Fibonacci is a free data retrieval call binding the contract method 0x61047ff4.
+// Fibonacci is a paid mutator transaction binding the contract method 0x61047ff4.
 //
-// Solidity: function fibonacci(uint256 i) pure returns(uint256)
-func (_Fibonacci *FibonacciCallerSession) Fibonacci(i *big.Int) (*big.Int, error) {
-	return _Fibonacci.Contract.Fibonacci(&_Fibonacci.CallOpts, i)
+// Solidity: function fibonacci(uint256 number) returns(uint256 result)
+func (_Fibonacci *FibonacciTransactorSession) Fibonacci(number *big.Int) (*types.Transaction, error) {
+	return _Fibonacci.Contract.Fibonacci(&_Fibonacci.TransactOpts, number)
 }

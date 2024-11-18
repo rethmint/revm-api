@@ -54,7 +54,7 @@ func Test_e2e(t *testing.T) {
 
 	abi, err := testca.TestMetaData.GetAbi()
 	require.NoError(t, err)
-	testInput, err := abi.Pack("increase")
+	increaseInput, err := abi.Pack("increase")
 	require.NoError(t, err)
 
 	increaseTx := testutils.MockTx(caller, deployedAddr, increaseInput, 1)

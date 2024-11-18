@@ -1,7 +1,6 @@
 use std::{env, fs::File, io::Write, sync::Arc};
 
 use alloy_primitives::B256;
-use libloading::{Library, Symbol};
 use revm::{handler::register::EvmHandler, Database};
 use revmc::{eyre::Result, EvmCompilerFn};
 
@@ -21,7 +20,7 @@ impl ExternalContext {
         Self {}
     }
 
-    fn get_function(&self, bytecode_hash: B256) -> Option<EvmCompilerFn> {
+    fn get_function(&self, bytecode_hash: B256) -> Option<(EvmCompilerFn, libloading::Library)> {
         let sled_db = SLED_DB.get_or_init(|| Arc::new(SledDB::<QueryKeySlice>::init()));
         let so_key = QueryKey::with_prefix(bytecode_hash, KeyPrefix::SO);
 
@@ -32,10 +31,15 @@ impl ExternalContext {
             if let Ok(mut file) = File::create(&temp_file_path) {
                 file.write_all(&so_bytes).unwrap();
 
-                let lib = unsafe { Library::new(&temp_file_path) }.unwrap();
-                let f: Symbol<'_, EvmCompilerFn> = unsafe { lib.get("afn".as_bytes()).unwrap() };
+                let lib;
+                let f = {
+                    lib = unsafe { libloading::Library::new(&temp_file_path) }.unwrap();
+                    let f: libloading::Symbol<'_, revmc::EvmCompilerFn> =
+                        unsafe { lib.get("afn".as_bytes()).unwrap() };
+                    *f
+                };
 
-                return Some(*f);
+                return Some((f, lib));
             } else {
                 eprintln!("Failed to create temporary file");
             }
@@ -77,7 +81,7 @@ pub fn register_handler<DB: Database>(handler: &mut EvmHandler<'_, ExternalConte
             .update_bytecode_reference(bytecode_hash)
             .expect("Update failed");
 
-        if let Some(f) = context.external.get_function(bytecode_hash) {
+        if let Some((f, _lib)) = context.external.get_function(bytecode_hash) {
             println!("Calling extern function on hash: {bytecode_hash:#?}");
             Ok(unsafe { f.call_with_interpreter_and_memory(interpreter, memory, context) })
         } else {

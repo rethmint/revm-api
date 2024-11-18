@@ -98,11 +98,9 @@ impl RuntimeJit {
 
         // Link.
         let so_path = out_dir.join("a.so");
-        if !self.cfg.no_link {
-            let linker = revmc::Linker::new();
-            linker.link(&so_path, [obj.to_str().unwrap()])?;
-            ensure!(so_path.exists(), "Failed to link object file");
-        }
+        let linker = revmc::Linker::new();
+        linker.link(&so_path, [obj.to_str().unwrap()])?;
+        ensure!(so_path.exists(), "Failed to link object file");
 
         Ok(so_path)
     }

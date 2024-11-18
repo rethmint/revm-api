@@ -1,6 +1,6 @@
 use std::{path::PathBuf, sync::Arc, time};
 
-use alloy_primitives::FixedBytes;
+use alloy_primitives::{hex, FixedBytes};
 use revm::Database;
 use revmc::eyre::{Context, Result};
 use tokio::time::{interval_at, Instant};
@@ -73,13 +73,12 @@ impl<'a> Cronner {
 
                         match Cronner::jit(label, &bytecode.original_byte_slice()).await {
                             Ok(so_path) => {
-                                println!("Success jit!");
-
                                 key.update_prefix(KeyPrefix::SO);
 
                                 match std::fs::read(&so_path) {
                                     Ok(so_bytes) => {
-                                        sled_db.put(*key.as_inner(), &so_bytes, true).unwrap()
+                                        sled_db.put(*key.as_inner(), &so_bytes, true).unwrap();
+                                        println!("Success jit!");
                                     }
                                     Err(err) => println!("While jit: {:#?}", err),
                                 }

@@ -5,9 +5,7 @@ mod sled;
 
 use std::path::PathBuf;
 
-use alloy_primitives::U256;
 use color_eyre::Result;
-use revm::primitives::SpecId;
 use revmc::{eyre::ensure, EvmCompiler, EvmLlvmBackend};
 use tempdir::TempDir;
 use tokio::fs;
@@ -17,7 +15,7 @@ pub use cron::*;
 pub use key::*;
 pub use sled::*;
 
-pub const JIT_OUT_PATH: &str = "librevm/out";
+pub const AOT_OUT_PATH: &str = "librevm/out";
 
 pub struct RuntimeAot {
     pub cfg: AotCfg,
@@ -41,11 +39,11 @@ impl RuntimeAot {
 
         let mut compiler = EvmCompiler::new(backend);
 
-        //let temp_dir = TempDir::new("jit_temp")?;
-        //let temp_path = temp_dir.path();
-        //fs::create_dir_all(&temp_path).await.unwrap();
+        let temp_dir = TempDir::new("aot_temp")?;
+        let temp_path = temp_dir.path();
+        fs::create_dir_all(&temp_path).await.unwrap();
 
-        let temp_path = std::path::Path::new(JIT_OUT_PATH);
+        let temp_path = std::path::Path::new(AOT_OUT_PATH);
         std::fs::create_dir_all(&temp_path).unwrap();
 
         compiler.set_dump_to(Some(temp_path.to_path_buf()));
@@ -58,16 +56,12 @@ impl RuntimeAot {
         compiler.set_module_name(name);
         compiler.validate_eof(true);
 
-        let spec_id = if self.cfg.eof {
-            SpecId::OSAKA
-        } else {
-            self.cfg.spec_id.into()
-        };
+        let spec_id = self.cfg.spec_id.into();
 
         compiler.inspect_stack_length(true);
         let _f_id = compiler.translate(name, bytecode, spec_id)?;
 
-        let out_dir = std::env::temp_dir().join(JIT_OUT_PATH).join(&name);
+        let out_dir = std::env::temp_dir().join(AOT_OUT_PATH).join(&name);
         std::fs::create_dir_all(&out_dir)?;
 
         // Compile.

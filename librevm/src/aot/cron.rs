@@ -1,8 +1,8 @@
 use std::{path::PathBuf, sync::Arc, time};
 
-use alloy_primitives::{hex, FixedBytes};
+use alloy_primitives::FixedBytes;
 use revm::Database;
-use revmc::eyre::{Context, Result};
+use revmc::eyre::Result;
 use tokio::time::{interval_at, Instant};
 
 use super::{QueryKeySlice, SledDB};
@@ -49,7 +49,7 @@ impl<'a> Cronner {
                 .into_iter()
             {
                 let count_bytes = sled_db.get(*key.as_inner()).unwrap_or(None);
-                let count = count_bytes.and_then(|v| ivec_to_i32(&v)).unwrap_or(1);
+                let count = count_bytes.and_then(|v| ivec_to_i32(&v)).unwrap_or(0);
 
                 if count > JIT_THRESHOLD {
                     if key.to_b256().iter().all(|&byte| byte == 0) {
@@ -59,20 +59,13 @@ impl<'a> Cronner {
                     if let Ok(bytecode) =
                         kvstore.code_by_hash(FixedBytes::from_slice(key.as_slice()))
                     {
-                        //println!("Bytecode: {:#02X?}", &bytecode.original_byte_slice()[..10]);
-                        //println!("Bytecode hash, {:#?}", key.to_b256());
-
-                        //let bytecode_hash = key.to_b256();
-                        //let bytes = hex::decode(bytecode_hash).unwrap();
-                        //let label = String::from_utf8(bytes).unwrap().leak();
-                        let label = "afn";
-
+                        let label = key.to_b256().to_string().leak();
                         let so_path = Cronner::jit(label, &bytecode.original_byte_slice()).await?;
                         key.update_prefix(KeyPrefix::SO);
 
                         let so_bytes = std::fs::read(&so_path)?;
                         sled_db.put(*key.as_inner(), &so_bytes, true)?;
-                        println!("Success jit!");
+                        println!("Success aot!");
                     }
                     continue;
                 }
@@ -82,9 +75,6 @@ impl<'a> Cronner {
 
     pub async fn jit(label: &'static str, bytecode: &[u8]) -> Result<PathBuf> {
         let runtime_jit = RuntimeAot::new(AotCfg::default());
-        runtime_jit
-            .compile(label, bytecode)
-            .await
-            .wrap_err("Compilation fail")
+        runtime_jit.compile(label, bytecode).await
     }
 }

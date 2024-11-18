@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use once_cell::sync::OnceCell;
-use revm::{primitives::SpecId, Context, Evm, EvmBuilder};
+use revm::{primitives::SpecId, Evm, EvmBuilder};
 
 use crate::{
     aot::{Compiler, QueryKeySlice, SledDB},
@@ -25,11 +25,11 @@ pub struct evm_t {}
 #[repr(C)]
 pub struct compiler_t {}
 
-pub fn to_evm<'a>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, (), GoStorage<'a>>> {
+pub fn to_evm<'a>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, ExternalContext, GoStorage<'a>>> {
     if ptr.is_null() {
         None
     } else {
-        let evm = unsafe { &mut *(ptr as *mut Evm<'a, (), GoStorage<'a>>) };
+        let evm = unsafe { &mut *(ptr as *mut Evm<'a, ExternalContext, GoStorage<'a>>) };
         Some(evm)
     }
 }
@@ -140,8 +140,9 @@ pub extern "C" fn query_tx(
             panic!("Failed to get VM");
         }
     };
-    let db = GoStorage::new(&db);
-    evm.context = Context::new_with_db(db);
+    let go_storage = GoStorage::new(&db);
+    evm.context.evm.db = go_storage;
+
     set_evm_env(evm, block, tx);
     // transact without state commit
     let result = evm.transact();

@@ -1,4 +1,7 @@
-.PHONY: all build build-rust build-go test precompile
+.PHONY: all build build-rust build-go test precompile clean_sleddb
+
+HOME_DIR := $(HOME)
+SLEDDB_PATH := $(HOME_DIR)/rethmint/data
 
 # Builds the Rust library librevm
 BUILDERS_PREFIX := rethmint/librevm-builder:0001
@@ -38,6 +41,15 @@ lib-test:
 go-test:
 	go clean -testcache
 	go test -v .
+
+clean-sleddb:
+	@echo "Removing directory: $(SLEDDB_PATH)"
+	@if [ -d "$(SLEDDB_PATH)" ]; then \
+		rm -rf "$(SLEDDB_PATH)"; \
+		echo "Directory removed successfully."; \
+	else \
+		echo "Directory does not exist."; \
+	fi
 
 # Use debug build for quick testing.
 # In order to use "--features backtraces" here we need a Rust nightly toolchain, which we don't have by default

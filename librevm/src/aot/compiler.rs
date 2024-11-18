@@ -42,16 +42,20 @@ impl<'a> Compiler {
                 let count = count_bytes.and_then(|v| ivec_to_i32(&v)).unwrap_or(0);
 
                 if count > JIT_THRESHOLD {
+                    key.update_prefix(KeyPrefix::SO);
+                    if let Some(_) = self.sled_db.get(*key.as_inner())? {
+                        continue;
+                    }
+
                     if let Ok(bytecode) =
                         kvstore.code_by_hash(FixedBytes::from_slice(key.as_slice()))
                     {
                         let label = key.to_b256().to_string().leak();
                         let so_path = Compiler::jit(label, &bytecode.original_byte_slice()).await?;
-                        key.update_prefix(KeyPrefix::SO);
 
                         let so_bytes = std::fs::read(&so_path)?;
                         self.sled_db.put(*key.as_inner(), &so_bytes, true)?;
-                        println!("Success aot!");
+                        println!("AOT Compiled for {label:#?}");
                     }
                     continue;
                 }

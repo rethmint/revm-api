@@ -73,7 +73,7 @@ pub fn register_handler<DB: Database>(handler: &mut EvmHandler<'_, ExternalConte
             .unwrap();
 
         if let Some((f, _lib)) = context.external.get_function(bytecode_hash).unwrap() {
-            println!("EvmCompilerFn from hash: {bytecode_hash:#?}");
+            println!("Executing with AOT Compiled Fn\n");
             Ok(unsafe { f.call_with_interpreter_and_memory(interpreter, memory, context) })
         } else {
             prev(frame, memory, tables, context)

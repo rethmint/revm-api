@@ -105,8 +105,8 @@ docker-publish: docker-images
 profiling:
 	@echo "Running Profiling..."
 	@export BENCHMARK_PREFIX=$(BENCHMARK_PREFIX) && \
-	export REV_CONTAINER_NAME=revmffi_container && \
-	export GEV_CONTAINER_NAME=gevm_container && \
+	export REV_CONTAINER_NAME=revmffi && \
+	export GEV_CONTAINER_NAME=gevm && \
 	docker-compose -f ./benchmark/docker-compose.yml up -d
-	docker exec -it revmffi_container sh -c "cd /app/revmffi && go test -v --count 1000"
-	docker exec -it gevm_container sh -c "cd /app/gevm && go test -v --count 1000"
+	docker exec -it revmffi sh -c "cd /app/revmffi && go test -v --count 1000"
+	docker exec -it gevm sh -c "cd /app/gevm && go test -v --count 1000"

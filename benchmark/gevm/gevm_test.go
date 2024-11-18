@@ -53,7 +53,6 @@ func Test_ERC20_Benchmark(t *testing.T) {
 	trieDb := triedb.NewDatabase(memDb, nil)
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(trieDb, nil))
 	evm := vm.NewEVM(blockContext, txContext, statedb, config, vm.Config{})
-
 	// ERC20 create
 	packedData, err := erc20abi.Constructor.Inputs.Pack("Mock Token", "Mock")
 	require.NoError(t, err)

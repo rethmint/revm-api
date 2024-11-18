@@ -1,4 +1,9 @@
-use std::{env, fs::File, io::Write, sync::Arc};
+use std::{
+    env,
+    fs::File,
+    io::Write,
+    sync::{Arc, RwLock},
+};
 
 use alloy_primitives::B256;
 use revm::{handler::register::EvmHandler, Database};
@@ -21,10 +26,16 @@ impl ExternalContext {
         &self,
         bytecode_hash: B256,
     ) -> Result<Option<(EvmCompilerFn, libloading::Library)>> {
-        let sled_db = SLED_DB.get_or_init(|| Arc::new(SledDB::<QueryKeySlice>::init()));
+        let sled_db =
+            SLED_DB.get_or_init(|| Arc::new(RwLock::new(SledDB::<QueryKeySlice>::init())));
         let key = QueryKey::with_prefix(bytecode_hash, KeyPrefix::SO);
 
-        if let Some(so_bytes) = sled_db.get(*key.as_inner()).unwrap_or(None) {
+        let maybe_so_bytes = {
+            let db_read = sled_db.read().expect("Failed to acquire read lock");
+            db_read.get(*key.as_inner()).unwrap_or(None)
+        };
+
+        if let Some(so_bytes) = maybe_so_bytes {
             let temp_dir = env::temp_dir();
             let temp_file_path = temp_dir.join("a.so");
 
@@ -46,15 +57,24 @@ impl ExternalContext {
     }
 
     fn update_bytecode_reference(&self, bytecode_hash: B256) -> Result<()> {
-        let sled_db = SLED_DB.get_or_init(|| Arc::new(SledDB::<QueryKeySlice>::init()));
+        let sled_db =
+            SLED_DB.get_or_init(|| Arc::new(RwLock::new(SledDB::<QueryKeySlice>::init())));
         let key = QueryKey::with_prefix(bytecode_hash, KeyPrefix::Count);
 
-        let count_bytes = sled_db.get(*key.as_inner()).unwrap_or(None);
-        let count = count_bytes.and_then(|v| ivec_to_i32(&v)).unwrap_or(0) + 1;
+        let count = {
+            let db_read = sled_db.read().unwrap();
+            let count_bytes = db_read.get(*key.as_inner()).unwrap_or(None);
+            count_bytes.and_then(|v| ivec_to_i32(&v)).unwrap_or(0)
+        };
 
-        sled_db
-            .put(*key.as_inner(), &count.to_be_bytes(), true)
-            .unwrap();
+        let new_count = count + 1;
+
+        {
+            let db_write = sled_db.write().unwrap();
+            db_write
+                .put(*key.as_inner(), &new_count.to_be_bytes(), true)
+                .unwrap();
+        }
 
         Ok(())
     }

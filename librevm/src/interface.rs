@@ -1,7 +1,6 @@
-use std::sync::Arc;
-
 use once_cell::sync::OnceCell;
 use revm::{primitives::SpecId, Evm, EvmBuilder};
+use std::sync::{Arc, RwLock};
 
 use crate::{
     aot::{Compiler, QueryKeySlice, SledDB},
@@ -13,7 +12,7 @@ use crate::{
     utils::{build_flat_buffer, set_evm_env},
 };
 
-pub static SLED_DB: OnceCell<Arc<SledDB<QueryKeySlice>>> = OnceCell::new();
+pub static SLED_DB: OnceCell<Arc<RwLock<SledDB<QueryKeySlice>>>> = OnceCell::new();
 
 // byte slice view: golang data type
 // unamangedvector: ffi safe vector data type compliants with rust's ownership and data types, for returning optional error value
@@ -68,7 +67,7 @@ pub async extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
 #[tokio::main]
 #[no_mangle]
 pub async extern "C" fn init_compiler() -> *mut compiler_t {
-    let sled_db = SLED_DB.get_or_init(|| Arc::new(SledDB::init()));
+    let sled_db = SLED_DB.get_or_init(|| Arc::new(RwLock::new(SledDB::init())));
 
     let interval_ms = 1_000;
 

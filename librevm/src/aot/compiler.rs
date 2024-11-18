@@ -1,4 +1,8 @@
-use std::{path::PathBuf, sync::Arc, time};
+use std::{
+    path::PathBuf,
+    sync::{Arc, RwLock},
+    time,
+};
 
 use alloy_primitives::FixedBytes;
 use revm::Database;
@@ -17,11 +21,11 @@ pub const JIT_THRESHOLD: i32 = 0;
 pub struct Compiler {
     // ms
     interval: u64,
-    sled_db: Arc<SledDB<QueryKeySlice>>,
+    sled_db: Arc<RwLock<SledDB<QueryKeySlice>>>,
 }
 
 impl<'a> Compiler {
-    pub fn new_with_db(interval: u64, sled_db: Arc<SledDB<QueryKeySlice>>) -> Self {
+    pub fn new_with_db(interval: u64, sled_db: Arc<RwLock<SledDB<QueryKeySlice>>>) -> Self {
         Self { interval, sled_db }
     }
 
@@ -32,20 +36,27 @@ impl<'a> Compiler {
         loop {
             interval.tick().await;
 
-            for mut key in self.sled_db.count_keys_iter() {
+            let keys = {
+                let db_read = self.sled_db.read().unwrap();
+                db_read.count_keys_iter().collect::<Vec<_>>()
+            };
+            for mut key in keys {
                 // skip empty bytecode (create tx)
                 if key.to_b256().iter().all(|&byte| byte == 0) {
                     continue;
                 }
 
-                let count_bytes = self.sled_db.get(*key.as_inner()).unwrap_or(None);
-                let count = count_bytes.and_then(|v| ivec_to_i32(&v)).unwrap_or(0);
+                let count = {
+                    let db_read = self.sled_db.read().unwrap();
+                    let count_bytes = db_read.get(*key.as_inner()).unwrap_or(None);
+                    count_bytes.and_then(|v| ivec_to_i32(&v)).unwrap_or(0)
+                };
 
                 if count > JIT_THRESHOLD {
                     key.update_prefix(KeyPrefix::SO);
 
                     // already aot compiled
-                    if let Some(_) = self.sled_db.get(*key.as_inner())? {
+                    if let Some(_) = { self.sled_db.read().unwrap().get(*key.as_inner())? } {
                         continue;
                     }
 
@@ -54,9 +65,14 @@ impl<'a> Compiler {
                     {
                         let label = key.to_b256().to_string().leak();
                         let so_path = Compiler::jit(label, &bytecode.original_byte_slice()).await?;
-
                         let so_bytes = std::fs::read(&so_path)?;
-                        self.sled_db.put(*key.as_inner(), &so_bytes, true)?;
+
+                        {
+                            self.sled_db
+                                .write()
+                                .unwrap()
+                                .put(*key.as_inner(), &so_bytes, true)?;
+                        }
                         println!("AOT Compiled for {label:#?}");
                     }
                     continue;

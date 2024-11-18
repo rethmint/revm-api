@@ -5,6 +5,7 @@ go 1.22
 require (
 	github.com/cosmos/cosmos-db v1.0.2
 	github.com/ethereum/go-ethereum v1.14.11
+	github.com/rethmint/revm-api/benchmark v0.0.0-20241118043918-f5b3080c80e4
 	github.com/stretchr/testify v1.9.0
 )
 

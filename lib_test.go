@@ -74,8 +74,22 @@ func Test_e2e_aot(t *testing.T) {
 		result, err = res.ProcessExecutionResult()
 		require.NoError(t, err)
 
-		_, ok := result.(types.Success)
+		fibRes, ok := result.(types.Success)
 		require.True(t, ok)
+
+		require.Equal(t, types.Success{
+			Reason:      "Return",
+			GasUsed:     0x1e7b1421,
+			GasRefunded: 0x0,
+			Logs:        []types.Log{},
+			Output: types.Output{
+				DeployedAddress: common.Address{},
+				Output: []uint8{
+					0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xc, 0xb2, 0x28,
+				},
+			},
+		},
+			fibRes)
 
 		elapsed := time.Since(start)
 		t.Logf("Test Aot: Call %d execution time: %v", i+1, elapsed)

@@ -16,10 +16,6 @@ Cargo.lock
 # MacOS
 .DS_Store
 
-# No static libraries (35MB+)
-lib*.a
-lib*.dylib
-
 # No native database
 librevm/data
 

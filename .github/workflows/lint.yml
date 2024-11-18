@@ -3,12 +3,12 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - '**.rs'
+      - "**.rs"
   push:
     branches:
       - main
     paths:
-      - '**.rs'
+      - "**.rs"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -26,6 +26,27 @@ jobs:
           sudo rm -rf /opt/ghc
           sudo rm -rf "/usr/local/share/boost"
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+
+      - name: Install LLVM 18
+        run: |
+          echo "Installing LLVM 18 on Ubuntu"
+          sudo apt-get update
+          sudo apt-get install -y lsb-release wget software-properties-common
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 18
+
+      - name: Set LLVM_SYS_180_PREFIX
+        run: |
+          prefix=$(llvm-config-18 --prefix)
+          echo "LLVM_SYS_180_PREFIX=$prefix" >> $GITHUB_ENV
+
+      - name: Verify LLVM Installation
+        run: |
+          echo "Using LLVM version:"
+          llvm-config-18 --version
+          echo "LLVM_SYS_180_PREFIX=$LLVM_SYS_180_PREFIX"
+
       - name: Install latest rust
         uses: actions-rs/toolchain@v1
         with:
@@ -34,7 +55,7 @@ jobs:
           components: rustfmt, clippy
       - uses: actions/setup-go@v4
         with:
-          go-version: '1.22'
+          go-version: "1.22"
       - uses: actions/cache@v3
         with:
           path: |
@@ -45,9 +66,11 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
           restore-keys: ${{ runner.os }}-cargo-
+
       - name: Rustfmt
         run: |
           cargo fmt --all
+
       - name: Clippy
         run: |
           cargo clippy --package revmapi --no-deps -- -D warnings

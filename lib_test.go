@@ -8,7 +8,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	revm "github.com/rethmint/revm-api"
-	fibca "github.com/rethmint/revm-api/contracts/Fibonacci"
+	// fibca "github.com/rethmint/revm-api/contracts/Fibonacci"
+	testca "github.com/rethmint/revm-api/contracts/Test"
 	testutils "github.com/rethmint/revm-api/testutils"
 	types "github.com/rethmint/revm-api/types/go"
 	"github.com/stretchr/testify/require"
@@ -40,7 +41,7 @@ func Test_e2e_fib(t *testing.T) {
 	vm, kvStore, caller := setupTest(t)
 
 	// Deploy Test Contract
-	txData, err := hexutil.Decode(fibca.FibonacciBin)
+	txData, err := hexutil.Decode(testca.TestBin)
 	require.NoError(t, err)
 	createTx := testutils.MockTx(caller, common.Address{}, txData, 0)
 	block := testutils.MockBlock(1)
@@ -52,7 +53,7 @@ func Test_e2e_fib(t *testing.T) {
 	require.True(t, ok)
 	deployedAddr := createRes.Output.DeployedAddress
 
-	abi, err := fibca.FibonacciMetaData.GetAbi()
+	abi, err := testca.TestMetaData.GetAbi()
 	require.NoError(t, err)
 	increaseInput, err := abi.Pack("increase")
 	require.NoError(t, err)

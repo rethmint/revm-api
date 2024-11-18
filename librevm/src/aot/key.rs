@@ -32,7 +32,7 @@ impl QueryKey {
         self.0[0] = new_prefix.as_byte();
     }
 
-    pub fn to_b256(&self) -> B256 {
+    pub fn to_b256(self) -> B256 {
         B256::from_slice(&self.0[1..])
     }
 

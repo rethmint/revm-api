@@ -50,7 +50,7 @@ pub async extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
     let go_storage = GoStorage::new(&db);
     let spec = SpecId::try_from_u8(default_spec_id).unwrap_or(SpecId::CANCUN);
 
-    let ext = ExternalContext::new();
+    let ext = ExternalContext::default();
     let builder = EvmBuilder::default();
     let evm = builder
         .with_db(go_storage)

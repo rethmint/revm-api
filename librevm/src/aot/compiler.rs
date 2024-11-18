@@ -56,7 +56,7 @@ impl<'a> Compiler {
                     key.update_prefix(KeyPrefix::SO);
 
                     // already aot compiled
-                    if let Some(_) = { self.sled_db.read().unwrap().get(*key.as_inner())? } {
+                    if { self.sled_db.read().unwrap().get(*key.as_inner())? }.is_some() {
                         continue;
                     }
 
@@ -64,7 +64,7 @@ impl<'a> Compiler {
                         kvstore.code_by_hash(FixedBytes::from_slice(key.as_slice()))
                     {
                         let label = key.to_b256().to_string().leak();
-                        let so_path = Compiler::jit(label, &bytecode.original_byte_slice()).await?;
+                        let so_path = Compiler::jit(label, bytecode.original_byte_slice()).await?;
                         let so_bytes = std::fs::read(&so_path)?;
 
                         {

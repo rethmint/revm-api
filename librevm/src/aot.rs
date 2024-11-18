@@ -50,12 +50,12 @@ impl RuntimeAot {
         compiler.set_module_name(name);
         compiler.validate_eof(true);
 
-        let spec_id = self.cfg.spec_id.into();
+        let spec_id = self.cfg.spec_id;
 
         compiler.inspect_stack_length(true);
         let _f_id = compiler.translate(name, bytecode, spec_id)?;
 
-        let out_dir = std::env::temp_dir().join(temp_dir).join(&name);
+        let out_dir = std::env::temp_dir().join(temp_dir).join(name);
         std::fs::create_dir_all(&out_dir)?;
 
         // Compile.

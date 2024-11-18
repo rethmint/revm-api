@@ -15,13 +15,10 @@ use crate::{
     SLED_DB,
 };
 
+#[derive(Default)]
 pub struct ExternalContext {}
 
 impl ExternalContext {
-    pub fn new() -> Self {
-        Self {}
-    }
-
     fn get_function(
         &self,
         bytecode_hash: B256,

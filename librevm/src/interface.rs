@@ -4,7 +4,7 @@ use once_cell::sync::OnceCell;
 use revm::{primitives::SpecId, Context, Evm, EvmBuilder};
 
 use crate::{
-    aot::{Cronner, QueryKeySlice, SledDB},
+    aot::{Compiler, QueryKeySlice, SledDB},
     db::Db,
     error::set_error,
     ext::{register_handler, ExternalContext},
@@ -23,7 +23,7 @@ pub struct evm_t {}
 
 #[allow(non_camel_case_types)]
 #[repr(C)]
-pub struct cron_t {}
+pub struct compiler_t {}
 
 pub fn to_evm<'a>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, (), GoStorage<'a>>> {
     if ptr.is_null() {
@@ -34,12 +34,12 @@ pub fn to_evm<'a>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, (), GoStorage<'a>>>
     }
 }
 
-pub fn to_cron<'a>(ptr: *mut cron_t) -> Option<&'a mut Cronner> {
+pub fn to_compiler<'a>(ptr: *mut compiler_t) -> Option<&'a mut Compiler> {
     if ptr.is_null() {
         None
     } else {
-        let cron = unsafe { &mut *(ptr as *mut Cronner) };
-        Some(cron)
+        let compiler = unsafe { &mut *(ptr as *mut Compiler) };
+        Some(compiler)
     }
 }
 
@@ -67,16 +67,14 @@ pub async extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
 
 #[tokio::main]
 #[no_mangle]
-pub async extern "C" fn init_cronner() -> *mut cron_t {
+pub async extern "C" fn init_compiler() -> *mut compiler_t {
     let sled_db = SLED_DB.get_or_init(|| Arc::new(SledDB::init()));
 
     let interval_ms = 1_000;
 
-    let cronner = Cronner::new_with_db(interval_ms, Arc::clone(sled_db));
-    //let cron_handle = cronner.routine_fn();
-
-    let cron = Box::into_raw(Box::new(cronner));
-    cron as *mut cron_t
+    let compiler = Compiler::new_with_db(interval_ms, Arc::clone(sled_db));
+    let compiler = Box::into_raw(Box::new(compiler));
+    compiler as *mut compiler_t
 }
 
 #[no_mangle]
@@ -88,10 +86,10 @@ pub extern "C" fn release_vm(vm: *mut evm_t) {
 }
 
 #[no_mangle]
-pub extern "C" fn release_cron(cron: *mut cron_t) {
-    if !cron.is_null() {
+pub extern "C" fn release_compiler(compiler: *mut compiler_t) {
+    if !compiler.is_null() {
         // this will free cache when it goes out of scope
-        let _ = unsafe { Box::from_raw(cron as *mut Cronner) };
+        let _ = unsafe { Box::from_raw(compiler as *mut Compiler) };
     }
 }
 
@@ -160,17 +158,17 @@ pub extern "C" fn query_tx(
 
 #[tokio::main]
 #[no_mangle]
-pub async extern "C" fn start_cron_job(cron_ptr: *mut cron_t, db: Db) {
+pub async extern "C" fn start_routine(compiler_ptr: *mut compiler_t, db: Db) {
     let kvstore = GoStorage::new(&db);
-    let cron = match to_cron(cron_ptr) {
-        Some(cron) => cron,
+    let compiler = match to_compiler(compiler_ptr) {
+        Some(compiler) => compiler,
         None => {
-            panic!("Failed to get cron");
+            panic!("Failed to get compiler");
         }
     };
 
-    let routine = cron.routine_fn(kvstore);
+    let routine = compiler.routine_fn(kvstore);
     if let Err(err) = routine.await {
-        println!("While cronning, Err: {err:#?}");
+        println!("While compiling, Err: {err:#?}");
     };
 }

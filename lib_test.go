@@ -19,16 +19,16 @@ const CANCUN uint8 = 17
 func setupTest(t *testing.T) (revm.VM, *testutils.MockKVStore, common.Address) {
 	kvStore := testutils.NewMockKVStore()
 	vm := revm.NewVM(CANCUN)
-	cronner := revm.NewCronner()
+	compiler := revm.NewCompiler()
 
 	go func() {
-		cronner.Start(kvStore)
+		compiler.Start(kvStore)
 	}()
 
 	t.Cleanup(func() {
 		time.Sleep(5 * time.Second)
 		vm.Destroy()
-		cronner.Destroy()
+		compiler.Destroy()
 	})
 	caller := common.HexToAddress("0xe100713fc15400d1e94096a545879e7c647001e0")
 	testutils.Faucet(kvStore, caller, big.NewInt(1000000000000))

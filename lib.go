@@ -10,21 +10,21 @@ type VM struct {
 	Inner api.VM
 }
 
-type Cronner struct {
-	Inner api.Cron
+type Compiler struct {
+	Inner api.Compiler
 }
 
-func NewCronner() Cronner {
-	inner := api.InitCronner()
-	return Cronner{inner}
+func NewCompiler() Compiler {
+	inner := api.InitCompiler()
+	return Compiler{inner}
 }
 
-func (cron *Cronner) Start(kvstore api.KVStore) {
-	api.StartCronJob(cron.Inner, kvstore)
+func (compiler *Compiler) Start(kvstore api.KVStore) {
+	api.StartRoutine(compiler.Inner, kvstore)
 }
 
-func (cron *Cronner) Destroy() {
-	api.ReleaseCron(cron.Inner)
+func (compiler *Compiler) Destroy() {
+	api.ReleaseCompiler(compiler.Inner)
 }
 
 // NewVm return VM instance

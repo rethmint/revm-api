@@ -14,13 +14,13 @@ use crate::{
 
 pub const JIT_THRESHOLD: i32 = 0;
 
-pub struct Cronner {
+pub struct Compiler {
     // ms
     interval: u64,
     sled_db: Arc<SledDB<QueryKeySlice>>,
 }
 
-impl<'a> Cronner {
+impl<'a> Compiler {
     pub fn new_with_db(interval: u64, sled_db: Arc<SledDB<QueryKeySlice>>) -> Self {
         Self { interval, sled_db }
     }
@@ -46,7 +46,7 @@ impl<'a> Cronner {
                         kvstore.code_by_hash(FixedBytes::from_slice(key.as_slice()))
                     {
                         let label = key.to_b256().to_string().leak();
-                        let so_path = Cronner::jit(label, &bytecode.original_byte_slice()).await?;
+                        let so_path = Compiler::jit(label, &bytecode.original_byte_slice()).await?;
                         key.update_prefix(KeyPrefix::SO);
 
                         let so_bytes = std::fs::read(&so_path)?;

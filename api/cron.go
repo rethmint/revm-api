@@ -4,22 +4,22 @@ package api
 // #include "bindings.h"
 import "C"
 
-type Cron struct {
-	ptr *C.cron_t
+type Compiler struct {
+	ptr *C.compiler_t
 }
 
-func ReleaseCron(cron Cron) {
-	C.release_cron(cron.ptr)
+func ReleaseCompiler(compiler Compiler) {
+	C.release_compiler(compiler.ptr)
 }
 
-func InitCronner() Cron {
-	return Cron{
-		ptr: C.init_cronner(),
+func InitCompiler() Compiler {
+	return Compiler{
+		ptr: C.init_compiler(),
 	}
 }
 
-func StartCronJob(cron Cron, store KVStore) {
+func StartRoutine(compiler Compiler, store KVStore) {
 	dbState := buildDBState(store)
 	db := buildDB(&dbState)
-	C.start_cron_job(cron.ptr, db)
+	C.start_routine(compiler.ptr, db)
 }

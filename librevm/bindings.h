@@ -154,7 +154,7 @@ typedef struct {
 
 typedef struct {
 
-} cron_t;
+} compiler_t;
 
 void destroy_unmanaged_vector(UnmanagedVector v);
 
@@ -164,7 +164,7 @@ UnmanagedVector execute_tx(evm_t *vm_ptr,
                            ByteSliceView tx,
                            UnmanagedVector *errmsg);
 
-cron_t *init_cronner(void);
+compiler_t *init_compiler(void);
 
 evm_t *init_vm(uint8_t default_spec_id);
 
@@ -176,10 +176,10 @@ UnmanagedVector query_tx(evm_t *vm_ptr,
                          ByteSliceView tx,
                          UnmanagedVector *errmsg);
 
-void release_cron(cron_t *cron);
+void release_compiler(compiler_t *compiler);
 
 void release_vm(evm_t *vm);
 
-void start_cron_job(cron_t *cron_ptr, Db db);
+void start_routine(compiler_t *compiler_ptr, Db db);
 
 #endif /* __LIBREVMAPI__ */

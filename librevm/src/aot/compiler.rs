@@ -38,16 +38,16 @@ impl<'a> Compiler {
                     continue;
                 }
 
-                // already aot compiled
-                if let Some(_) = self.sled_db.get(*key.as_inner())? {
-                    continue;
-                }
-
                 let count_bytes = self.sled_db.get(*key.as_inner()).unwrap_or(None);
                 let count = count_bytes.and_then(|v| ivec_to_i32(&v)).unwrap_or(0);
 
                 if count > JIT_THRESHOLD {
                     key.update_prefix(KeyPrefix::SO);
+
+                    // already aot compiled
+                    if let Some(_) = self.sled_db.get(*key.as_inner())? {
+                        continue;
+                    }
 
                     if let Ok(bytecode) =
                         kvstore.code_by_hash(FixedBytes::from_slice(key.as_slice()))

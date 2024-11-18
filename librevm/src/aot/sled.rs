@@ -3,10 +3,14 @@ use sled::IVec;
 use std::marker::PhantomData;
 use std::path::Path;
 use std::sync::Arc;
+use std::{env, path::PathBuf};
 
 use super::{KeyPrefix, QueryKey, QueryKeySlice};
 
-pub const SLEDDB_PATH: &str = "/Users/anjihwan/desktop/rethmint/data";
+pub fn sleddb_path() -> PathBuf {
+    let home_dir = env::var("HOME").unwrap_or_else(|_| ".".to_string());
+    PathBuf::from(home_dir).join("rethmint").join("data")
+}
 
 pub struct SledDB<K>
 where
@@ -21,7 +25,7 @@ where
     K: AsRef<[u8]>,
 {
     pub fn init() -> Self {
-        let db = SledDB::<K>::connect(SLEDDB_PATH).unwrap();
+        let db = SledDB::<K>::connect(sleddb_path().to_str().unwrap()).unwrap();
 
         Self {
             db: Arc::new(db),

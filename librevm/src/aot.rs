@@ -3,10 +3,9 @@ mod cron;
 mod key;
 mod sled;
 
-use std::path::PathBuf;
-
 use color_eyre::Result;
 use revmc::{eyre::ensure, EvmCompiler, EvmLlvmBackend};
+use std::path::PathBuf;
 use tempdir::TempDir;
 use tokio::fs;
 
@@ -14,8 +13,6 @@ pub use cfg::*;
 pub use cron::*;
 pub use key::*;
 pub use sled::*;
-
-pub const AOT_OUT_PATH: &str = "/Users/anjihwan/desktop/rethmint/aot";
 
 pub struct RuntimeAot {
     pub cfg: AotCfg,
@@ -43,9 +40,6 @@ impl RuntimeAot {
         let temp_path = temp_dir.path();
         fs::create_dir_all(&temp_path).await.unwrap();
 
-        let temp_path = std::path::Path::new(AOT_OUT_PATH);
-        std::fs::create_dir_all(&temp_path).unwrap();
-
         compiler.set_dump_to(Some(temp_path.to_path_buf()));
         compiler.gas_metering(self.cfg.no_gas);
 
@@ -61,7 +55,7 @@ impl RuntimeAot {
         compiler.inspect_stack_length(true);
         let _f_id = compiler.translate(name, bytecode, spec_id)?;
 
-        let out_dir = std::env::temp_dir().join(AOT_OUT_PATH).join(&name);
+        let out_dir = std::env::temp_dir().join(temp_dir).join(&name);
         std::fs::create_dir_all(&out_dir)?;
 
         // Compile.

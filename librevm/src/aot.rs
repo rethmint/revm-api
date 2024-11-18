@@ -19,32 +19,16 @@ pub use sled::*;
 
 pub const JIT_OUT_PATH: &str = "librevm/out";
 
-pub struct RuntimeJit {
-    pub unit: JitUnit,
-    pub cfg: JitCfg,
+pub struct RuntimeAot {
+    pub cfg: AotCfg,
 }
 
-#[derive(Clone, Debug, Default)]
-pub struct JitUnit {
-    pub name: &'static str,
-    pub stack_input: Vec<U256>,
-}
-
-impl JitUnit {
-    pub fn new(name: &'static str, stack_input_size: u64) -> Self {
-        Self {
-            name,
-            stack_input: vec![U256::from(stack_input_size)],
-        }
-    }
-}
-
-impl RuntimeJit {
-    pub fn new(unit: JitUnit, cfg: JitCfg) -> Self {
-        Self { unit, cfg }
+impl RuntimeAot {
+    pub fn new(cfg: AotCfg) -> Self {
+        Self { cfg }
     }
 
-    pub async fn compile(&self, bytecode: &[u8]) -> Result<PathBuf> {
+    pub async fn compile(&self, name: &'static str, bytecode: &[u8]) -> Result<PathBuf> {
         let _ = color_eyre::install();
 
         let context = revmc::llvm::inkwell::context::Context::create();
@@ -71,7 +55,7 @@ impl RuntimeJit {
 
         compiler.frame_pointers(true);
         compiler.debug_assertions(self.cfg.debug_assertions);
-        compiler.set_module_name(self.unit.name);
+        compiler.set_module_name(name);
         compiler.validate_eof(true);
 
         let spec_id = if self.cfg.eof {
@@ -80,15 +64,10 @@ impl RuntimeJit {
             self.cfg.spec_id.into()
         };
 
-        if !self.unit.stack_input.is_empty() {
-            compiler.inspect_stack_length(true);
-        }
+        compiler.inspect_stack_length(true);
+        let _f_id = compiler.translate(name, bytecode, spec_id)?;
 
-        let _f_id = compiler.translate(self.unit.name, bytecode, spec_id)?;
-
-        let out_dir = std::env::temp_dir()
-            .join(JIT_OUT_PATH)
-            .join(&self.unit.name);
+        let out_dir = std::env::temp_dir().join(JIT_OUT_PATH).join(&name);
         std::fs::create_dir_all(&out_dir)?;
 
         // Compile.

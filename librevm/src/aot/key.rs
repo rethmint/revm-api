@@ -36,6 +36,10 @@ impl QueryKey {
         B256::from_slice(&self.0[1..])
     }
 
+    pub fn as_slice(&self) -> &[u8] {
+        &self.0[1..33]
+    }
+
     pub fn from_ivec(ivec: IVec) -> Self {
         assert!(ivec.len() == 33, "ivec len not 33");
 

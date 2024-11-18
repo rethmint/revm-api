@@ -4,11 +4,11 @@ use once_cell::sync::OnceCell;
 use revm::{primitives::SpecId, Context, Evm, EvmBuilder};
 
 use crate::{
+    aot::{Cronner, QueryKeySlice, SledDB},
     db::Db,
     error::set_error,
     ext::{register_handler, ExternalContext},
     gstorage::GoStorage,
-    jit::{Cronner, QueryKeySlice, SledDB},
     memory::{ByteSliceView, UnmanagedVector},
     utils::{build_flat_buffer, set_evm_env},
 };
@@ -179,5 +179,7 @@ pub async extern "C" fn start_cron_job(cron_ptr: *mut cron_t, db: Db) {
     };
 
     let routine = cron.routine_fn(kvstore);
-    routine.await;
+    if let Err(err) = routine.await {
+        println!("While cronning, Err: {err:#?}");
+    };
 }

@@ -217,3 +217,7 @@ pub fn build_flat_buffer(result: ExecutionResult) -> Vec<u8> {
     finish_evm_result_buffer(&mut builder, args);
     builder.finished_data().to_vec()
 }
+
+pub fn ivec_to_i32(ivec: &sled::IVec) -> Option<i32> {
+    ivec.as_ref().try_into().ok().map(i32::from_be_bytes)
+}

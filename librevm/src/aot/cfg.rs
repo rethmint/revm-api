@@ -1,7 +1,7 @@
 use revm::primitives::SpecId;
 use revmc::OptimizationLevel;
 
-pub struct JitCfg {
+pub struct AotCfg {
     pub aot: bool,
     pub opt_level: OptimizationLevel,
     pub no_gas: bool,
@@ -11,9 +11,9 @@ pub struct JitCfg {
     pub spec_id: SpecId,
 }
 
-impl Default for JitCfg {
+impl Default for AotCfg {
     fn default() -> Self {
-        JitCfg {
+        AotCfg {
             aot: true,
             opt_level: OptimizationLevel::Aggressive,
             no_gas: true,

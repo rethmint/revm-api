@@ -7,8 +7,9 @@ use tokio::time::{interval_at, Instant};
 
 use super::{QueryKeySlice, SledDB};
 use crate::{
+    aot::{AotCfg, KeyPrefix, QueryKey, RuntimeAot},
     gstorage::GoStorage,
-    jit::{JitCfg, JitUnit, KeyPrefix, QueryKey, RuntimeJit},
+    utils::ivec_to_i32,
 };
 
 pub const JIT_THRESHOLD: i32 = 0;
@@ -24,7 +25,7 @@ impl<'a> Cronner {
         Self { interval, sled_db }
     }
 
-    pub async fn routine_fn(&self, mut kvstore: GoStorage<'a>) {
+    pub async fn routine_fn(&self, mut kvstore: GoStorage<'a>) -> Result<()> {
         let interval = self.interval.clone();
         let sled_db = self.sled_db.clone();
 
@@ -48,20 +49,15 @@ impl<'a> Cronner {
                 .into_iter()
             {
                 let count_bytes = sled_db.get(*key.as_inner()).unwrap_or(None);
-                let count = count_bytes.as_ref().map_or(1, |v| {
-                    let bytes: [u8; 4] = v.to_vec().as_slice().try_into().unwrap_or([0, 0, 0, 0]);
-                    i32::from_be_bytes(bytes)
-                });
+                let count = count_bytes.and_then(|v| ivec_to_i32(&v)).unwrap_or(1);
 
                 if count > JIT_THRESHOLD {
-                    let prefix_zeros = &key.to_b256()[0..10];
-                    if prefix_zeros.iter().all(|&byte| byte == 0) {
+                    if key.to_b256().iter().all(|&byte| byte == 0) {
                         continue;
                     }
 
-                    // use gostorage db
                     if let Ok(bytecode) =
-                        kvstore.code_by_hash(FixedBytes::from_slice(&*key.to_b256().as_slice()))
+                        kvstore.code_by_hash(FixedBytes::from_slice(key.as_slice()))
                     {
                         //println!("Bytecode: {:#02X?}", &bytecode.original_byte_slice()[..10]);
                         //println!("Bytecode hash, {:#?}", key.to_b256());
@@ -71,20 +67,12 @@ impl<'a> Cronner {
                         //let label = String::from_utf8(bytes).unwrap().leak();
                         let label = "afn";
 
-                        match Cronner::jit(label, &bytecode.original_byte_slice()).await {
-                            Ok(so_path) => {
-                                key.update_prefix(KeyPrefix::SO);
+                        let so_path = Cronner::jit(label, &bytecode.original_byte_slice()).await?;
+                        key.update_prefix(KeyPrefix::SO);
 
-                                match std::fs::read(&so_path) {
-                                    Ok(so_bytes) => {
-                                        sled_db.put(*key.as_inner(), &so_bytes, true).unwrap();
-                                        println!("Success jit!");
-                                    }
-                                    Err(err) => println!("While jit: {:#?}", err),
-                                }
-                            }
-                            Err(err) => println!("While jit: {:#?}", err),
-                        }
+                        let so_bytes = std::fs::read(&so_path)?;
+                        sled_db.put(*key.as_inner(), &so_bytes, true)?;
+                        println!("Success jit!");
                     }
                     continue;
                 }
@@ -93,10 +81,9 @@ impl<'a> Cronner {
     }
 
     pub async fn jit(label: &'static str, bytecode: &[u8]) -> Result<PathBuf> {
-        let unit = JitUnit::new(label, 70);
-        let runtime_jit = RuntimeJit::new(unit, JitCfg::default());
+        let runtime_jit = RuntimeAot::new(AotCfg::default());
         runtime_jit
-            .compile(bytecode)
+            .compile(label, bytecode)
             .await
             .wrap_err("Compilation fail")
     }

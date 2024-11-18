@@ -5,7 +5,7 @@ use revm::{handler::register::EvmHandler, Database};
 use revmc::{eyre::Result, EvmCompilerFn};
 
 use crate::{
-    jit::{KeyPrefix, QueryKey, QueryKeySlice, SledDB},
+    aot::{KeyPrefix, QueryKey, QueryKeySlice, SledDB},
     SLED_DB,
 };
 

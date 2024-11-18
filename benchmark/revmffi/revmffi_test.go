@@ -8,7 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	revm_api "github.com/rethmint/revm-api"
 	"github.com/rethmint/revm-api/benchmark/contracts/erc20"
-	"github.com/rethmint/revm-api/benchmark/revmffi/contracts/erc20"
 	"github.com/rethmint/revm-api/testutils"
 	types "github.com/rethmint/revm-api/types/go"
 	"github.com/stretchr/testify/require"
@@ -23,6 +22,7 @@ func Test_ERC20_Benchmark(t *testing.T) {
 	callerAddr := common.HexToAddress(caller)
 	// Create VM
 	evm := revm_api.NewVM(cancun)
+	defer evm.Destroy()
 	kvstore := testutils.NewMockKVStore()
 	// ERC20 create
 	packedData, _ := erc20abi.Constructor.Inputs.Pack("Mock", "Mock")

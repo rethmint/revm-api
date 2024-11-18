@@ -4,7 +4,9 @@ use std::marker::PhantomData;
 use std::path::Path;
 use std::sync::Arc;
 
-pub const SLEDDB_PATH: &str = "librevm/data";
+use super::{KeyPrefix, QueryKey, QueryKeySlice};
+
+pub const SLEDDB_PATH: &str = "/Users/anjihwan/desktop/rethmint/data";
 
 pub struct SledDB<K>
 where
@@ -49,6 +51,15 @@ where
 
     pub fn key_iterator(&self) -> impl Iterator<Item = IVec> {
         self.db.iter().keys().filter_map(|res| res.ok())
+    }
+}
+
+impl SledDB<QueryKeySlice> {
+    pub fn count_keys_iter(&self) -> impl Iterator<Item = QueryKey> + '_ {
+        self.key_iterator().filter_map(|iv| {
+            let key = QueryKey::from_ivec(iv);
+            key.match_prefix(KeyPrefix::Count).then_some(key)
+        })
     }
 }
 

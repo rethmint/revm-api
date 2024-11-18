@@ -15,7 +15,7 @@ pub use cron::*;
 pub use key::*;
 pub use sled::*;
 
-pub const AOT_OUT_PATH: &str = "librevm/out";
+pub const AOT_OUT_PATH: &str = "/Users/anjihwan/desktop/rethmint/aot";
 
 pub struct RuntimeAot {
     pub cfg: AotCfg,

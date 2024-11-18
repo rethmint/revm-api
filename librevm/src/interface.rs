@@ -118,12 +118,8 @@ pub extern "C" fn execute_tx(
 
     let result = evm.transact_commit();
     let data = match result {
-        Ok(res) => {
-            println!("Success: {res:#?}");
-            build_flat_buffer(res)
-        }
+        Ok(res) => build_flat_buffer(res),
         Err(err) => {
-            println!("Error: {err:#?}");
             set_error(err, errmsg);
             Vec::new()
         }

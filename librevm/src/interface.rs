@@ -120,7 +120,6 @@ pub extern "C" fn execute_tx(
     let data = match result {
         Ok(res) => build_flat_buffer(res),
         Err(err) => {
-            println!("Execute tx err: {:#?}", err);
             set_error(err, errmsg);
             Vec::new()
         }

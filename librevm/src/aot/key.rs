@@ -41,7 +41,7 @@ impl QueryKey {
     }
 
     pub fn from_ivec(ivec: IVec) -> Self {
-        assert!(ivec.len() == 33, "ivec len not 33");
+        assert!(ivec.len() == 33);
 
         let mut arr = [0u8; 33];
         arr.copy_from_slice(&ivec);

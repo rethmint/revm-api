@@ -1,4 +1,4 @@
-use std::{sync::Arc, thread};
+use std::sync::Arc;
 
 use once_cell::sync::OnceCell;
 use revm::{primitives::SpecId, Context, Evm, EvmBuilder};
@@ -124,11 +124,6 @@ pub extern "C" fn execute_tx(
             Vec::new()
         }
     };
-
-    //println!("TxKind: {:#?}", evm.tx().transact_to);
-    //if evm.tx().transact_to.is_call() {
-    //    std::thread::sleep(std::time::Duration::from_secs(60));
-    //}
 
     UnmanagedVector::new(Some(data))
 }

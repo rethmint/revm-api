@@ -3,11 +3,11 @@ package revm_api_test
 import (
 	"math/big"
 	"testing"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	revm "github.com/rethmint/revm-api"
-	// fibca "github.com/rethmint/revm-api/contracts/Fibonacci"
 
 	testca "github.com/rethmint/revm-api/contracts/Test"
 	testutils "github.com/rethmint/revm-api/testutils"
@@ -22,13 +22,13 @@ func setupTest(t *testing.T) (revm.VM, *testutils.MockKVStore, common.Address) {
 	vm := revm.NewVM(CANCUN)
 	cronner := revm.NewCronner()
 
-	go cronner.Start(kvStore)
+	go func() {
+		cronner.Start(kvStore)
+	}()
 
 	t.Cleanup(func() {
+		time.Sleep(5 * time.Second)
 		vm.Destroy()
-	})
-
-	t.Cleanup(func() {
 		cronner.Destroy()
 	})
 	caller := common.HexToAddress("0xe100713fc15400d1e94096a545879e7c647001e0")
@@ -39,6 +39,7 @@ func setupTest(t *testing.T) (revm.VM, *testutils.MockKVStore, common.Address) {
 
 func Test_e2e(t *testing.T) {
 	vm, kvStore, caller := setupTest(t)
+
 	// Deploy Test Contract
 	txData, err := hexutil.Decode(testca.TestBin)
 	require.NoError(t, err)
@@ -60,9 +61,6 @@ func Test_e2e(t *testing.T) {
 	increaseTx := testutils.MockTx(caller, deployedAddr, increaseInput, 1)
 	block = testutils.MockBlock(2)
 	res, err = vm.ExecuteTx(kvStore, block.ToSerialized(), increaseTx.ToSerialized())
-	require.NoError(t, err)
-
-	result, err = res.ProcessExecutionResult()
 	require.NoError(t, err)
 
 	increaseRes, ok := result.(types.Success)

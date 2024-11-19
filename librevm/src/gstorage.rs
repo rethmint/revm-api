@@ -74,7 +74,7 @@ impl<'db> Database for GoStorage<'db> {
         let default = Vec::new();
         let output = self.get(code_key_slice, &default)?;
 
-        Ok(Bytecode::LegacyRaw(Bytes::from(output)))
+        Ok(Bytecode::new_raw(Bytes::from(output)))
     }
 }
 

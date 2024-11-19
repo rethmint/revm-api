@@ -25,9 +25,9 @@ impl From<EvmStoreKeyPrefix> for u8 {
     }
 }
 
-type CodeHash = B256;
-type StorageIndex = U256;
-type BlockNum = u64;
+pub type CodeHash = B256;
+pub type StorageIndex = U256;
+pub type BlockNum = u64;
 
 pub enum EvmStoreKey {
     Account(Address),
@@ -44,9 +44,9 @@ impl EvmStoreKey {
                 result.append(&mut addr.to_vec());
                 result
             }
-            Self::Code(addr) => {
+            Self::Code(code_hash) => {
                 let mut result = vec![EvmStoreKeyPrefix::Code.into()];
-                result.append(&mut addr.to_vec());
+                result.append(&mut code_hash.to_vec());
                 result
             }
             Self::Storage(addr, idx) => {

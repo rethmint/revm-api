@@ -14,8 +14,6 @@
 #include <stdlib.h>
 
 
-#define JIT_THRESHOLD 0
-
 enum ErrnoValue {
   Success = 0,
   Other = 1,
@@ -164,9 +162,9 @@ UnmanagedVector execute_tx(evm_t *vm_ptr,
                            ByteSliceView tx,
                            UnmanagedVector *errmsg);
 
-compiler_t *init_compiler(void);
+compiler_t *init_compiler(uint64_t interval);
 
-evm_t *init_vm(uint8_t default_spec_id);
+evm_t *init_vm(uint8_t default_spec_id, compiler_t *compiler);
 
 UnmanagedVector new_unmanaged_vector(bool nil, const uint8_t *ptr, size_t length);
 
@@ -180,6 +178,6 @@ void release_compiler(compiler_t *compiler);
 
 void release_vm(evm_t *vm);
 
-void start_routine(compiler_t *compiler_ptr, Db db);
+void start_routine(compiler_t *compiler_ptr);
 
 #endif /* __LIBREVMAPI__ */

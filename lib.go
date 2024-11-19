@@ -75,3 +75,4 @@ func (vm *VM) QueryTx(
 
 	return res, nil
 }
+

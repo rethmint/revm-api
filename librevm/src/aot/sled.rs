@@ -9,7 +9,7 @@ use super::{KeyPrefix, QueryKey, QueryKeySlice};
 
 pub fn sleddb_path() -> PathBuf {
     let home_dir = env::var("HOME").unwrap_or_else(|_| ".".to_string());
-    PathBuf::from(home_dir).join("rethmint").join("db")
+    PathBuf::from(home_dir).join(".rethmint").join("db")
 }
 
 pub struct SledDB<K>

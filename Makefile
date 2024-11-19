@@ -51,6 +51,20 @@ clean-sleddb:
 		echo "Directory does not exist."; \
 	fi
 
+install-llvm:
+		@echo "Installing LLVM 18 on Ubuntu"
+		sudo apt-get update
+		sudo apt-get install -y lsb-release wget software-properties-common
+		wget https://apt.llvm.org/llvm.sh
+		chmod +x llvm.sh
+		sudo ./llvm.sh 18
+		llvm-config-18 --version
+
+set-llvm:
+		@echo "Setting LLVM_SYS_180_PREFIX"
+		prefix=$(shell llvm-config-18 --prefix)
+
+		
 # Use debug build for quick testing.
 # In order to use "--features backtraces" here we need a Rust nightly toolchain, which we don't have by default
 build-rust-debug:

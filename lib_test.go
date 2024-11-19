@@ -21,8 +21,8 @@ func setupTest(t *testing.T, aot bool) (revm.VM, *testutils.MockKVStore, common.
 	vm := revm.NewVM(CANCUN)
 
 	var compiler revm.Compiler
+	compiler = revm.NewCompiler()
 	if aot {
-		compiler = revm.NewCompiler()
 		go func() {
 			compiler.Start(kvStore)
 		}()
@@ -31,9 +31,7 @@ func setupTest(t *testing.T, aot bool) (revm.VM, *testutils.MockKVStore, common.
 	t.Cleanup(func() {
 		time.Sleep(3 * time.Second)
 		vm.Destroy()
-		if aot {
-			compiler.Destroy()
-		}
+		compiler.Destroy()
 	})
 
 	caller := common.HexToAddress("0xe100713fc15400d1e94096a545879e7c647001e0")
@@ -42,8 +40,16 @@ func setupTest(t *testing.T, aot bool) (revm.VM, *testutils.MockKVStore, common.
 	return vm, kvStore, caller
 }
 
+func Test_e2e_non_aot(t *testing.T) {
+	Fib(t, false)
+}
+
 func Test_e2e_aot(t *testing.T) {
-	vm, kvStore, caller := setupTest(t, true)
+	Fib(t, true)
+}
+
+func Fib(t *testing.T, aot bool) {
+	vm, kvStore, caller := setupTest(t, aot)
 
 	txData, err := hexutil.Decode(fibca.FibonacciBin)
 	require.NoError(t, err)
@@ -61,7 +67,7 @@ func Test_e2e_aot(t *testing.T) {
 	require.NoError(t, err)
 
 	for i := 0; i < 5; i++ {
-		testInput, err := abi.Pack("fibonacci", big.NewInt(30))
+		testInput, err := abi.Pack("fibonacci", big.NewInt(25))
 		require.NoError(t, err)
 
 		start := time.Now()
@@ -79,17 +85,16 @@ func Test_e2e_aot(t *testing.T) {
 
 		require.Equal(t, types.Success{
 			Reason:      "Return",
-			GasUsed:     0x1e7b1421,
+			GasUsed:     0x2bff4bd,
 			GasRefunded: 0x0,
 			Logs:        []types.Log{},
 			Output: types.Output{
 				DeployedAddress: common.Address{},
 				Output: []uint8{
-					0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xc, 0xb2, 0x28,
+					0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1, 0x25, 0x11,
 				},
 			},
-		},
-			fibRes)
+		}, fibRes)
 
 		elapsed := time.Since(start)
 		t.Logf("Test Aot: Call %d execution time: %v", i+1, elapsed)

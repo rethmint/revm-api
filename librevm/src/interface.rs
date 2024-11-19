@@ -146,7 +146,10 @@ pub extern "C" fn query_tx(
     // transact without state commit
     let result = evm.transact();
     let data = match result {
-        Ok(res) => build_flat_buffer(res.result),
+        Ok(res) => {
+            println!("Execute_tx: {res:#?}");
+            build_flat_buffer(res.result)
+        }
         Err(err) => {
             set_error(err, errmsg);
             Vec::new()

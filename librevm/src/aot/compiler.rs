@@ -1,33 +1,34 @@
-use std::{
-    collections::VecDeque,
-    path::PathBuf,
-    sync::{Arc, RwLock},
-    time,
-};
+use std::{ collections::VecDeque, path::PathBuf, sync::{ Arc, RwLock }, time };
 
 use alloy_primitives::FixedBytes;
-use revm::{primitives::Bytecode, Database};
+use revm::{ primitives::Bytecode, Database };
 use revmc::eyre::Result;
-use tokio::time::{interval_at, Instant};
+use tokio::time::{ interval_at, Instant };
 
-use super::{QueryKeySlice, SledDB};
+use super::{ QueryKeySlice, SledDB };
 use crate::{
-    aot::{AotCfg, KeyPrefix, RuntimeAot},
+    aot::{ AotCfg, KeyPrefix, RuntimeAot },
     gstorage::GoStorage,
-    storeutils::{CodeHash, EvmStoreKey},
+    storeutils::{ CodeHash, EvmStoreKey },
     utils::ivec_to_i32,
 };
 
 pub struct Compiler {
     interval: u64,
+    pub threshold: u64,
     queues: VecDeque<(CodeHash, Bytecode)>,
     sled_db: Arc<RwLock<SledDB<QueryKeySlice>>>,
 }
 
 impl<'static> Compiler {
-    pub fn new_with_db(interval: u64, sled_db: Arc<RwLock<SledDB<QueryKeySlice>>>) -> Self {
+    pub fn new_with_db(
+        interval: u64,
+        threshold: u64,
+        sled_db: Arc<RwLock<SledDB<QueryKeySlice>>>
+    ) -> Self {
         Self {
             interval,
+            threshold,
             queues: VecDeque::new(),
             sled_db,
         }
@@ -45,18 +46,10 @@ impl<'static> Compiler {
                     continue;
                 }
             };
-            let label = code_hash
-                .update_prefix(KeyPrefix::SO)
-                .to_b256()
-                .to_string()
-                .leak();
+            let label = code_hash.update_prefix(KeyPrefix::SO).to_b256().to_string().leak();
             let so_path = Self::jit(label, bytecode.bytes_slice()).await?;
             let so_bytes = std::fs::read(&so_path)?;
-            self.sled_db
-                .write()
-                .unwrap()
-                .put(*item.as_inner(), &so_bytes, true)
-                .await?;
+            self.sled_db.write().unwrap().put(*item.as_inner(), &so_bytes, true).await?;
             println!("AOT Compiled for {label:#?}");
         }
     }

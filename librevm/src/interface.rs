@@ -1,15 +1,15 @@
 use crate::{
-    aot::{Compiler, QueryKeySlice, SledDB},
+    aot::{ Compiler, QueryKeySlice, SledDB },
     db::Db,
     error::set_error,
-    ext::{register_handler, ExternalContext},
+    ext::{ register_handler, ExternalContext },
     gstorage::GoStorage,
-    memory::{ByteSliceView, UnmanagedVector},
-    utils::{build_flat_buffer, set_evm_env},
+    memory::{ ByteSliceView, UnmanagedVector },
+    utils::{ build_flat_buffer, set_evm_env },
 };
 use once_cell::sync::OnceCell;
-use revm::{primitives::SpecId, Evm, EvmBuilder};
-use std::sync::{Arc, RwLock};
+use revm::{ primitives::SpecId, Evm, EvmBuilder };
+use std::sync::{ Arc, RwLock };
 
 pub static SLED_DB: OnceCell<Arc<RwLock<SledDB<QueryKeySlice>>>> = OnceCell::new();
 
@@ -28,9 +28,9 @@ pub fn to_compiler<'a>(ptr: *mut compiler_t) -> Option<&'a mut Compiler> {
 
 #[tokio::main]
 #[no_mangle]
-pub async extern "C" fn init_compiler(interval: u64) -> *mut compiler_t {
+pub async extern "C" fn init_compiler(interval: u64, threshold: u64) -> *mut compiler_t {
     let sled_db = SLED_DB.get_or_init(|| Arc::new(RwLock::new(SledDB::init())));
-    let compiler = Compiler::new_with_db(interval, Arc::clone(sled_db));
+    let compiler = Compiler::new_with_db(interval, threshold, Arc::clone(sled_db));
     let compiler = Box::into_raw(Box::new(compiler));
     compiler as *mut compiler_t
 }
@@ -85,7 +85,8 @@ pub async extern "C" fn init_vm(default_spec_id: u8, compiler: *mut compiler_t) 
     let evm = if compiler.is_null() {
         builder.with_db(go_storage).with_spec_id(spec).build()
     } else {
-        let ext = ExternalContext::default();
+        let compiler = unsafe { &mut *(ptr as *mut Compiler) };
+        let ext = ExternalContext::new(compiler);
         builder
             .with_db(go_storage)
             .with_spec_id(spec)
@@ -113,7 +114,7 @@ pub extern "C" fn execute_tx(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>,
+    errmsg: Option<&mut UnmanagedVector>
 ) -> UnmanagedVector {
     let evm = match to_evm(vm_ptr) {
         Some(vm) => vm,
@@ -145,7 +146,7 @@ pub extern "C" fn query_tx(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>,
+    errmsg: Option<&mut UnmanagedVector>
 ) -> UnmanagedVector {
     let evm = match to_evm(vm_ptr) {
         Some(vm) => vm,

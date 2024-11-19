@@ -1,36 +1,33 @@
-use std::{
-    env,
-    fs::File,
-    io::Write,
-    sync::{Arc, RwLock},
-};
+use std::{ env, fs::File, io::Write, sync::{ Arc, RwLock } };
 
 use alloy_primitives::B256;
-use revm::{
-    handler::register::{EvmHandler, HandleRegister},
-    Database,
-};
-use revmc::{eyre::Result, EvmCompilerFn};
+use revm::{ handler::register::{ EvmHandler, HandleRegister }, Database };
+use revmc::{ eyre::Result, EvmCompilerFn };
 
 use crate::{
-    aot::{Compiler, KeyPrefix, QueryKey, QueryKeySlice, SledDB},
+    aot::{ Compiler, KeyPrefix, QueryKey, QueryKeySlice, SledDB },
     utils::ivec_to_i32,
     SLED_DB,
 };
 
-#[derive(Default)]
 pub struct ExternalContext {
-    threshold: u64,
     compiler: &mut Compiler,
 }
 
 impl ExternalContext {
+    pub fn new(threshold: u64, compiler: &mut Compiler) -> Self {
+        Self {
+            compiler,
+        }
+    }
+
     fn get_function(
         &self,
-        code_hash: B256,
+        code_hash: B256
     ) -> Result<Option<(EvmCompilerFn, libloading::Library)>> {
-        let sled_db =
-            SLED_DB.get_or_init(|| Arc::new(RwLock::new(SledDB::<QueryKeySlice>::init())));
+        let sled_db = SLED_DB.get_or_init(||
+            Arc::new(RwLock::new(SledDB::<QueryKeySlice>::init()))
+        );
         let key = QueryKey::with_prefix(code_hash, KeyPrefix::SO);
 
         let maybe_so_bytes = {
@@ -48,8 +45,9 @@ impl ExternalContext {
             let lib;
             let f = {
                 lib = (unsafe { libloading::Library::new(&temp_file_path) }).unwrap();
-                let f: libloading::Symbol<'_, revmc::EvmCompilerFn> =
-                    unsafe { lib.get(code_hash.to_string().as_ref()).unwrap() };
+                let f: libloading::Symbol<'_, revmc::EvmCompilerFn> = unsafe {
+                    lib.get(code_hash.to_string().as_ref()).unwrap()
+                };
                 *f
             };
 
@@ -62,10 +60,11 @@ impl ExternalContext {
     fn update_bytecode_reference(
         &self,
         code_hash: B256,
-        bytecode: &revm::primitives::Bytecode,
+        bytecode: &revm::primitives::Bytecode
     ) -> Result<()> {
-        let sled_db =
-            SLED_DB.get_or_init(|| Arc::new(RwLock::new(SledDB::<QueryKeySlice>::init())));
+        let sled_db = SLED_DB.get_or_init(||
+            Arc::new(RwLock::new(SledDB::<QueryKeySlice>::init()))
+        );
         let key = QueryKey::with_prefix(code_hash, KeyPrefix::Count);
 
         let count = {
@@ -80,13 +79,11 @@ impl ExternalContext {
         let new_count = count + 1;
         {
             let db_write = sled_db.write().unwrap();
-            db_write
-                .put(*key.as_inner(), &new_count.to_be_bytes(), true)
-                .unwrap();
+            db_write.put(*key.as_inner(), &new_count.to_be_bytes(), true).unwrap();
         }
 
         // if new count over the threshold, push to queue
-        if new_count > self.threshold {
+        if new_count > self.compiler.threshold {
             self.compiler.push_queue(code_hash, *bytecode);
         }
         Ok(())
@@ -101,10 +98,7 @@ pub fn register_handler<DB: Database>(handler: &mut EvmHandler<'_, ExternalConte
         let code_hash = interpreter.contract.hash.unwrap_or_default();
 
         let bytecode = context.evm.db.code_by_hash(code_hash).unwrap();
-        context
-            .external
-            .update_bytecode_reference(code_hash, &bytecode)
-            .unwrap();
+        context.external.update_bytecode_reference(code_hash, &bytecode).unwrap();
 
         if let Some((f, _lib)) = context.external.get_function(code_hash).unwrap() {
             println!("Executing with AOT Compiled Fn\n");

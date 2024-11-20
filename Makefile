@@ -1,7 +1,7 @@
 .PHONY: all build build-rust build-go test precompile clean_sleddb
 
 HOME_DIR := $(HOME)
-SLEDDB_PATH := $(HOME_DIR)/rethmint/db
+SLEDDB_PATH := $(HOME_DIR)/.rethmint/db
 
 # Builds the Rust library librevm
 BUILDERS_PREFIX := rethmint/librevm-builder:0001

@@ -18,7 +18,7 @@ use crate::{
 pub struct Compiler {
     interval: u64,
     pub threshold: u64,
-    queue: VecDeque<(CodeHash, Bytecode)>,
+    queue: RwLock<VecDeque<(CodeHash, Bytecode)>>,
     sled_db: Arc<RwLock<SledDB<QueryKeySlice>>>,
 }
 
@@ -31,7 +31,7 @@ impl Compiler {
         Self {
             interval,
             threshold,
-            queue: VecDeque::new(),
+            queue: RwLock::new(VecDeque::new()),
             sled_db,
         }
     }
@@ -41,7 +41,12 @@ impl Compiler {
         let mut interval = interval_at(start, time::Duration::from_millis(self.interval));
         loop {
             interval.tick().await;
-            let (code_hash, bytecode) = match self.queue.pop_front() {
+
+            let queue_front = {
+                let mut queue = self.queue.write().unwrap();
+                queue.pop_front()
+            };
+            let (code_hash, bytecode) = match queue_front {
                 Some(item) => item,
                 None => {
                     //empty queue
@@ -70,6 +75,7 @@ impl Compiler {
     }
 
     pub fn push_queue(&mut self, code_hash: CodeHash, bytecode: Bytecode) {
-        self.queue.push_back((code_hash, bytecode));
+        let mut queue = self.queue.write().unwrap();
+        queue.push_back((code_hash, bytecode));
     }
 }

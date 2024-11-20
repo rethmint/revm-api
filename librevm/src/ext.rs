@@ -74,7 +74,7 @@ impl ExternalContext {
                 .unwrap();
         }
 
-        // if new count over the threshold, push to queue
+        // if new count equals the threshold, push to queue
         if new_count == self.compiler.threshold {
             self.compiler.push_queue(code_hash, bytecode.clone());
         }

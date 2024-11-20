@@ -24,6 +24,11 @@ else
 	endif
 endif
 
+# lint (macos)
+lint:
+	@export LLVM_SYS_180_PREFIX=$(shell brew --prefix llvm@18);\
+	cargo clippy --package revmapi --no-deps -- -D warnings
+	
 fmt:
 	cargo fmt
 

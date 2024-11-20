@@ -164,7 +164,7 @@ fn _execute_tx<EXT>(
     let result = evm.transact_commit();
     match result {
         Ok(res) => {
-            println!("Execute_tx res: {res:#?}");
+            //println!("Execute_tx res: {res:#?}");
             build_flat_buffer(res)
         }
         Err(err) => {

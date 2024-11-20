@@ -54,10 +54,27 @@ impl Compiler {
                 }
             };
 
+            let bytecode_slice = bytecode.bytes_slice();
+
+            // skip create
+            if bytecode_slice.iter().all(|&b| b == 0) {
+                continue;
+            }
+
             let key = QueryKey::with_prefix(code_hash, KeyPrefix::SO);
+
+            {
+                let db_read = self.sled_db.read().unwrap();
+
+                // skip already compiled
+                if let Some(_) = db_read.get(*key.as_inner())? {
+                    continue;
+                }
+            }
+
             let label = key.to_b256().to_string().leak();
 
-            let so_path = Self::jit(label, bytecode.bytes_slice()).await?;
+            let so_path = Self::jit(label, bytecode_slice).await?;
             let so_bytes = std::fs::read(&so_path)?;
 
             self.sled_db

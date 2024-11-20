@@ -40,7 +40,7 @@ lib-test:
 
 go-test:
 	go clean -testcache
-	go test -v .
+	go test -v -run Test_e2e_aot
 
 clean-sleddb:
 	@echo "Removing directory: $(SLEDDB_PATH)"

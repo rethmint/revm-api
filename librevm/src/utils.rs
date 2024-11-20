@@ -16,13 +16,9 @@ use revm::{
     Evm,
 };
 
-use crate::{ext::ExternalContext, gstorage::GoStorage, memory::ByteSliceView};
+use crate::{gstorage::GoStorage, memory::ByteSliceView};
 
-pub fn set_evm_env(
-    evm: &mut Evm<ExternalContext, GoStorage>,
-    block: ByteSliceView,
-    tx: ByteSliceView,
-) {
+pub fn set_evm_env<EXT>(evm: &mut Evm<EXT, GoStorage>, block: ByteSliceView, tx: ByteSliceView) {
     let block_bytes = block.read().unwrap();
     let block = flatbuffers::root::<Block>(block_bytes).unwrap();
     let block_env = BlockEnv {

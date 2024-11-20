@@ -64,11 +64,11 @@ pub async extern "C" fn start_routine(compiler_ptr: *mut compiler_t) {
 #[repr(C)]
 pub struct evm_t {}
 
-pub fn to_evm<'a>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, ExternalContext, GoStorage<'a>>> {
+pub fn to_evm<'a, EXT>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, EXT, GoStorage<'a>>> {
     if ptr.is_null() {
         None
     } else {
-        let evm = unsafe { &mut *(ptr as *mut Evm<'a, ExternalContext, GoStorage<'a>>) };
+        let evm = unsafe { &mut *(ptr as *mut Evm<'a, EXT, GoStorage<'a>>) };
         Some(evm)
     }
 }
@@ -113,23 +113,43 @@ pub async extern "C" fn init_aot_vm(default_spec_id: u8, compiler: *mut compiler
 }
 
 #[no_mangle]
-pub extern "C" fn release_vm(vm: *mut evm_t) {
+pub extern "C" fn release_vm(vm: *mut evm_t, aot: bool) {
     if !vm.is_null() {
         // this will free cache when it goes out of scope
-        let _ = unsafe { Box::from_raw(vm as *mut Evm<(), GoStorage>) };
+        if aot {
+            let _ = unsafe { Box::from_raw(vm as *mut Evm<ExternalContext, GoStorage>) };
+        } else {
+            let _ = unsafe { Box::from_raw(vm as *mut Evm<(), GoStorage>) };
+        }
     }
 }
 
-// VM initializer
 #[no_mangle]
 pub extern "C" fn execute_tx(
     vm_ptr: *mut evm_t,
+    aot: bool,
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
     errmsg: Option<&mut UnmanagedVector>,
 ) -> UnmanagedVector {
-    let evm = match to_evm(vm_ptr) {
+    let data = if aot {
+        _execute_tx::<ExternalContext>(vm_ptr, db, block, tx, errmsg)
+    } else {
+        _execute_tx::<()>(vm_ptr, db, block, tx, errmsg)
+    };
+
+    UnmanagedVector::new(Some(data))
+}
+
+fn _execute_tx<EXT>(
+    vm_ptr: *mut evm_t,
+    db: Db,
+    block: ByteSliceView,
+    tx: ByteSliceView,
+    errmsg: Option<&mut UnmanagedVector>,
+) -> Vec<u8> {
+    let evm = match to_evm::<EXT>(vm_ptr) {
         Some(vm) => vm,
         None => {
             panic!("Failed to get VM");
@@ -142,26 +162,41 @@ pub extern "C" fn execute_tx(
     set_evm_env(evm, block, tx);
 
     let result = evm.transact_commit();
-    let data = match result {
+    match result {
         Ok(res) => build_flat_buffer(res),
         Err(err) => {
             set_error(err, errmsg);
             Vec::new()
         }
-    };
-
-    UnmanagedVector::new(Some(data))
+    }
 }
 
 #[no_mangle]
 pub extern "C" fn query_tx(
     vm_ptr: *mut evm_t,
+    aot: bool,
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
     errmsg: Option<&mut UnmanagedVector>,
 ) -> UnmanagedVector {
-    let evm = match to_evm(vm_ptr) {
+    let data = if aot {
+        _query_tx::<ExternalContext>(vm_ptr, db, block, tx, errmsg)
+    } else {
+        _query_tx::<()>(vm_ptr, db, block, tx, errmsg)
+    };
+
+    UnmanagedVector::new(Some(data))
+}
+
+fn _query_tx<EXT>(
+    vm_ptr: *mut evm_t,
+    db: Db,
+    block: ByteSliceView,
+    tx: ByteSliceView,
+    errmsg: Option<&mut UnmanagedVector>,
+) -> Vec<u8> {
+    let evm = match to_evm::<EXT>(vm_ptr) {
         Some(vm) => vm,
         None => {
             panic!("Failed to get VM");
@@ -173,16 +208,11 @@ pub extern "C" fn query_tx(
     set_evm_env(evm, block, tx);
     // transact without state commit
     let result = evm.transact();
-    let data = match result {
-        Ok(res) => {
-            println!("Execute_tx: {res:#?}");
-            build_flat_buffer(res.result)
-        }
+    match result {
+        Ok(res) => build_flat_buffer(res.result),
         Err(err) => {
             set_error(err, errmsg);
             Vec::new()
         }
-    };
-
-    UnmanagedVector::new(Some(data))
+    }
 }

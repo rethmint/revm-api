@@ -157,6 +157,7 @@ typedef struct {
 void destroy_unmanaged_vector(UnmanagedVector v);
 
 UnmanagedVector execute_tx(evm_t *vm_ptr,
+                           bool aot,
                            Db db,
                            ByteSliceView block,
                            ByteSliceView tx,
@@ -169,6 +170,7 @@ evm_t *init_vm(uint8_t default_spec_id);
 UnmanagedVector new_unmanaged_vector(bool nil, const uint8_t *ptr, size_t length);
 
 UnmanagedVector query_tx(evm_t *vm_ptr,
+                         bool aot,
                          Db db,
                          ByteSliceView block,
                          ByteSliceView tx,
@@ -176,7 +178,7 @@ UnmanagedVector query_tx(evm_t *vm_ptr,
 
 void release_compiler(compiler_t *compiler);
 
-void release_vm(evm_t *vm);
+void release_vm(evm_t *vm, bool aot);
 
 void start_routine(compiler_t *compiler_ptr);
 

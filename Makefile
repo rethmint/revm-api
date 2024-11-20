@@ -1,7 +1,8 @@
-.PHONY: all build build-rust build-go test precompile clean_sleddb
+.PHONY: all build build-rust build-go test precompile clean-compile-sleddb
 
 HOME_DIR := $(HOME)
 SLEDDB_PATH := $(HOME_DIR)/.rethmint/db
+AOT_OUT_PATH := $(HOME_DIR)/.rethmint/output
 
 # Builds the Rust library librevm
 BUILDERS_PREFIX := rethmint/librevm-builder:0001
@@ -42,13 +43,19 @@ go-test:
 	go clean -testcache
 	go test -v -run Test_e2e_aot
 
-clean-sleddb:
-	@echo "Removing directory: $(SLEDDB_PATH)"
+clean-compile-sleddb:
+	@echo "Removing directories: $(SLEDDB_PATH) and $(AOT_OUT_PATH)"
 	@if [ -d "$(SLEDDB_PATH)" ]; then \
 		rm -rf "$(SLEDDB_PATH)"; \
-		echo "Directory removed successfully."; \
+		echo "Directory $(SLEDDB_PATH) removed successfully."; \
 	else \
-		echo "Directory does not exist."; \
+		echo "Directory $(SLEDDB_PATH) does not exist."; \
+	fi
+	@if [ -d "$(AOT_OUT_PATH)" ]; then \
+		rm -rf "$(AOT_OUT_PATH)"; \
+		echo "Directory $(AOT_OUT_PATH) removed successfully."; \
+	else \
+		echo "Directory $(AOT_OUT_PATH) does not exist."; \
 	fi
 
 install-llvm:

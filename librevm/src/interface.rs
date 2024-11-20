@@ -26,9 +26,8 @@ pub fn to_compiler(ptr: *mut compiler_t) -> Option<&'static mut Compiler> {
     }
 }
 
-#[tokio::main]
 #[no_mangle]
-pub async extern "C" fn init_compiler(interval: u64, threshold: u64) -> *mut compiler_t {
+pub extern "C" fn init_compiler(interval: u64, threshold: u64) -> *mut compiler_t {
     let sled_db = SLED_DB.get_or_init(|| Arc::new(RwLock::new(SledDB::init())));
     let compiler = Compiler::new_with_db(interval, threshold, Arc::clone(sled_db));
     let compiler = Box::into_raw(Box::new(compiler));
@@ -43,17 +42,16 @@ pub extern "C" fn release_compiler(compiler: *mut compiler_t) {
     }
 }
 
-#[tokio::main]
 #[no_mangle]
-pub async extern "C" fn start_routine(compiler_ptr: *mut compiler_t) {
+pub extern "C" fn start_routine(compiler_ptr: *mut compiler_t) {
     let compiler = match to_compiler(compiler_ptr) {
         Some(compiler) => compiler,
         None => {
             panic!("Failed to get compiler");
         }
     };
-    let routine = compiler.routine_fn();
-    if let Err(err) = routine.await {
+
+    if let Err(err) = compiler.routine_fn() {
         println!("While compiling, Err: {err:#?}");
     };
 }
@@ -75,9 +73,8 @@ pub fn to_evm<'a, EXT>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, EXT, GoStorage
 
 // initialize vm instance with handler
 // if aot mark is true, initialize compiler
-#[tokio::main]
 #[no_mangle]
-pub async extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
+pub extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
     let db = Db::default();
     let go_storage = GoStorage::new(&db);
     let spec = SpecId::try_from_u8(default_spec_id).unwrap_or(SpecId::CANCUN);
@@ -89,9 +86,8 @@ pub async extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
     vm as *mut evm_t
 }
 
-#[tokio::main]
 #[no_mangle]
-pub async extern "C" fn init_aot_vm(default_spec_id: u8, compiler: *mut compiler_t) -> *mut evm_t {
+pub extern "C" fn init_aot_vm(default_spec_id: u8, compiler: *mut compiler_t) -> *mut evm_t {
     let db = Db::default();
     let go_storage = GoStorage::new(&db);
     let spec = SpecId::try_from_u8(default_spec_id).unwrap_or(SpecId::CANCUN);

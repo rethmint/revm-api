@@ -9,7 +9,7 @@ pub struct QueryKey(QueryKeySlice);
 /*
 * Prefix
 * 0x0...[u8;32] -> Count
-* 0x1...[u8;32] -> Shared object file
+* 0x1...[u8;32] -> Path to shared object
 */
 
 impl QueryKey {
@@ -51,14 +51,14 @@ impl QueryKey {
 
 pub enum KeyPrefix {
     Count,
-    SO,
+    SOPath,
 }
 
 impl KeyPrefix {
     fn as_byte(&self) -> u8 {
         match self {
             KeyPrefix::Count => 0x01,
-            KeyPrefix::SO => 0x02,
+            KeyPrefix::SOPath => 0x02,
         }
     }
 }

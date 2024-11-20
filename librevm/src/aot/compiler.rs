@@ -2,12 +2,12 @@ use std::{
     collections::VecDeque,
     path::PathBuf,
     sync::{Arc, RwLock},
-    time,
+    thread,
+    time::{Duration, Instant},
 };
 
 use revm::primitives::Bytecode;
 use revmc::eyre::Result;
-use tokio::time::{interval_at, Instant};
 
 use super::{QueryKeySlice, SledDB};
 use crate::{
@@ -36,12 +36,11 @@ impl Compiler {
         }
     }
 
-    pub async fn routine_fn(&mut self) -> Result<()> {
+    pub fn routine_fn(&mut self) -> Result<()> {
         let start = Instant::now();
-        let mut interval = interval_at(start, time::Duration::from_millis(self.interval));
-        loop {
-            interval.tick().await;
+        let mut next_tick = start + Duration::from_millis(self.interval);
 
+        loop {
             let queue_front = {
                 let mut queue = self.queue.write().unwrap();
                 queue.pop_front()
@@ -61,7 +60,7 @@ impl Compiler {
                 continue;
             }
 
-            let key = QueryKey::with_prefix(code_hash, KeyPrefix::SO);
+            let key = QueryKey::with_prefix(code_hash, KeyPrefix::SOPath);
 
             {
                 let db_read = self.sled_db.read().unwrap();
@@ -73,22 +72,27 @@ impl Compiler {
             }
 
             let label = key.to_b256().to_string().leak();
+            let so_path = Self::jit(label, bytecode_slice)?;
 
-            let so_path = Self::jit(label, bytecode_slice).await?;
-            let so_bytes = std::fs::read(&so_path)?;
-
-            self.sled_db
-                .write()
-                .unwrap()
-                .put(*key.as_inner(), &so_bytes, true)?;
+            self.sled_db.write().unwrap().put(
+                *key.as_inner(),
+                so_path.to_str().unwrap().as_bytes(),
+                true,
+            )?;
 
             println!("AOT Compiled for {label:#?}");
+
+            let now = Instant::now();
+            if now < next_tick {
+                thread::sleep(next_tick - now);
+            }
+            next_tick += Duration::from_millis(self.interval);
         }
     }
 
-    pub async fn jit(label: &'static str, bytecode: &[u8]) -> Result<PathBuf> {
+    pub fn jit(label: &'static str, bytecode: &[u8]) -> Result<PathBuf> {
         let runtime_jit = RuntimeAot::new(AotCfg::default());
-        runtime_jit.compile(label, bytecode).await
+        runtime_jit.compile(label, bytecode)
     }
 
     pub fn push_queue(&mut self, code_hash: CodeHash, bytecode: Bytecode) {

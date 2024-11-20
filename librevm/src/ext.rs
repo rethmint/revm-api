@@ -1,17 +1,11 @@
-use std::{
-    env,
-    fs::File,
-    io::Write,
-    sync::{Arc, RwLock},
-};
-
 use alloy_primitives::B256;
 use revm::{handler::register::EvmHandler, Database};
 use revmc::{eyre::Result, EvmCompilerFn};
+use std::sync::{Arc, RwLock};
 
 use crate::{
     aot::{Compiler, KeyPrefix, QueryKey, QueryKeySlice, SledDB},
-    utils::ivec_to_u64,
+    utils::{ivec_to_pathbuf, ivec_to_u64},
     SLED_DB,
 };
 
@@ -30,23 +24,19 @@ impl ExternalContext {
     ) -> Result<Option<(EvmCompilerFn, libloading::Library)>> {
         let sled_db =
             SLED_DB.get_or_init(|| Arc::new(RwLock::new(SledDB::<QueryKeySlice>::init())));
-        let key = QueryKey::with_prefix(code_hash, KeyPrefix::SO);
+        let key = QueryKey::with_prefix(code_hash, KeyPrefix::SOPath);
 
-        let maybe_so_bytes = {
+        let maybe_so_path = {
             let db_read = sled_db.read().expect("Failed to acquire read lock");
             db_read.get(*key.as_inner()).unwrap_or(None)
         };
 
-        if let Some(so_bytes) = maybe_so_bytes {
-            let temp_dir = env::temp_dir();
-            let temp_file_path = temp_dir.join("a.so");
-
-            let mut file = File::create(&temp_file_path)?;
-            file.write_all(&so_bytes).unwrap();
+        if let Some(so_path) = maybe_so_path {
+            let so_path = ivec_to_pathbuf(&so_path).unwrap();
 
             let lib;
             let f = {
-                lib = (unsafe { libloading::Library::new(&temp_file_path) }).unwrap();
+                lib = (unsafe { libloading::Library::new(&so_path) }).unwrap();
                 let f: libloading::Symbol<'_, revmc::EvmCompilerFn> =
                     unsafe { lib.get(code_hash.to_string().as_ref()).unwrap() };
                 *f

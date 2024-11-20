@@ -5,14 +5,18 @@ mod sled;
 
 use color_eyre::Result;
 use revmc::{eyre::ensure, EvmCompiler, EvmLlvmBackend};
+use std::env;
 use std::path::PathBuf;
-use tempdir::TempDir;
-use tokio::fs;
 
 pub use cfg::*;
 pub use compiler::*;
 pub use key::*;
 pub use sled::*;
+
+fn aot_out_path() -> PathBuf {
+    let home_dir = env::var("HOME").unwrap_or_else(|_| ".".to_string());
+    PathBuf::from(home_dir).join(".rethmint").join("output")
+}
 
 pub struct RuntimeAot {
     pub cfg: AotCfg,
@@ -23,7 +27,7 @@ impl RuntimeAot {
         Self { cfg }
     }
 
-    pub async fn compile(&self, name: &'static str, bytecode: &[u8]) -> Result<PathBuf> {
+    pub fn compile(&self, name: &'static str, bytecode: &[u8]) -> Result<PathBuf> {
         let _ = color_eyre::install();
 
         let context = revmc::llvm::inkwell::context::Context::create();
@@ -36,11 +40,10 @@ impl RuntimeAot {
 
         let mut compiler = EvmCompiler::new(backend);
 
-        let temp_dir = TempDir::new("aot_temp")?;
-        let temp_path = temp_dir.path();
-        fs::create_dir_all(&temp_path).await.unwrap();
+        let out_dir = aot_out_path();
+        std::fs::create_dir_all(&out_dir).unwrap();
 
-        compiler.set_dump_to(Some(temp_path.to_path_buf()));
+        compiler.set_dump_to(Some(out_dir.clone()));
         compiler.gas_metering(self.cfg.no_gas);
 
         unsafe { compiler.stack_bound_checks(self.cfg.no_len_checks) };
@@ -55,16 +58,16 @@ impl RuntimeAot {
         compiler.inspect_stack_length(true);
         let _f_id = compiler.translate(name, bytecode, spec_id)?;
 
-        let out_dir = std::env::temp_dir().join(temp_dir).join(name);
-        std::fs::create_dir_all(&out_dir)?;
+        let module_out_dir = std::env::temp_dir().join(out_dir).join(name);
+        std::fs::create_dir_all(&module_out_dir)?;
 
         // Compile.
-        let obj = out_dir.join("a.o");
+        let obj = module_out_dir.join("a.o");
         compiler.write_object_to_file(&obj)?;
         ensure!(obj.exists(), "Failed to write object file");
 
         // Link.
-        let so_path = out_dir.join("a.so");
+        let so_path = module_out_dir.join("a.so");
         let linker = revmc::Linker::new();
         linker.link(&so_path, [obj.to_str().unwrap()])?;
         ensure!(so_path.exists(), "Failed to link object file");

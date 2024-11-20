@@ -18,13 +18,13 @@ const CANCUN uint8 = 17
 
 func setupTest(t *testing.T, aot bool) (revm.VM, *testutils.MockKVStore, common.Address) {
 	kvStore := testutils.NewMockKVStore()
-	vm := revm.NewVM(CANCUN)
+	vm := revm.NewVM(CANCUN, aot)
 
 	var compiler revm.Compiler
-	compiler = revm.NewCompiler()
+	compiler = revm.NewCompiler(1000, 0)
 	if aot {
 		go func() {
-			compiler.Start(kvStore)
+			compiler.Start()
 		}()
 	}
 

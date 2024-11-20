@@ -14,13 +14,13 @@ type Compiler struct {
 	Inner api.Compiler
 }
 
-func NewCompiler() Compiler {
-	inner := api.InitCompiler()
+func NewCompiler(interval uint64, threshold uint64) Compiler {
+	inner := api.InitCompiler(interval, threshold)
 	return Compiler{inner}
 }
 
-func (compiler *Compiler) Start(kvstore api.KVStore) {
-	api.StartRoutine(compiler.Inner, kvstore)
+func (compiler *Compiler) Start() {
+	api.StartRoutine(compiler.Inner)
 }
 
 func (compiler *Compiler) Destroy() {
@@ -29,8 +29,8 @@ func (compiler *Compiler) Destroy() {
 
 // NewVm return VM instance
 // handler
-func NewVM(SPEC_ID uint8) VM {
-	inner := api.InitVM(SPEC_ID)
+func NewVM(SPEC_ID uint8, aot bool) VM {
+	inner := api.InitVM(SPEC_ID, aot)
 	return VM{inner}
 }
 
@@ -75,4 +75,3 @@ func (vm *VM) QueryTx(
 
 	return res, nil
 }
-

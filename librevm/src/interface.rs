@@ -1,15 +1,15 @@
 use crate::{
-    aot::{ Compiler, QueryKeySlice, SledDB },
+    aot::{Compiler, QueryKeySlice, SledDB},
     db::Db,
     error::set_error,
-    ext::{ register_handler, ExternalContext },
+    ext::{register_handler, ExternalContext},
     gstorage::GoStorage,
-    memory::{ ByteSliceView, UnmanagedVector },
-    utils::{ build_flat_buffer, set_evm_env },
+    memory::{ByteSliceView, UnmanagedVector},
+    utils::{build_flat_buffer, set_evm_env},
 };
 use once_cell::sync::OnceCell;
-use revm::{ primitives::SpecId, Evm, EvmBuilder };
-use std::sync::{ Arc, RwLock };
+use revm::{primitives::SpecId, Evm, EvmBuilder};
+use std::sync::{Arc, RwLock};
 
 pub static SLED_DB: OnceCell<Arc<RwLock<SledDB<QueryKeySlice>>>> = OnceCell::new();
 
@@ -75,17 +75,30 @@ pub fn to_evm<'a>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, ExternalContext, Go
 
 // initialize vm instance with handler
 // if aot mark is true, initialize compiler
+#[tokio::main]
 #[no_mangle]
-pub async extern "C" fn init_vm(default_spec_id: u8, compiler: *mut compiler_t) -> *mut evm_t {
+pub async extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
     let db = Db::default();
     let go_storage = GoStorage::new(&db);
     let spec = SpecId::try_from_u8(default_spec_id).unwrap_or(SpecId::CANCUN);
     let builder = EvmBuilder::default();
 
-    let evm = if compiler.is_null() {
-        builder.with_db(go_storage).with_spec_id(spec).build()
-    } else {
-        let compiler = unsafe { &mut *(ptr as *mut Compiler) };
+    let evm = builder.with_db(go_storage).with_spec_id(spec).build();
+
+    let vm = Box::into_raw(Box::new(evm));
+    vm as *mut evm_t
+}
+
+//TODO: separate evm_t and aot_evm_t
+#[tokio::main]
+pub async extern "C" fn init_aot_vm(default_spec_id: u8, compiler: *mut compiler_t) -> *mut evm_t {
+    let db = Db::default();
+    let go_storage = GoStorage::new(&db);
+    let spec = SpecId::try_from_u8(default_spec_id).unwrap_or(SpecId::CANCUN);
+    let builder = EvmBuilder::default();
+
+    let evm = {
+        let compiler = unsafe { &mut *(compiler as *mut Compiler) };
         let ext = ExternalContext::new(compiler);
         builder
             .with_db(go_storage)
@@ -114,7 +127,7 @@ pub extern "C" fn execute_tx(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>
+    errmsg: Option<&mut UnmanagedVector>,
 ) -> UnmanagedVector {
     let evm = match to_evm(vm_ptr) {
         Some(vm) => vm,
@@ -146,7 +159,7 @@ pub extern "C" fn query_tx(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>
+    errmsg: Option<&mut UnmanagedVector>,
 ) -> UnmanagedVector {
     let evm = match to_evm(vm_ptr) {
         Some(vm) => vm,

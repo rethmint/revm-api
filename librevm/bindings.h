@@ -164,7 +164,7 @@ UnmanagedVector execute_tx(evm_t *vm_ptr,
 
 compiler_t *init_compiler(uint64_t interval, uint64_t threshold);
 
-evm_t *init_vm(uint8_t default_spec_id, compiler_t *compiler);
+evm_t *init_vm(uint8_t default_spec_id);
 
 UnmanagedVector new_unmanaged_vector(bool nil, const uint8_t *ptr, size_t length);
 

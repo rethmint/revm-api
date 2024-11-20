@@ -17,7 +17,7 @@ pub static SLED_DB: OnceCell<Arc<RwLock<SledDB<QueryKeySlice>>>> = OnceCell::new
 #[repr(C)]
 pub struct compiler_t {}
 
-pub fn to_compiler<'a>(ptr: *mut compiler_t) -> Option<&'a mut Compiler> {
+pub fn to_compiler(ptr: *mut compiler_t) -> Option<&'static mut Compiler> {
     if ptr.is_null() {
         None
     } else {
@@ -89,8 +89,8 @@ pub async extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
     vm as *mut evm_t
 }
 
-//TODO: separate evm_t and aot_evm_t
 #[tokio::main]
+#[no_mangle]
 pub async extern "C" fn init_aot_vm(default_spec_id: u8, compiler: *mut compiler_t) -> *mut evm_t {
     let db = Db::default();
     let go_storage = GoStorage::new(&db);
@@ -163,7 +163,10 @@ fn _execute_tx<EXT>(
 
     let result = evm.transact_commit();
     match result {
-        Ok(res) => build_flat_buffer(res),
+        Ok(res) => {
+            println!("Execute_tx res: {res:#?}");
+            build_flat_buffer(res)
+        }
         Err(err) => {
             set_error(err, errmsg);
             Vec::new()

@@ -29,8 +29,15 @@ func (compiler *Compiler) Destroy() {
 
 // NewVm return VM instance
 // handler
-func NewVM(SPEC_ID uint8, aot bool) VM {
-	inner := api.InitVM(SPEC_ID, aot)
+func NewVM(SPEC_ID uint8) VM {
+	inner := api.InitVM(SPEC_ID)
+
+	return VM{inner}
+}
+
+func NewAotVM(SPEC_ID uint8, compiler Compiler) VM {
+	inner := api.InitAotVM(SPEC_ID, compiler.Inner)
+
 	return VM{inner}
 }
 

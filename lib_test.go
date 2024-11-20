@@ -18,20 +18,27 @@ const CANCUN uint8 = 17
 
 func setupTest(t *testing.T, aot bool) (revm.VM, *testutils.MockKVStore, common.Address) {
 	kvStore := testutils.NewMockKVStore()
-	vm := revm.NewVM(CANCUN, aot)
 
 	var compiler revm.Compiler
-	compiler = revm.NewCompiler(1000, 0)
+	var vm revm.VM
+
 	if aot {
+		compiler = revm.NewCompiler(1000, 0)
+		vm = revm.NewAotVM(CANCUN, compiler)
+
 		go func() {
 			compiler.Start()
 		}()
+	} else {
+		vm = revm.NewVM(CANCUN)
 	}
 
 	t.Cleanup(func() {
 		time.Sleep(3 * time.Second)
 		vm.Destroy()
-		compiler.Destroy()
+		if aot {
+			compiler.Destroy()
+		}
 	})
 
 	caller := common.HexToAddress("0xe100713fc15400d1e94096a545879e7c647001e0")
@@ -41,11 +48,13 @@ func setupTest(t *testing.T, aot bool) (revm.VM, *testutils.MockKVStore, common.
 }
 
 func Test_e2e_non_aot(t *testing.T) {
-	Fib(t, false)
+	aot := false
+	Fib(t, aot)
 }
 
 func Test_e2e_aot(t *testing.T) {
-	Fib(t, true)
+	aot := true
+	Fib(t, aot)
 }
 
 func Fib(t *testing.T, aot bool) {

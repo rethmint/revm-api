@@ -36,7 +36,7 @@ update-bindings:
 lib-test:
 	make build-rust-debug
 	go clean -testcache
-	go test -v .
+	go test -v -run Test_e2e_aot
 
 go-test:
 	go clean -testcache

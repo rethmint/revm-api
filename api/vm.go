@@ -22,10 +22,18 @@ func ReleaseVM(vm VM) {
 }
 
 // InitVM call ffi(`init_vm`) to initialize vm instance
-func InitVM(SPEC_ID uint8, aot bool) VM {
+func InitVM(SPEC_ID uint8) VM {
 	return VM{
 		evm_ptr: C.init_vm(cu8(SPEC_ID)),
-		aot:     aot,
+		aot:     false,
+	}
+}
+
+// InitAotVM call ffi(`init_aot_vm`) to initialize vm instance
+func InitAotVM(SPEC_ID uint8, compiler Compiler) VM {
+	return VM{
+		evm_ptr: C.init_aot_vm(cu8(SPEC_ID), compiler.ptr),
+		aot:     true,
 	}
 }
 

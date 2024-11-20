@@ -42,8 +42,9 @@ pub extern "C" fn release_compiler(compiler: *mut compiler_t) {
     }
 }
 
+#[tokio::main]
 #[no_mangle]
-pub extern "C" fn start_routine(compiler_ptr: *mut compiler_t) {
+pub async extern "C" fn start_routine(compiler_ptr: *mut compiler_t) {
     let compiler = match to_compiler(compiler_ptr) {
         Some(compiler) => compiler,
         None => {
@@ -51,7 +52,7 @@ pub extern "C" fn start_routine(compiler_ptr: *mut compiler_t) {
         }
     };
 
-    if let Err(err) = compiler.routine_fn() {
+    if let Err(err) = compiler.routine_fn().await {
         println!("While compiling, Err: {err:#?}");
     };
 }

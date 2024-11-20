@@ -1,13 +1,13 @@
+use core::time;
 use std::{
     collections::VecDeque,
     path::PathBuf,
     sync::{Arc, RwLock},
-    thread,
-    time::{Duration, Instant},
 };
 
 use revm::primitives::Bytecode;
 use revmc::eyre::Result;
+use tokio::time::{interval_at, Instant};
 
 use super::{QueryKeySlice, SledDB};
 use crate::{
@@ -36,11 +36,13 @@ impl Compiler {
         }
     }
 
-    pub fn routine_fn(&mut self) -> Result<()> {
+    pub async fn routine_fn(&mut self) -> Result<()> {
         let start = Instant::now();
-        let mut next_tick = start + Duration::from_millis(self.interval);
+        let mut interval = interval_at(start, time::Duration::from_millis(self.interval));
 
         loop {
+            interval.tick().await;
+
             let queue_front = {
                 let mut queue = self.queue.write().unwrap();
                 queue.pop_front()
@@ -81,12 +83,6 @@ impl Compiler {
             )?;
 
             println!("AOT Compiled for {label:#?}");
-
-            let now = Instant::now();
-            if now < next_tick {
-                thread::sleep(next_tick - now);
-            }
-            next_tick += Duration::from_millis(self.interval);
         }
     }
 

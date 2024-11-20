@@ -1,9 +1,6 @@
 .PHONY: all build build-rust build-go test precompile clean-compile-sleddb
 
-HOME_DIR := $(HOME)
-SLEDDB_PATH := $(HOME_DIR)/.rethmint/db
-AOT_OUT_PATH := $(HOME_DIR)/.rethmint/output
-
+RETHMINT_DB_PATH := $(HOME)/.rethmint
 # Builds the Rust library librevm
 BUILDERS_PREFIX := rethmint/librevm-builder:0001
 BENCHMARK_PREFIX := rethmint/benchmark:0001
@@ -14,8 +11,7 @@ USER_GROUP = $(shell id -g)
 SHARED_LIB_SRC = "" # File name of the shared library as created by the Rust build system
 SHARED_LIB_DST = "" # File name of the shared library that we store
 ifeq ($(OS),Windows_NT)
-	SHARED_LIB_SRC = librevmapi.dll
-	SHARED_LIB_DST = librevmapi.dll
+	# not supported
 else
 	UNAME_S := $(shell uname -s)
 	ifeq ($(UNAME_S),Linux)
@@ -44,42 +40,29 @@ go-test:
 	go test -v -run Test_e2e_aot
 
 clean-compile-sleddb:
-	@echo "Removing directories: $(SLEDDB_PATH) and $(AOT_OUT_PATH)"
-	@if [ -d "$(SLEDDB_PATH)" ]; then \
-		rm -rf "$(SLEDDB_PATH)"; \
-		echo "Directory $(SLEDDB_PATH) removed successfully."; \
+	@echo "clean the db: $(RETHMINT_DB_PATH)"
+	@if [ -d "$(RETHMINT_DB_PATH)" ]; then \
+		rm -rf "$(RETHMINT_DB_PATH)"; \
+		echo "Directory $(RETHMINT_DB_PATH) removed successfully."; \
 	else \
-		echo "Directory $(SLEDDB_PATH) does not exist."; \
-	fi
-	@if [ -d "$(AOT_OUT_PATH)" ]; then \
-		rm -rf "$(AOT_OUT_PATH)"; \
-		echo "Directory $(AOT_OUT_PATH) removed successfully."; \
-	else \
-		echo "Directory $(AOT_OUT_PATH) does not exist."; \
+		echo "Directory $(RETHMINT_DB_PATH) does not exist."; \
 	fi
 
-install-llvm:
-		@echo "Installing LLVM 18 on Ubuntu"
-		sudo apt-get update
-		sudo apt-get install -y lsb-release wget software-properties-common
-		wget https://apt.llvm.org/llvm.sh
-		chmod +x llvm.sh
-		sudo ./llvm.sh 18
-		llvm-config-18 --version
-
-set-llvm:
-		@echo "Setting LLVM_SYS_180_PREFIX"
-		prefix=$(shell llvm-config-18 --prefix)
-
-		
 # Use debug build for quick testing.
 # In order to use "--features backtraces" here we need a Rust nightly toolchain, which we don't have by default
+# build in macos to debug
 build-rust-debug:
+	@export LLVM_SYS_180_PREFIX=$(shell brew --prefix llvm@18);\
+	export LIBRARY_PATH="/opt/homebrew/lib:$LIBRARY_PATH";\
+	export LD_LIBRARY_PATH="/opt/homebrew/lib:$LD_LIBRARY_PATH";\
 	cargo build
-	cp -fp target/debug/$(SHARED_LIB_SRC) api/$(SHARED_LIB_DST)
-	make update-bindings
+	@cp -fp target/debug/$(SHARED_LIB_SRC) api/$(SHARED_LIB_DST)
+	@make update-bindings
 
 build-rust-release:
+	@export LLVM_SYS_180_PREFIX=$(shell brew --prefix llvm@18);\
+	export LIBRARY_PATH="/opt/homebrew/lib:$LIBRARY_PATH";\
+	export LD_LIBRARY_PATH="/opt/homebrew/lib:$LD_LIBRARY_PATH";\
 	cargo build --release
 	rm -f api/$(SHARED_LIB_DST)
 	cp -fp target/release/$(SHARED_LIB_SRC) api/$(SHARED_LIB_DST)

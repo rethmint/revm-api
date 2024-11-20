@@ -131,15 +131,33 @@ pub extern "C" fn execute_tx(
     errmsg: Option<&mut UnmanagedVector>,
 ) -> UnmanagedVector {
     let data = if aot {
-        _execute_tx::<ExternalContext>(vm_ptr, db, block, tx, errmsg)
+        execute::<ExternalContext>(vm_ptr, db, block, tx, errmsg)
     } else {
-        _execute_tx::<()>(vm_ptr, db, block, tx, errmsg)
+        execute::<()>(vm_ptr, db, block, tx, errmsg)
     };
 
     UnmanagedVector::new(Some(data))
 }
 
-fn _execute_tx<EXT>(
+#[no_mangle]
+pub extern "C" fn query_tx(
+    vm_ptr: *mut evm_t,
+    aot: bool,
+    db: Db,
+    block: ByteSliceView,
+    tx: ByteSliceView,
+    errmsg: Option<&mut UnmanagedVector>,
+) -> UnmanagedVector {
+    let data = if aot {
+        query::<ExternalContext>(vm_ptr, db, block, tx, errmsg)
+    } else {
+        query::<()>(vm_ptr, db, block, tx, errmsg)
+    };
+
+    UnmanagedVector::new(Some(data))
+}
+
+fn execute<EXT>(
     vm_ptr: *mut evm_t,
     db: Db,
     block: ByteSliceView,
@@ -171,25 +189,7 @@ fn _execute_tx<EXT>(
     }
 }
 
-#[no_mangle]
-pub extern "C" fn query_tx(
-    vm_ptr: *mut evm_t,
-    aot: bool,
-    db: Db,
-    block: ByteSliceView,
-    tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>,
-) -> UnmanagedVector {
-    let data = if aot {
-        _query_tx::<ExternalContext>(vm_ptr, db, block, tx, errmsg)
-    } else {
-        _query_tx::<()>(vm_ptr, db, block, tx, errmsg)
-    };
-
-    UnmanagedVector::new(Some(data))
-}
-
-fn _query_tx<EXT>(
+fn query<EXT>(
     vm_ptr: *mut evm_t,
     db: Db,
     block: ByteSliceView,

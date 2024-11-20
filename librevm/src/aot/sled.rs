@@ -37,14 +37,12 @@ where
         sled::open(Path::new(path)).map_err(|e| eyre::Report::new(e))
     }
 
-    pub fn put(&self, key: K, value: &[u8], flush: bool) -> Result<()> {
+    pub fn put(&self, key: K, value: &[u8]) -> Result<()> {
         self.db
             .insert(key, value)
             .map_err(|e| eyre::Report::new(e))?;
 
-        if flush {
-            self.db.flush().map_err(|e| eyre::Report::new(e))?;
-        }
+        self.db.flush().map_err(|e| eyre::Report::new(e))?;
 
         Ok(())
     }

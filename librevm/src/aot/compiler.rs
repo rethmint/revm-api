@@ -1,8 +1,8 @@
-use core::time;
 use std::{
     collections::VecDeque,
     path::PathBuf,
     sync::{Arc, RwLock},
+    time,
 };
 
 use revm::primitives::Bytecode;
@@ -64,23 +64,13 @@ impl Compiler {
 
             let key = QueryKey::with_prefix(code_hash, KeyPrefix::SOPath);
 
-            {
-                let db_read = self.sled_db.read().unwrap();
-
-                // skip already compiled
-                if let Some(_) = db_read.get(*key.as_inner())? {
-                    continue;
-                }
-            }
-
             let label = key.to_b256().to_string().leak();
             let so_path = Self::jit(label, bytecode_slice)?;
 
-            self.sled_db.write().unwrap().put(
-                *key.as_inner(),
-                so_path.to_str().unwrap().as_bytes(),
-                true,
-            )?;
+            self.sled_db
+                .write()
+                .unwrap()
+                .put(*key.as_inner(), so_path.to_str().unwrap().as_bytes())?;
 
             println!("AOT Compiled for {label:#?}");
         }

@@ -70,12 +70,12 @@ impl ExternalContext {
         {
             let db_write = sled_db.write().unwrap();
             db_write
-                .put(*key.as_inner(), &new_count.to_be_bytes(), true)
+                .put(*key.as_inner(), &new_count.to_be_bytes())
                 .unwrap();
         }
 
         // if new count over the threshold, push to queue
-        if new_count > self.compiler.threshold {
+        if new_count == self.compiler.threshold {
             self.compiler.push_queue(code_hash, bytecode.clone());
         }
         Ok(())

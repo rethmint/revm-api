@@ -54,7 +54,7 @@ func setupTest(t *testing.T, aot bool, caller common.Address) (revm.VM, *testuti
 	}
 
 	t.Cleanup(func() {
-		time.Sleep(3 * time.Second)
+		time.Sleep(10 * time.Second)
 		vm.Destroy()
 		if aot {
 			compiler.Destroy()
@@ -84,10 +84,10 @@ func Erc20CA(t *testing.T, aot bool) {
 	packedData, _ := erc20abi.Constructor.Inputs.Pack("Mock", "Mock")
 	txdata := append(erc20bin, packedData...)
 
-	mintdata, _ := erc20abi.Pack("mint", caller, big.NewInt(1000))
+	mintData, _ := erc20abi.Pack("mint", caller, big.NewInt(1000))
 	mintCallData := CallData{
 		name:     "mint()",
-		calldata: mintdata,
+		calldata: mintData,
 		expected: types.Success{
 			Reason:      "Stop",
 			GasUsed:     0x11d96,
@@ -110,6 +110,34 @@ func Erc20CA(t *testing.T, aot bool) {
 		},
 	}
 
+	recipientAddr := common.HexToAddress("0x20")
+	transferData, _ := erc20abi.Pack("transfer", recipientAddr, big.NewInt(100))
+	transferCallData := CallData{
+		name:     "transfer()",
+		calldata: transferData,
+		expected: types.Success{
+			Reason:      "Return",
+			GasUsed:     0xdb79,
+			GasRefunded: 0x0,
+			Logs: []types.Log{
+				{
+					Address: common.HexToAddress("0xeC30481c768e48D34Ea8fc2bEbcfeAddEBA6bfA4"),
+					Data: types.LogData{
+						Topics: []common.Hash{
+							common.HexToHash("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"),
+							common.HexToHash("0x000000000000000000000000e100713fc15400d1e94096a545879e7c647001e0"),
+							common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000020"),
+						},
+						Data: []uint8{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x64},
+					},
+				},
+			}, Output: types.Output{
+				DeployedAddress: common.Address{},
+				Output:          []uint8{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1},
+			},
+		},
+	}
+
 	ca := TestContract{
 		name:   "Erc20",
 		aot:    aot,
@@ -119,6 +147,7 @@ func Erc20CA(t *testing.T, aot bool) {
 		txdata: txdata,
 		calldatas: []CallData{
 			mintCallData,
+			transferCallData,
 		},
 		repeat: 1,
 	}
@@ -146,12 +175,12 @@ func Fib(t *testing.T, aot bool) {
 	txdata, err := hexutil.Decode(fibca.FibonacciBin)
 	require.NoError(t, err)
 
-	fibdata, err := fibabi.Pack("fibonacci", big.NewInt(25))
+	fibData, err := fibabi.Pack("fibonacci", big.NewInt(25))
 	require.NoError(t, err)
 
 	fibCallData := CallData{
 		name:     "fibonacci()",
-		calldata: fibdata,
+		calldata: fibData,
 		expected: types.Success{
 			Reason:      "Return",
 			GasUsed:     0x2bff4bd,

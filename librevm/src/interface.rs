@@ -1,60 +1,49 @@
 use crate::{
-    aot::{Compiler, QueryKeySlice, SledDB},
+    aot::{ CompilationQueue, SledDBKeySlice, SledDB },
     db::Db,
     error::set_error,
-    ext::{register_handler, ExternalContext},
+    ext::{ register_handler, ExternalContext },
     gstorage::GoStorage,
-    memory::{ByteSliceView, UnmanagedVector},
-    utils::{build_flat_buffer, set_evm_env},
+    memory::{ ByteSliceView, UnmanagedVector },
+    utils::{ build_flat_buffer, set_evm_env },
 };
 use once_cell::sync::OnceCell;
-use revm::{primitives::SpecId, Evm, EvmBuilder};
-use std::sync::{Arc, RwLock};
+use revm::{ primitives::SpecId, Evm, EvmBuilder };
+use tokio::{ runtime::Runtime, sync::Mutex };
+use std::sync::{ Arc, RwLock };
 
-pub static SLED_DB: OnceCell<Arc<RwLock<SledDB<QueryKeySlice>>>> = OnceCell::new();
+pub static SLED_DB: OnceCell<Arc<RwLock<SledDB<SledDBKeySlice>>>> = OnceCell::new();
 
 #[allow(non_camel_case_types)]
 #[repr(C)]
 pub struct compiler_t {}
 
-pub fn to_compiler(ptr: *mut compiler_t) -> Option<&'static mut Compiler> {
+pub fn to_compiler(ptr: *mut compiler_t) -> Option<&'static mut CompilationQueue> {
     if ptr.is_null() {
         None
     } else {
-        let compiler = unsafe { &mut *(ptr as *mut Compiler) };
+        let compiler = unsafe { &mut *(ptr as *mut CompilationQueue) };
         Some(compiler)
     }
 }
 
 #[no_mangle]
-pub extern "C" fn init_compiler(interval: u64, threshold: u64) -> *mut compiler_t {
-    let sled_db = SLED_DB.get_or_init(|| Arc::new(RwLock::new(SledDB::init())));
-    let compiler = Compiler::new_with_db(interval, threshold, Arc::clone(sled_db));
-    let compiler = Box::into_raw(Box::new(compiler));
-    compiler as *mut compiler_t
+pub extern "C" fn init_compiler(threshold: u64) -> *mut compiler_t {
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    rt.block_on(async {
+        let sled_db = SLED_DB.get_or_init(|| Arc::new(RwLock::new(SledDB::init())));
+        let compiler = CompilationQueue::new(threshold, Arc::clone(sled_db));
+        let compiler = Box::into_raw(Box::new(compiler));
+        compiler as *mut compiler_t
+    })
 }
 
 #[no_mangle]
 pub extern "C" fn release_compiler(compiler: *mut compiler_t) {
     if !compiler.is_null() {
         // this will free cache when it goes out of scope
-        let _ = unsafe { Box::from_raw(compiler as *mut Compiler) };
+        let _ = unsafe { Box::from_raw(compiler as *mut CompilationQueue) };
     }
-}
-
-#[tokio::main]
-#[no_mangle]
-pub async extern "C" fn start_routine(compiler_ptr: *mut compiler_t) {
-    let compiler = match to_compiler(compiler_ptr) {
-        Some(compiler) => compiler,
-        None => {
-            panic!("Failed to get compiler");
-        }
-    };
-
-    if let Err(err) = compiler.routine_fn().await {
-        println!("While compiling, Err: {err:#?}");
-    };
 }
 
 // byte slice view: golang data type
@@ -94,9 +83,11 @@ pub extern "C" fn init_aot_vm(default_spec_id: u8, compiler: *mut compiler_t) ->
     let spec = SpecId::try_from_u8(default_spec_id).unwrap_or(SpecId::CANCUN);
     let builder = EvmBuilder::default();
 
+    let runtime = Runtime::new().unwrap();
+
     let evm = {
-        let compiler = unsafe { &mut *(compiler as *mut Compiler) };
-        let ext = ExternalContext::new(compiler);
+        let compiler = unsafe { &mut *(compiler as *mut CompilationQueue) };
+        let ext = ExternalContext::new(Arc::new(Mutex::new(compiler.clone())));
         builder
             .with_db(go_storage)
             .with_spec_id(spec)
@@ -105,8 +96,11 @@ pub extern "C" fn init_aot_vm(default_spec_id: u8, compiler: *mut compiler_t) ->
             .build()
     };
 
-    let vm = Box::into_raw(Box::new(evm));
-    vm as *mut evm_t
+    let vm = runtime.block_on(async {
+        let vm = Box::into_raw(Box::new(evm));
+        vm as *mut evm_t
+    });
+    vm
 }
 
 #[no_mangle]
@@ -128,7 +122,7 @@ pub extern "C" fn execute_tx(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>,
+    errmsg: Option<&mut UnmanagedVector>
 ) -> UnmanagedVector {
     let data = if aot {
         execute::<ExternalContext>(vm_ptr, db, block, tx, errmsg)
@@ -146,7 +140,7 @@ pub extern "C" fn query_tx(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>,
+    errmsg: Option<&mut UnmanagedVector>
 ) -> UnmanagedVector {
     let data = if aot {
         query::<ExternalContext>(vm_ptr, db, block, tx, errmsg)
@@ -162,7 +156,7 @@ fn execute<EXT>(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>,
+    errmsg: Option<&mut UnmanagedVector>
 ) -> Vec<u8> {
     let evm = match to_evm::<EXT>(vm_ptr) {
         Some(vm) => vm,
@@ -194,7 +188,7 @@ fn query<EXT>(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>,
+    errmsg: Option<&mut UnmanagedVector>
 ) -> Vec<u8> {
     let evm = match to_evm::<EXT>(vm_ptr) {
         Some(vm) => vm,

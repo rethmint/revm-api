@@ -94,12 +94,8 @@ func ReleaseCompiler(compiler Compiler) {
 	C.release_compiler(compiler.ptr)
 }
 
-func InitCompiler(interval uint64, threshold uint64) Compiler {
+func InitCompiler(threshold uint64) Compiler {
 	return Compiler{
-		ptr: C.init_compiler(C.uint64_t(interval), C.uint64_t(threshold)),
+		ptr: C.init_compiler(C.uint64_t(threshold)),
 	}
-}
-
-func StartRoutine(compiler Compiler) {
-	C.start_routine(compiler.ptr)
 }

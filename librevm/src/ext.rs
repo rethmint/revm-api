@@ -1,21 +1,23 @@
 use alloy_primitives::B256;
 use revm::{ handler::register::EvmHandler, Database };
 use revmc::{ eyre::Result, EvmCompilerFn };
+use tokio::sync::Mutex;
 use std::sync::{ Arc, RwLock };
 
 use crate::{
-    aot::{ Compiler, KeyPrefix, QueryKey, QueryKeySlice, SledDB },
+    aot::{ CompilationQueue, KeyPrefix, SledDbKey, SledDBKeySlice, SledDB },
     utils::{ ivec_to_pathbuf, ivec_to_u64 },
     SLED_DB,
 };
 
+#[derive(Clone)]
 pub struct ExternalContext {
-    compiler: &'static mut Compiler,
+    compilation_queue: Arc<Mutex<CompilationQueue>>,
 }
 
 impl ExternalContext {
-    pub fn new(compiler: &'static mut Compiler) -> Self {
-        Self { compiler }
+    pub fn new(compilation_queue: Arc<Mutex<CompilationQueue>>) -> Self {
+        Self { compilation_queue }
     }
 
     fn get_function(
@@ -23,9 +25,9 @@ impl ExternalContext {
         code_hash: B256
     ) -> Result<Option<(EvmCompilerFn, libloading::Library)>> {
         let sled_db = SLED_DB.get_or_init(||
-            Arc::new(RwLock::new(SledDB::<QueryKeySlice>::init()))
+            Arc::new(RwLock::new(SledDB::<SledDBKeySlice>::init()))
         );
-        let key = QueryKey::with_prefix(code_hash, KeyPrefix::SOPath);
+        let key = SledDbKey::with_prefix(code_hash, KeyPrefix::SOPath);
 
         let maybe_so_path = {
             let db_read = sled_db.read().expect("Failed to acquire read lock");
@@ -49,15 +51,17 @@ impl ExternalContext {
         Ok(None)
     }
 
-    fn update_bytecode_reference(
+    async fn update_bytecode_reference(
         &mut self,
-        code_hash: B256,
-        bytecode: &revm::primitives::Bytes
+        code_hash: Arc<B256>,
+        bytecode: Arc<revm::primitives::Bytes>
     ) -> Result<()> {
+        let code_hash = (*code_hash).clone();
+        let bytecode = (*bytecode).clone();
         let sled_db = SLED_DB.get_or_init(||
-            Arc::new(RwLock::new(SledDB::<QueryKeySlice>::init()))
+            Arc::new(RwLock::new(SledDB::<SledDBKeySlice>::init()))
         );
-        let key = QueryKey::with_prefix(code_hash, KeyPrefix::Count);
+        let key = SledDbKey::with_prefix(code_hash, KeyPrefix::Count);
 
         let count = {
             let db_read = match sled_db.read() {
@@ -78,12 +82,16 @@ impl ExternalContext {
         }
 
         // if new count equals the threshold, push to queue
-        if new_count == self.compiler.threshold {
-            self.compiler.push_queue(code_hash, bytecode.clone());
+        if let Ok(queue) = self.compilation_queue.try_lock() {
+            if new_count == queue.threshold {
+                queue.push(code_hash.clone(), bytecode.clone()).await;
+            }
         }
+
         Ok(())
     }
 }
+
 
 // This `+ 'static` bound is only necessary here because of an internal cfg feature.
 pub fn register_handler<DB: Database>(handler: &mut EvmHandler<'_, ExternalContext, DB>) {
@@ -91,23 +99,45 @@ pub fn register_handler<DB: Database>(handler: &mut EvmHandler<'_, ExternalConte
     handler.execution.execute_frame = Arc::new(move |frame, memory, tables, context| {
         let interpreter = frame.interpreter_mut();
         let code_hash = interpreter.contract.hash.unwrap_or_default();
-
-        let bytecode = context.evm.db.code_by_hash(code_hash).unwrap_or_default();
-        match bytecode {
-            revm::primitives::Bytecode::LegacyRaw(bytes) => {
-                context.external.update_bytecode_reference(code_hash, &bytes).unwrap();
-            }
-            revm::primitives::Bytecode::LegacyAnalyzed(analyzed_bytecode) => {
-                context.external
-                    .update_bytecode_reference(code_hash, analyzed_bytecode.bytecode())
-                    .unwrap();
-            }
-            _ => {}
-        }
         if let Some((f, _lib)) = context.external.get_function(code_hash).unwrap() {
             println!("Executing with AOT Compiled Fn\n");
             Ok(unsafe { f.call_with_interpreter_and_memory(interpreter, memory, context) })
         } else {
+            // if there are no function in aot compiled lib, count the bytecode reference
+            let bytecode = context.evm.db.code_by_hash(code_hash).unwrap_or_default();
+            match bytecode {
+                revm::primitives::Bytecode::LegacyRaw(bytes) => {
+                    let code_hash = Arc::new(code_hash.clone());
+                    let bytecode = Arc::new(bytes.clone());
+                    let external = Arc::new(Mutex::new(context.external.clone()));
+                    tokio::spawn(async move {
+                        if let Ok(mut external) = external.try_lock() {
+                            external
+                                .update_bytecode_reference(code_hash, bytecode).await
+                                .unwrap_or_else(|err|
+                                    eprintln!("Update Bytecode Reference Failed: {:?}", err)
+                                );
+                        }
+                    });
+                }
+                revm::primitives::Bytecode::LegacyAnalyzed(analyzed_bytecode) => {
+                    let code_hash = Arc::new(code_hash.clone());
+                    let bytecode = Arc::new(analyzed_bytecode.original_bytes().clone());
+                    let external = Arc::new(Mutex::new(context.external.clone()));
+                    tokio::spawn(async move {
+                        if let Ok(mut external) = external.try_lock() {
+                            external
+                                .update_bytecode_reference(code_hash, bytecode).await
+                                .unwrap_or_else(|err|
+                                    eprintln!("Update Bytecode Reference Failed: {:?}", err)
+                                );
+                        }
+                    });
+                }
+                // eof and eip7702 not supoorted by revmc llvm
+                _ => {}
+            }
+
             prev(frame, memory, tables, context)
         }
     });

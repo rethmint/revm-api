@@ -14,13 +14,9 @@ type Compiler struct {
 	Inner api.Compiler
 }
 
-func NewCompiler(interval uint64, threshold uint64) Compiler {
-	inner := api.InitCompiler(interval, threshold)
+func NewCompiler(threshold uint64) Compiler {
+	inner := api.InitCompiler(threshold)
 	return Compiler{inner}
-}
-
-func (compiler *Compiler) Start() {
-	api.StartRoutine(compiler.Inner)
 }
 
 func (compiler *Compiler) Destroy() {

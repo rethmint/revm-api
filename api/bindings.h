@@ -165,7 +165,7 @@ UnmanagedVector execute_tx(evm_t *vm_ptr,
 
 evm_t *init_aot_vm(uint8_t default_spec_id, compiler_t *compiler);
 
-compiler_t *init_compiler(uint64_t interval, uint64_t threshold);
+compiler_t *init_compiler(uint64_t threshold);
 
 evm_t *init_vm(uint8_t default_spec_id);
 
@@ -181,7 +181,5 @@ UnmanagedVector query_tx(evm_t *vm_ptr,
 void release_compiler(compiler_t *compiler);
 
 void release_vm(evm_t *vm, bool aot);
-
-void start_routine(compiler_t *compiler_ptr);
 
 #endif /* __LIBREVMAPI__ */

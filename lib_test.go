@@ -23,12 +23,8 @@ func setupTest(t *testing.T, aot bool) (revm.VM, *testutils.MockKVStore, common.
 	var vm revm.VM
 
 	if aot {
-		compiler = revm.NewCompiler(1000, 1)
+		compiler = revm.NewCompiler(1)
 		vm = revm.NewAotVM(CANCUN, compiler)
-
-		go func() {
-			compiler.Start()
-		}()
 	} else {
 		vm = revm.NewVM(CANCUN)
 	}

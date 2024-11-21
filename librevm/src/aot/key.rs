@@ -1,23 +1,23 @@
 use alloy_primitives::B256;
 use sled::IVec;
 
-pub type QueryKeySlice = [u8; 33];
+pub type SledDBKeySlice = [u8; 33];
 
 #[derive(Debug, Clone, Copy)]
-pub struct QueryKey(QueryKeySlice);
+pub struct SledDbKey(SledDBKeySlice);
 
 /*
-* Prefix
-* 0x0...[u8;32] -> Count
-* 0x1...[u8;32] -> Path to shared object
-*/
+ * Prefix
+ * 0x0...[u8;32] -> Count
+ * 0x1...[u8;32] -> Path to shared object
+ */
 
-impl QueryKey {
+impl SledDbKey {
     pub fn with_prefix(key: B256, prefix: KeyPrefix) -> Self {
         let mut prefixed = [0u8; 33];
         prefixed[0] = prefix.as_byte();
         prefixed[1..].copy_from_slice(key.as_slice());
-        QueryKey(prefixed)
+        SledDbKey(prefixed)
     }
 
     pub fn as_inner(&self) -> &[u8; 33] {
@@ -45,7 +45,7 @@ impl QueryKey {
 
         let mut arr = [0u8; 33];
         arr.copy_from_slice(&ivec);
-        QueryKey(arr)
+        SledDbKey(arr)
     }
 }
 

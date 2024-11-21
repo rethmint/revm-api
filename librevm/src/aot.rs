@@ -72,6 +72,8 @@ impl RuntimeAot {
         linker.link(&so_path, [obj.to_str().unwrap()])?;
         ensure!(so_path.exists(), "Failed to link object file");
 
+        println!("AOT Compiled for {:#?}", name);
+
         Ok(so_path)
     }
 }

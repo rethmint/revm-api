@@ -5,7 +5,11 @@ use revmc::eyre::Result;
 use tokio::sync::mpsc;
 
 use super::{ SledDBKeySlice, SledDB };
-use crate::{ aot::{ AotCfg, KeyPrefix, SledDbKey, RuntimeAot }, storeutils::CodeHash };
+use crate::{
+    aot::{ AotCfg, KeyPrefix, RuntimeAot, SledDbKey },
+    runtime::get_runtime,
+    storeutils::CodeHash,
+};
 
 // Control channels that send task tuple (code_hash, bytes) to worker
 #[derive(Clone)]
@@ -19,7 +23,8 @@ impl CompilationQueue {
         let (queue, rx) = mpsc::channel::<(CodeHash, Bytes)>(100);
         let sled_db_clone = sled_db.clone();
         // start compiler worker
-        tokio::spawn(async move {
+        let runtime = get_runtime();
+        runtime.spawn(async move {
             let mut worker = CompileWorker::new(rx, sled_db_clone);
             worker.run().await;
         });
@@ -29,9 +34,10 @@ impl CompilationQueue {
             queue,
         }
     }
+
     pub async fn push(&self, code_hash: CodeHash, bytecode: Bytes) {
         if let Err(err) = self.queue.send((code_hash, bytecode)).await {
-            eprintln!("Failed to send to compilation queue: {:?}", err);
+            eprintln!("Failed to send to compilation queue: {:?}", err.to_string());
         }
     }
 }
@@ -74,7 +80,7 @@ impl CompileWorker {
         let so_path = match Self::jit(label, &bytecode_slice) {
             Ok(path) => path,
             Err(err) => {
-                eprintln!("Failed to JIT compile: {:?}", err);
+                eprintln!("Failed to JIT compile: {:?}", err.to_string());
                 return;
             }
         };
@@ -84,7 +90,7 @@ impl CompileWorker {
             sled_db.put(*key.as_inner(), so_path.to_str().unwrap().as_bytes())
         };
         if let Err(err) = result {
-            eprintln!("Failed to write in db: {:?}", err);
+            eprintln!("Failed to write in db: {:?}", err.to_string());
         }
     }
 

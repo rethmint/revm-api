@@ -5,7 +5,8 @@ use tokio::sync::Mutex;
 use std::sync::{ Arc, RwLock };
 
 use crate::{
-    aot::{ CompilationQueue, KeyPrefix, SledDbKey, SledDBKeySlice, SledDB },
+    aot::{ CompilationQueue, KeyPrefix, SledDB, SledDBKeySlice, SledDbKey },
+    runtime::get_runtime,
     utils::{ ivec_to_pathbuf, ivec_to_u64 },
     SLED_DB,
 };
@@ -22,7 +23,7 @@ impl ExternalContext {
 
     fn get_function(
         &self,
-        code_hash: B256,
+        code_hash: B256
     ) -> Result<Option<(EvmCompilerFn, libloading::Library)>> {
         let sled_db = SLED_DB.get_or_init(||
             Arc::new(RwLock::new(SledDB::<SledDBKeySlice>::init()))
@@ -39,8 +40,9 @@ impl ExternalContext {
             let lib;
             let f = {
                 lib = (unsafe { libloading::Library::new(&so_path) }).unwrap();
-                let f: libloading::Symbol<'_, revmc::EvmCompilerFn> =
-                    unsafe { lib.get(code_hash.to_string().as_ref()).unwrap() };
+                let f: libloading::Symbol<'_, revmc::EvmCompilerFn> = unsafe {
+                    lib.get(code_hash.to_string().as_ref()).unwrap()
+                };
                 *f
             };
 
@@ -77,9 +79,7 @@ impl ExternalContext {
                 Ok(lock) => lock,
                 Err(poisoned) => poisoned.into_inner(),
             };
-            db_write
-                .put(*key.as_inner(), &new_count.to_be_bytes())
-                .unwrap();
+            db_write.put(*key.as_inner(), &new_count.to_be_bytes()).unwrap();
         }
 
         // if new count equals the threshold, push to queue
@@ -92,7 +92,6 @@ impl ExternalContext {
         Ok(())
     }
 }
-
 
 // This `+ 'static` bound is only necessary here because of an internal cfg feature.
 pub fn register_handler<DB: Database>(handler: &mut EvmHandler<'_, ExternalContext, DB>) {
@@ -107,30 +106,21 @@ pub fn register_handler<DB: Database>(handler: &mut EvmHandler<'_, ExternalConte
             // if there are no function in aot compiled lib, count the bytecode reference
             let bytecode = context.evm.db.code_by_hash(code_hash).unwrap_or_default();
             match bytecode {
-                revm::primitives::Bytecode::LegacyRaw(bytes) => {
+                | revm::primitives::Bytecode::LegacyRaw(_)
+                | revm::primitives::Bytecode::LegacyAnalyzed(_) => {
                     let code_hash = Arc::new(code_hash.clone());
-                    let bytecode = Arc::new(bytes.clone());
+                    let bytecode = Arc::new(bytecode.original_bytes().clone());
                     let external = Arc::new(Mutex::new(context.external.clone()));
-                    tokio::spawn(async move {
+                    let runtime = get_runtime();
+                    runtime.spawn(async move {
                         if let Ok(mut external) = external.try_lock() {
                             external
                                 .update_bytecode_reference(code_hash, bytecode).await
                                 .unwrap_or_else(|err|
-                                    eprintln!("Update Bytecode Reference Failed: {:?}", err)
-                                );
-                        }
-                    });
-                }
-                revm::primitives::Bytecode::LegacyAnalyzed(analyzed_bytecode) => {
-                    let code_hash = Arc::new(code_hash.clone());
-                    let bytecode = Arc::new(analyzed_bytecode.original_bytes().clone());
-                    let external = Arc::new(Mutex::new(context.external.clone()));
-                    tokio::spawn(async move {
-                        if let Ok(mut external) = external.try_lock() {
-                            external
-                                .update_bytecode_reference(code_hash, bytecode).await
-                                .unwrap_or_else(|err|
-                                    eprintln!("Update Bytecode Reference Failed: {:?}", err)
+                                    eprintln!(
+                                        "Update Bytecode Reference Failed: {:?}",
+                                        err.to_string()
+                                    )
                                 );
                         }
                     });

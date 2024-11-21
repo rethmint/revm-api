@@ -9,7 +9,7 @@ use crate::{
 };
 use once_cell::sync::OnceCell;
 use revm::{ primitives::SpecId, Evm, EvmBuilder };
-use tokio::{ runtime::Runtime, sync::Mutex };
+use tokio::sync::Mutex;
 use std::sync::{ Arc, RwLock };
 
 pub static SLED_DB: OnceCell<Arc<RwLock<SledDB<SledDBKeySlice>>>> = OnceCell::new();
@@ -83,8 +83,6 @@ pub extern "C" fn init_aot_vm(default_spec_id: u8, compiler: *mut compiler_t) ->
     let spec = SpecId::try_from_u8(default_spec_id).unwrap_or(SpecId::CANCUN);
     let builder = EvmBuilder::default();
 
-    let runtime = Runtime::new().unwrap();
-
     let evm = {
         let compiler = unsafe { &mut *(compiler as *mut CompilationQueue) };
         let ext = ExternalContext::new(Arc::new(Mutex::new(compiler.clone())));
@@ -96,11 +94,8 @@ pub extern "C" fn init_aot_vm(default_spec_id: u8, compiler: *mut compiler_t) ->
             .build()
     };
 
-    let vm = runtime.block_on(async {
-        let vm = Box::into_raw(Box::new(evm));
-        vm as *mut evm_t
-    });
-    vm
+    let vm = Box::into_raw(Box::new(evm));
+    vm as *mut evm_t
 }
 
 #[no_mangle]
@@ -172,10 +167,7 @@ fn execute<EXT>(
 
     let result = evm.transact_commit();
     match result {
-        Ok(res) => {
-            //println!("Execute_tx res: {res:#?}");
-            build_flat_buffer(res)
-        }
+        Ok(res) => build_flat_buffer(res),
         Err(err) => {
             set_error(err, errmsg);
             Vec::new()

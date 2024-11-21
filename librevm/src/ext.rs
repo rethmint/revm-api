@@ -22,7 +22,7 @@ impl ExternalContext {
 
     fn get_function(
         &self,
-        code_hash: B256
+        code_hash: B256,
     ) -> Result<Option<(EvmCompilerFn, libloading::Library)>> {
         let sled_db = SLED_DB.get_or_init(||
             Arc::new(RwLock::new(SledDB::<SledDBKeySlice>::init()))
@@ -39,9 +39,8 @@ impl ExternalContext {
             let lib;
             let f = {
                 lib = (unsafe { libloading::Library::new(&so_path) }).unwrap();
-                let f: libloading::Symbol<'_, revmc::EvmCompilerFn> = unsafe {
-                    lib.get(code_hash.to_string().as_ref()).unwrap()
-                };
+                let f: libloading::Symbol<'_, revmc::EvmCompilerFn> =
+                    unsafe { lib.get(code_hash.to_string().as_ref()).unwrap() };
                 *f
             };
 
@@ -78,7 +77,9 @@ impl ExternalContext {
                 Ok(lock) => lock,
                 Err(poisoned) => poisoned.into_inner(),
             };
-            db_write.put(*key.as_inner(), &new_count.to_be_bytes()).unwrap();
+            db_write
+                .put(*key.as_inner(), &new_count.to_be_bytes())
+                .unwrap();
         }
 
         // if new count equals the threshold, push to queue

@@ -38,11 +38,11 @@ update-bindings:
 lib-test:
 	make build-rust-debug
 	go clean -testcache
-	go test -v -run Test_e2e_aot
+	go test -v -run Test_e2e_fib_aot
 
 go-test:
 	go clean -testcache
-	go test -v -run Test_e2e_aot
+	go test -v -run Test_e2e_fib_aot
 
 clean-compile-sleddb:
 	@echo "clean the db: $(RETHMINT_DB_PATH)"

@@ -1,11 +1,19 @@
-use std::{ collections::VecDeque, path::PathBuf, sync::{ Arc, RwLock }, time };
+use std::{
+    collections::VecDeque,
+    path::PathBuf,
+    sync::{Arc, RwLock},
+    time,
+};
 
 use alloy_primitives::Bytes;
 use revmc::eyre::Result;
-use tokio::time::{ interval_at, Instant };
+use tokio::time::{interval_at, Instant};
 
-use super::{ QueryKeySlice, SledDB };
-use crate::{ aot::{ AotCfg, KeyPrefix, QueryKey, RuntimeAot }, storeutils::CodeHash };
+use super::{QueryKeySlice, SledDB};
+use crate::{
+    aot::{AotCfg, KeyPrefix, QueryKey, RuntimeAot},
+    storeutils::CodeHash,
+};
 
 pub struct Compiler {
     interval: u64,
@@ -18,7 +26,7 @@ impl Compiler {
     pub fn new_with_db(
         interval: u64,
         threshold: u64,
-        sled_db: Arc<RwLock<SledDB<QueryKeySlice>>>
+        sled_db: Arc<RwLock<SledDB<QueryKeySlice>>>,
     ) -> Self {
         Self {
             interval,

@@ -1,12 +1,15 @@
-use std::{ path::PathBuf, sync::{ Arc, RwLock } };
+use std::{
+    path::PathBuf,
+    sync::{Arc, RwLock},
+};
 
 use alloy_primitives::Bytes;
 use revmc::eyre::Result;
 use tokio::sync::mpsc;
 
-use super::{ SledDBKeySlice, SledDB };
+use super::{SledDB, SledDBKeySlice};
 use crate::{
-    aot::{ AotCfg, KeyPrefix, RuntimeAot, SledDbKey },
+    aot::{AotCfg, KeyPrefix, RuntimeAot, SledDbKey},
     runtime::get_runtime,
     storeutils::CodeHash,
 };
@@ -29,10 +32,7 @@ impl CompilationQueue {
             worker.run().await;
         });
 
-        Self {
-            threshold,
-            queue,
-        }
+        Self { threshold, queue }
     }
 
     pub async fn push(&self, code_hash: CodeHash, bytecode: Bytes) {
@@ -51,7 +51,7 @@ struct CompileWorker {
 impl CompileWorker {
     fn new(
         queue_receiver: mpsc::Receiver<(CodeHash, Bytes)>,
-        sled_db: Arc<RwLock<SledDB<SledDBKeySlice>>>
+        sled_db: Arc<RwLock<SledDB<SledDBKeySlice>>>,
     ) -> Self {
         Self {
             queue_receiver,

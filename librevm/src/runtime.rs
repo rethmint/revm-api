@@ -1,5 +1,5 @@
-use tokio::runtime::Runtime;
 use std::sync::Once;
+use tokio::runtime::Runtime;
 
 static mut RUNTIME: Option<Runtime> = None;
 static INIT: Once = Once::new();

@@ -5,8 +5,8 @@ mod ext;
 mod gstorage;
 mod interface;
 mod memory;
+mod runtime;
 mod storeutils;
 mod utils;
-mod runtime;
 
 pub use interface::*;

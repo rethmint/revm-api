@@ -1,23 +1,29 @@
-use revmc::eyre::{ self, Result };
+use revmc::eyre::{self, Result};
 use sled::IVec;
 use std::marker::PhantomData;
 use std::path::Path;
 use std::sync::Arc;
-use std::{ env, path::PathBuf };
+use std::{env, path::PathBuf};
 
-use super::{ KeyPrefix, SledDbKey, SledDBKeySlice };
+use super::{KeyPrefix, SledDBKeySlice, SledDbKey};
 
 pub fn sleddb_path() -> PathBuf {
     let home_dir = env::var("HOME").unwrap_or_else(|_| ".".to_string());
     PathBuf::from(home_dir).join(".rethmint").join("db")
 }
 
-pub struct SledDB<K> where K: AsRef<[u8]> {
+pub struct SledDB<K>
+where
+    K: AsRef<[u8]>,
+{
     pub db: Arc<sled::Db>,
     _marker: std::marker::PhantomData<K>,
 }
 
-impl<K> SledDB<K> where K: AsRef<[u8]> {
+impl<K> SledDB<K>
+where
+    K: AsRef<[u8]>,
+{
     pub fn init() -> Self {
         let db = SledDB::<K>::connect(sleddb_path().to_str().unwrap()).unwrap();
 
@@ -32,7 +38,9 @@ impl<K> SledDB<K> where K: AsRef<[u8]> {
     }
 
     pub fn put(&self, key: K, value: &[u8]) -> Result<()> {
-        self.db.insert(key, value).map_err(|e| eyre::Report::new(e))?;
+        self.db
+            .insert(key, value)
+            .map_err(|e| eyre::Report::new(e))?;
 
         self.db.flush().map_err(|e| eyre::Report::new(e))?;
 
@@ -44,10 +52,7 @@ impl<K> SledDB<K> where K: AsRef<[u8]> {
     }
 
     pub fn key_iterator(&self) -> impl Iterator<Item = IVec> {
-        self.db
-            .iter()
-            .keys()
-            .filter_map(|res| res.ok())
+        self.db.iter().keys().filter_map(|res| res.ok())
     }
 }
 
@@ -60,7 +65,10 @@ impl SledDB<SledDBKeySlice> {
     }
 }
 
-impl<K> Clone for SledDB<K> where K: AsRef<[u8]> {
+impl<K> Clone for SledDB<K>
+where
+    K: AsRef<[u8]>,
+{
     fn clone(&self) -> Self {
         Self {
             db: Arc::clone(&self.db),

@@ -1,16 +1,16 @@
 use crate::{
-    aot::{ CompilationQueue, SledDBKeySlice, SledDB },
+    aot::{CompilationQueue, SledDB, SledDBKeySlice},
     db::Db,
     error::set_error,
-    ext::{ register_handler, ExternalContext },
+    ext::{register_handler, ExternalContext},
     gstorage::GoStorage,
-    memory::{ ByteSliceView, UnmanagedVector },
-    utils::{ build_flat_buffer, set_evm_env },
+    memory::{ByteSliceView, UnmanagedVector},
+    utils::{build_flat_buffer, set_evm_env},
 };
 use once_cell::sync::OnceCell;
-use revm::{ primitives::SpecId, Evm, EvmBuilder };
+use revm::{primitives::SpecId, Evm, EvmBuilder};
+use std::sync::{Arc, RwLock};
 use tokio::sync::Mutex;
-use std::sync::{ Arc, RwLock };
 
 pub static SLED_DB: OnceCell<Arc<RwLock<SledDB<SledDBKeySlice>>>> = OnceCell::new();
 
@@ -117,7 +117,7 @@ pub extern "C" fn execute_tx(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>
+    errmsg: Option<&mut UnmanagedVector>,
 ) -> UnmanagedVector {
     let data = if aot {
         execute::<ExternalContext>(vm_ptr, db, block, tx, errmsg)
@@ -135,7 +135,7 @@ pub extern "C" fn query_tx(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>
+    errmsg: Option<&mut UnmanagedVector>,
 ) -> UnmanagedVector {
     let data = if aot {
         query::<ExternalContext>(vm_ptr, db, block, tx, errmsg)
@@ -151,7 +151,7 @@ fn execute<EXT>(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>
+    errmsg: Option<&mut UnmanagedVector>,
 ) -> Vec<u8> {
     let evm = match to_evm::<EXT>(vm_ptr) {
         Some(vm) => vm,
@@ -180,7 +180,7 @@ fn query<EXT>(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>
+    errmsg: Option<&mut UnmanagedVector>,
 ) -> Vec<u8> {
     let evm = match to_evm::<EXT>(vm_ptr) {
         Some(vm) => vm,

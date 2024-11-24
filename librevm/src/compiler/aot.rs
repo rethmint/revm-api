@@ -1,17 +1,9 @@
-mod cfg;
-mod compiler;
-mod key;
-mod sled;
-
 use color_eyre::Result;
-use revmc::{eyre::ensure, EvmCompiler, EvmLlvmBackend};
+use revmc::{ eyre::ensure, EvmCompiler, EvmLlvmBackend };
 use std::env;
 use std::path::PathBuf;
-
-pub use cfg::*;
-pub use compiler::*;
-pub use key::*;
-pub use sled::*;
+use revm::primitives::SpecId;
+use revmc::OptimizationLevel;
 
 fn aot_out_path() -> PathBuf {
     let home_dir = env::var("HOME").unwrap_or_else(|_| ".".to_string());
@@ -35,7 +27,7 @@ impl RuntimeAot {
             &context,
             self.cfg.aot,
             self.cfg.opt_level,
-            &revmc::Target::Native,
+            &revmc::Target::Native
         )?;
 
         let mut compiler = EvmCompiler::new(backend);
@@ -46,7 +38,9 @@ impl RuntimeAot {
         compiler.set_dump_to(Some(out_dir.clone()));
         compiler.gas_metering(self.cfg.no_gas);
 
-        unsafe { compiler.stack_bound_checks(self.cfg.no_len_checks) };
+        unsafe {
+            compiler.stack_bound_checks(self.cfg.no_len_checks);
+        }
 
         compiler.frame_pointers(true);
         compiler.debug_assertions(self.cfg.debug_assertions);
@@ -75,5 +69,27 @@ impl RuntimeAot {
         println!("AOT Compiled for {:#?}", name);
 
         Ok(so_path)
+    }
+}
+
+pub struct AotCfg {
+    pub aot: bool,
+    pub opt_level: OptimizationLevel,
+    pub no_gas: bool,
+    pub no_len_checks: bool,
+    pub debug_assertions: bool,
+    pub spec_id: SpecId,
+}
+
+impl Default for AotCfg {
+    fn default() -> Self {
+        AotCfg {
+            aot: true,
+            opt_level: OptimizationLevel::Aggressive,
+            no_gas: true,
+            no_len_checks: true,
+            debug_assertions: true,
+            spec_id: SpecId::PRAGUE,
+        }
     }
 }

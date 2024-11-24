@@ -60,6 +60,7 @@ build-rust-debug:
 	@export LLVM_SYS_180_PREFIX=$(shell brew --prefix llvm@18);\
 	export LIBRARY_PATH="/opt/homebrew/lib:$LIBRARY_PATH";\
 	export LD_LIBRARY_PATH="/opt/homebrew/lib:$LD_LIBRARY_PATH";\
+	export RUST_BACKTRACE=full; \
 	cargo build
 	@cp -fp target/debug/$(SHARED_LIB_SRC) api/$(SHARED_LIB_DST)
 	@make update-bindings

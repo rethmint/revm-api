@@ -1,7 +1,7 @@
 use crate::db::Db;
 use crate::error::{BackendError, GoError};
 use crate::memory::{U8SliceView, UnmanagedVector};
-use crate::storeutils::{compress_account_info, parse_account_info, EvmStoreKey};
+use crate::evmdb::{compress_account_info, parse_account_info, EvmStoreKey};
 use alloy_primitives::{Address, Bytes, B256, U256};
 use revm::primitives::{Account, AccountInfo, Bytecode, HashMap};
 use revm::{Database, DatabaseCommit};

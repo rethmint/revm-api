@@ -50,7 +50,6 @@ func setupTest(t *testing.T, aot bool, caller common.Address) (revm.VM, *testuti
 	}
 
 	t.Cleanup(func() {
-		time.Sleep(10 * time.Second)
 		vm.Destroy()
 		if aot {
 			compiler.Destroy()

@@ -1,16 +1,15 @@
 use crate::{
-    aot::{CompilationQueue, SledDB, SledDBKeySlice},
+    compiler::{ CompileWorker, SledDB, SledDBKeySlice },
     db::Db,
     error::set_error,
-    ext::{register_handler, ExternalContext},
+    ext::{ register_handler, ExternalContext },
     gstorage::GoStorage,
-    memory::{ByteSliceView, UnmanagedVector},
-    utils::{build_flat_buffer, set_evm_env},
+    memory::{ ByteSliceView, UnmanagedVector },
+    utils::{ build_flat_buffer, set_evm_env },
 };
 use once_cell::sync::OnceCell;
-use revm::{primitives::SpecId, Evm, EvmBuilder};
-use std::sync::{Arc, RwLock};
-use tokio::sync::Mutex;
+use revm::{ primitives::SpecId, Evm, EvmBuilder };
+use std::sync::{ Arc, RwLock };
 
 pub static SLED_DB: OnceCell<Arc<RwLock<SledDB<SledDBKeySlice>>>> = OnceCell::new();
 
@@ -18,11 +17,11 @@ pub static SLED_DB: OnceCell<Arc<RwLock<SledDB<SledDBKeySlice>>>> = OnceCell::ne
 #[repr(C)]
 pub struct compiler_t {}
 
-pub fn to_compiler(ptr: *mut compiler_t) -> Option<&'static mut CompilationQueue> {
+pub fn to_compiler(ptr: *mut compiler_t) -> Option<&'static mut CompileWorker> {
     if ptr.is_null() {
         None
     } else {
-        let compiler = unsafe { &mut *(ptr as *mut CompilationQueue) };
+        let compiler = unsafe { &mut *(ptr as *mut CompileWorker) };
         Some(compiler)
     }
 }
@@ -32,7 +31,7 @@ pub extern "C" fn init_compiler(threshold: u64) -> *mut compiler_t {
     let rt = tokio::runtime::Runtime::new().unwrap();
     rt.block_on(async {
         let sled_db = SLED_DB.get_or_init(|| Arc::new(RwLock::new(SledDB::init())));
-        let compiler = CompilationQueue::new(threshold, Arc::clone(sled_db));
+        let compiler = CompileWorker::new(threshold, Arc::clone(sled_db));
         let compiler = Box::into_raw(Box::new(compiler));
         compiler as *mut compiler_t
     })
@@ -42,7 +41,7 @@ pub extern "C" fn init_compiler(threshold: u64) -> *mut compiler_t {
 pub extern "C" fn release_compiler(compiler: *mut compiler_t) {
     if !compiler.is_null() {
         // this will free cache when it goes out of scope
-        let _ = unsafe { Box::from_raw(compiler as *mut CompilationQueue) };
+        let _ = unsafe { Box::from_raw(compiler as *mut CompileWorker) };
     }
 }
 
@@ -84,8 +83,8 @@ pub extern "C" fn init_aot_vm(default_spec_id: u8, compiler: *mut compiler_t) ->
     let builder = EvmBuilder::default();
 
     let evm = {
-        let compiler = unsafe { &mut *(compiler as *mut CompilationQueue) };
-        let ext = ExternalContext::new(Arc::new(Mutex::new(compiler.clone())));
+        let compiler = unsafe { &mut *(compiler as *mut CompileWorker) };
+        let ext = ExternalContext::new(compiler);
         builder
             .with_db(go_storage)
             .with_spec_id(spec)
@@ -117,7 +116,7 @@ pub extern "C" fn execute_tx(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>,
+    errmsg: Option<&mut UnmanagedVector>
 ) -> UnmanagedVector {
     let data = if aot {
         execute::<ExternalContext>(vm_ptr, db, block, tx, errmsg)
@@ -135,7 +134,7 @@ pub extern "C" fn query_tx(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>,
+    errmsg: Option<&mut UnmanagedVector>
 ) -> UnmanagedVector {
     let data = if aot {
         query::<ExternalContext>(vm_ptr, db, block, tx, errmsg)
@@ -151,7 +150,7 @@ fn execute<EXT>(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>,
+    errmsg: Option<&mut UnmanagedVector>
 ) -> Vec<u8> {
     let evm = match to_evm::<EXT>(vm_ptr) {
         Some(vm) => vm,
@@ -180,7 +179,7 @@ fn query<EXT>(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>,
+    errmsg: Option<&mut UnmanagedVector>
 ) -> Vec<u8> {
     let evm = match to_evm::<EXT>(vm_ptr) {
         Some(vm) => vm,

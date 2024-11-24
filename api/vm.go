@@ -56,6 +56,11 @@ func ExecuteTx(
 	errmsg := uninitializedUnmanagedVector()
 	res, err := C.execute_tx(vm.evm_ptr, C.bool(vm.aot), db, blockBytesSliceView, txByteSliceView, &errmsg)
 	if err != nil && err.(syscall.Errno) != C.Success {
+		// ignore the opereation times out error
+		errno, ok := err.(syscall.Errno)
+		if ok && errno == syscall.ETIMEDOUT {
+			return copyAndDestroyUnmanagedVector(res), nil
+		}
 		return nil, errorWithMessage(err, errmsg)
 	}
 
@@ -80,6 +85,11 @@ func QueryTx(
 	errmsg := uninitializedUnmanagedVector()
 	res, err := C.query_tx(vm.evm_ptr, C.bool(vm.aot), db, blockBytesSliceView, txByteSliceView, &errmsg)
 	if err != nil && err.(syscall.Errno) != C.Success {
+		// ignore the operation timed out error
+		errno, ok := err.(syscall.Errno)
+		if ok && errno == syscall.ETIMEDOUT {
+			return copyAndDestroyUnmanagedVector(res), nil
+		}
 		return nil, errorWithMessage(err, errmsg)
 	}
 

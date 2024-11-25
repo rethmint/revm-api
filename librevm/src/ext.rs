@@ -14,7 +14,7 @@ pub struct ExternalContext {
 }
 
 impl ExternalContext {
-    pub fn new(compile_worker: &'static mut CompileWorker,) -> Self {
+    pub fn new(compile_worker: &'static mut CompileWorker) -> Self {
         Self { compile_worker }
     }
 
@@ -36,7 +36,9 @@ impl ExternalContext {
             let so_path = ivec_to_pathbuf(&so_path).unwrap();
             let lib;
             let f = {
-                lib = (unsafe { libloading::Library::new(&so_path) }).unwrap();
+                lib = (unsafe { libloading::Library::new(&so_path) }).unwrap_or_else({
+                    return Err("Load Library Failed");
+                });
                 let f: libloading::Symbol<'_, revmc::EvmCompilerFn> = unsafe {
                     lib.get(code_hash.to_string().as_ref()).unwrap()
                 };
@@ -60,7 +62,13 @@ pub fn register_handler<DB: Database>(handler: &mut EvmHandler<'_, ExternalConte
     handler.execution.execute_frame = Arc::new(move |frame, memory, tables, context| {
         let interpreter = frame.interpreter_mut();
         let code_hash = interpreter.contract.hash.unwrap_or_default();
-        if let Some((f, _lib)) = context.external.get_function(code_hash).unwrap() {
+        if
+            let Some((f, _lib)) = context.external
+                .get_function(code_hash)
+                .unwrap_or_else(
+                    // TODO: err logger write in .rethmint/errlog with info code_hash
+                    prev(frame, memory, tables, context))
+        {
             println!("Executing with AOT Compiled Fn\n");
             Ok(unsafe { f.call_with_interpreter_and_memory(interpreter, memory, context) })
         } else {

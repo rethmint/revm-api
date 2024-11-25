@@ -49,10 +49,10 @@ impl EvmStoreKey {
                 result.append(&mut code_hash.to_vec());
                 result
             }
-            Self::Storage(addr, idx) => {
+            Self::Storage(addr, slot) => {
                 let mut result = vec![EvmStoreKeyPrefix::Storage.into()];
                 result.append(&mut addr.to_vec());
-                result.append(&mut idx.to_be_bytes::<32>().to_vec());
+                result.append(&mut slot.to_be_bytes::<32>().to_vec());
                 result
             }
             Self::Block(block_num) => {

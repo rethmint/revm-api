@@ -4,8 +4,8 @@
 // STORAGE_PREFIX(B1) + {address(B20)} + {index(B32)} => [32]byte(value)
 // BLOCK_PREFIX(B1) + block_num(B8) => block_hash
 
-use alloy_primitives::{ Address, B256, U256 };
-use revm::primitives::{ AccountInfo, Bytecode };
+use alloy_primitives::{Address, B256, U256};
+use revm::primitives::{AccountInfo, Bytecode};
 
 enum EvmStoreKeyPrefix {
     Account,

@@ -1,9 +1,9 @@
 use color_eyre::Result;
-use revmc::{ eyre::ensure, EvmCompiler, EvmLlvmBackend };
-use std::env;
-use std::path::PathBuf;
 use revm::primitives::SpecId;
 use revmc::OptimizationLevel;
+use revmc::{eyre::ensure, EvmCompiler, EvmLlvmBackend};
+use std::env;
+use std::path::PathBuf;
 
 fn aot_out_path() -> PathBuf {
     let home_dir = env::var("HOME").unwrap_or_else(|_| ".".to_string());
@@ -27,7 +27,7 @@ impl RuntimeAot {
             &context,
             self.cfg.aot,
             self.cfg.opt_level,
-            &revmc::Target::Native
+            &revmc::Target::Native,
         )?;
 
         let mut compiler = EvmCompiler::new(backend);

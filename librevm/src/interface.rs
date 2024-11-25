@@ -2,8 +2,9 @@ use crate::{
     compiler::{ CompileWorker, SledDB, SledDBKeySlice },
     db::Db,
     error::set_error,
-    ext::{ register_handler, ExternalContext },
+    ext::ExternalContext,
     gstorage::GoStorage,
+    handler::register_handler,
     memory::{ ByteSliceView, UnmanagedVector },
     utils::{ build_flat_buffer, set_evm_env },
 };

@@ -1,5 +1,4 @@
 use alloy_primitives::B256;
-use revm::{ handler::register::EvmHandler, Database };
 use revmc::{ eyre::Result, EvmCompilerFn };
 use std::sync::{ Arc, RwLock };
 
@@ -18,7 +17,7 @@ impl ExternalContext {
         Self { compile_worker }
     }
 
-    fn get_function(
+    pub fn get_function(
         &self,
         code_hash: B256
     ) -> Result<Option<(EvmCompilerFn, libloading::Library)>> {
@@ -36,9 +35,7 @@ impl ExternalContext {
             let so_path = ivec_to_pathbuf(&so_path).unwrap();
             let lib;
             let f = {
-                lib = (unsafe { libloading::Library::new(&so_path) }).unwrap_or_else({
-                    return Err("Load Library Failed");
-                });
+                lib = (unsafe { libloading::Library::new(&so_path) }).unwrap();
                 let f: libloading::Symbol<'_, revmc::EvmCompilerFn> = unsafe {
                     lib.get(code_hash.to_string().as_ref()).unwrap()
                 };
@@ -51,39 +48,7 @@ impl ExternalContext {
         Ok(None)
     }
 
-    fn work(&mut self, code_hash: B256, bytecode: revm::primitives::Bytes) {
+    pub fn work(&mut self, code_hash: B256, bytecode: revm::primitives::Bytes) {
         self.compile_worker.work(code_hash, bytecode);
     }
-}
-
-// This `+ 'static` bound is only necessary here because of an internal cfg feature.
-pub fn register_handler<DB: Database>(handler: &mut EvmHandler<'_, ExternalContext, DB>) {
-    let prev = handler.execution.execute_frame.clone();
-    handler.execution.execute_frame = Arc::new(move |frame, memory, tables, context| {
-        let interpreter = frame.interpreter_mut();
-        let code_hash = interpreter.contract.hash.unwrap_or_default();
-        if
-            let Some((f, _lib)) = context.external
-                .get_function(code_hash)
-                .unwrap_or_else(
-                    // TODO: err logger write in .rethmint/errlog with info code_hash
-                    prev(frame, memory, tables, context))
-        {
-            println!("Executing with AOT Compiled Fn\n");
-            Ok(unsafe { f.call_with_interpreter_and_memory(interpreter, memory, context) })
-        } else {
-            // if there are no function in aot compiled lib, count the bytecode reference
-            let bytecode = context.evm.db.code_by_hash(code_hash).unwrap_or_default();
-            match bytecode {
-                | revm::primitives::Bytecode::LegacyRaw(_)
-                | revm::primitives::Bytecode::LegacyAnalyzed(_) =>
-                    context.external.work(code_hash, bytecode.original_bytes()),
-                // eof and eip7702 not supoorted by revmc llvm
-                revm::primitives::Bytecode::Eip7702(_) => {}
-                revm::primitives::Bytecode::Eof(_) => {}
-            }
-
-            prev(frame, memory, tables, context)
-        }
-    });
 }

@@ -8,5 +8,5 @@ mod memory;
 mod runtime;
 mod evmdb;
 mod utils;
-
+mod handler;
 pub use interface::*;

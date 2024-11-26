@@ -1,0 +1,20 @@
+namespace bank;
+
+enum BankAction: ubyte {
+    PLUS,
+    MINUS,
+    COMMIT
+}
+
+table BankRecord {
+    coin: [ubyte]; // 20
+    owner: [ubyte]; // 20
+    value: [ubyte]; // 32
+    action: BankAction;
+}
+
+table BankRecords {
+    records: [BankRecord];
+}
+
+root_type BankRecords;

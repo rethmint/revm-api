@@ -1,0 +1,12 @@
+namespace account;
+
+table AccountRecord {
+    address: [ubyte]; //20
+    sequence: uint64;
+}
+
+table AccountRecords {
+    records: [AccountRecord];
+}
+
+root_type AccountRecords;

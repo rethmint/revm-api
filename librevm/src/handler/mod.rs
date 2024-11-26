@@ -1,10 +1,10 @@
-mod bank;
-mod account;
+mod bank_end_handler;
+mod account_end_handler;
 
 use std::sync::Arc;
 
-use bank::*;
-use account::record_new_account;
+use bank_end_handler::*;
+use account_end_handler::account_end_handler;
 use revm::{ handler::register::EvmHandler, primitives::ResultAndState, Database };
 
 use crate::ext::ExternalContext;
@@ -38,7 +38,7 @@ pub fn register_handler<DB: Database>(handler: &mut EvmHandler<'_, ExternalConte
     handler.post_execution.end = Arc::new(move |context, execution_results| {
         let result: ResultAndState = execution_results.unwrap();
         // record new account address created
-        record_new_account(result.state);
+        account_end_handler(result.state);
         // record erc20 events with result result
         // result.result.logs().
 

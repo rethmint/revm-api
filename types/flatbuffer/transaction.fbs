@@ -4,10 +4,12 @@ namespace transaction;
 table StorageKey {
     value: [ubyte]; // 32
 }
+
 table AccessListItem {
     address: [ubyte]; // 20
     storage_key: [StorageKey];
 }
+
 table Transaction {
     caller: [ubyte]; // 20
     gas_limit: uint64;

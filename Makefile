@@ -106,6 +106,9 @@ release-build:
 	make release-build-macos
 
 flatbuffer-gen:
+	@export LLVM_SYS_180_PREFIX=$(shell brew --prefix llvm@18);\
+	export LIBRARY_PATH="/opt/homebrew/lib:$LIBRARY_PATH";\
+	export LD_LIBRARY_PATH="/opt/homebrew/lib:$LD_LIBRARY_PATH";
 	@bash ./scripts/flatbuffer-gen.sh
 	cargo fix --allow-dirty
 	

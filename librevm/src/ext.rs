@@ -1,9 +1,6 @@
 use alloy_primitives::B256;
 use revm::{handler::register::EvmHandler, Database};
-use revmc::{
-    eyre::{eyre, Result},
-    EvmCompilerFn,
-};
+use revmc::EvmCompilerFn;
 use std::{
     panic::{self, AssertUnwindSafe},
     sync::{Arc, RwLock},
@@ -11,6 +8,7 @@ use std::{
 
 use crate::{
     compiler::{CompileWorker, KeyPrefix, SledDB, SledDBKeySlice, SledDbKey},
+    error::ExtError,
     utils::ivec_to_pathbuf,
     SLED_DB,
 };
@@ -27,24 +25,34 @@ impl ExternalContext {
     fn get_function(
         &self,
         code_hash: B256,
-    ) -> Result<Option<(EvmCompilerFn, libloading::Library)>> {
+    ) -> Result<Option<(EvmCompilerFn, libloading::Library)>, ExtError> {
         let sled_db =
             SLED_DB.get_or_init(|| Arc::new(RwLock::new(SledDB::<SledDBKeySlice>::init())));
         let key = SledDbKey::with_prefix(code_hash, KeyPrefix::SOPath);
 
         let maybe_so_path = {
-            let db_read = sled_db.read().map_err(|err| eyre!(err.to_string()))?;
+            let db_read = sled_db.read().map_err(|err| ExtError::DBError {
+                err: err.to_string(),
+            })?;
             db_read.get(*key.as_inner()).unwrap_or(None)
         };
 
         if let Some(so_path) = maybe_so_path {
-            let so_path =
-                ivec_to_pathbuf(&so_path).ok_or_else(|| eyre!("IVec to pathbuf error"))?;
+            let so_path = ivec_to_pathbuf(&so_path).ok_or_else(|| ExtError::IVecCastError)?;
             let lib;
             let f = {
-                lib = (unsafe { libloading::Library::new(&so_path) })?;
-                let f: libloading::Symbol<'_, revmc::EvmCompilerFn> =
-                    unsafe { lib.get(code_hash.to_string().as_ref())? };
+                lib = (unsafe { libloading::Library::new(&so_path) }).map_err(|err| {
+                    ExtError::LibLoadingError {
+                        err: err.to_string(),
+                    }
+                })?;
+                let f: libloading::Symbol<'_, revmc::EvmCompilerFn> = unsafe {
+                    lib.get(code_hash.to_string().as_ref()).map_err(|err| {
+                        ExtError::GetSymbolError {
+                            err: err.to_string(),
+                        }
+                    })?
+                };
                 *f
             };
 

@@ -8,6 +8,7 @@ use super::{
 };
 use crate::{
     compiler::{KeyPrefix, SledDbKey},
+    error::CompilerError,
     runtime::get_runtime,
     utils::ivec_to_u64,
 };
@@ -64,12 +65,16 @@ impl CompileWorker {
                             Ok(lock) => lock,
                             Err(poisoned) => poisoned.into_inner(),
                         };
-                        db_write
-                            .put(
-                                *SledDbKey::with_prefix(code_hash, KeyPrefix::SOPath).as_inner(),
-                                so_path.to_str().unwrap().as_bytes(),
-                            )
-                            .unwrap();
+
+                        if let Err(err) = db_write.put(
+                            *SledDbKey::with_prefix(code_hash, KeyPrefix::SOPath).as_inner(),
+                            so_path.to_str().unwrap().as_bytes(),
+                        ) {
+                            let err = CompilerError::DBError {
+                                err: err.to_string(),
+                            };
+                            tracing::error!("Compile: with bytecode hash {} {:#?}", code_hash, err);
+                        };
                     }
                     Err(err) => {
                         tracing::error!("Compile: with bytecode hash {} {:#?}", code_hash, err);

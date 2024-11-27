@@ -1,9 +1,10 @@
-use color_eyre::Result;
 use revm::primitives::SpecId;
 use revmc::OptimizationLevel;
-use revmc::{eyre::ensure, EvmCompiler, EvmLlvmBackend};
+use revmc::{EvmCompiler, EvmLlvmBackend};
 use std::env;
 use std::path::PathBuf;
+
+use crate::error::CompilerError;
 
 fn aot_out_path() -> PathBuf {
     let home_dir = env::var("HOME").unwrap_or_else(|_| ".".to_string());
@@ -19,7 +20,7 @@ impl RuntimeAot {
         Self { cfg }
     }
 
-    pub fn compile(&self, name: &'static str, bytecode: &[u8]) -> Result<PathBuf> {
+    pub fn compile(&self, name: &'static str, bytecode: &[u8]) -> Result<PathBuf, CompilerError> {
         let _ = color_eyre::install();
 
         let context = revmc::llvm::inkwell::context::Context::create();
@@ -28,12 +29,17 @@ impl RuntimeAot {
             self.cfg.aot,
             self.cfg.opt_level,
             &revmc::Target::Native,
-        )?;
+        )
+        .map_err(|err| CompilerError::BackendInitError {
+            err: err.to_string(),
+        })?;
 
         let mut compiler = EvmCompiler::new(backend);
 
         let out_dir = aot_out_path();
-        std::fs::create_dir_all(&out_dir).unwrap();
+        std::fs::create_dir_all(&out_dir).map_err(|err| CompilerError::FileIOError {
+            err: err.to_string(),
+        })?;
 
         compiler.set_dump_to(Some(out_dir.clone()));
         compiler.gas_metering(self.cfg.no_gas);
@@ -50,21 +56,33 @@ impl RuntimeAot {
         let spec_id = self.cfg.spec_id;
 
         compiler.inspect_stack_length(true);
-        let _f_id = compiler.translate(name, bytecode, spec_id)?;
+        let _f_id = compiler.translate(name, bytecode, spec_id).map_err(|err| {
+            CompilerError::BytecodeTranslationError {
+                err: err.to_string(),
+            }
+        })?;
 
         let module_out_dir = std::env::temp_dir().join(out_dir).join(name);
-        std::fs::create_dir_all(&module_out_dir)?;
+        std::fs::create_dir_all(&module_out_dir).map_err(|err| CompilerError::FileIOError {
+            err: err.to_string(),
+        })?;
 
         // Compile.
         let obj = module_out_dir.join("a.o");
-        compiler.write_object_to_file(&obj)?;
-        ensure!(obj.exists(), "Failed to write object file");
+        compiler
+            .write_object_to_file(&obj)
+            .map_err(|err| CompilerError::FileIOError {
+                err: err.to_string(),
+            })?;
 
         // Link.
         let so_path = module_out_dir.join("a.so");
         let linker = revmc::Linker::new();
-        linker.link(&so_path, [obj.to_str().unwrap()])?;
-        ensure!(so_path.exists(), "Failed to link object file");
+        linker
+            .link(&so_path, [obj.to_str().unwrap()])
+            .map_err(|err| CompilerError::LinkError {
+                err: err.to_string(),
+            })?;
 
         Ok(so_path)
     }

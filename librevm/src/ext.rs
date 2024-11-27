@@ -1,23 +1,16 @@
 use alloy_primitives::B256;
 use revm::{handler::register::EvmHandler, Database};
 use revmc::EvmCompilerFn;
-use std::env;
 use std::{
+    fs::File,
     panic::{self, AssertUnwindSafe},
-    path::PathBuf,
     sync::Arc,
 };
 
-use crate::{compiler::CompileWorker, error::ExtError};
+use crate::{aot_out_path, compiler::CompileWorker, error::ExtError};
 
 pub struct ExternalContext {
     compile_worker: &'static mut CompileWorker,
-}
-
-#[inline]
-fn so_path() -> PathBuf {
-    let home_dir = env::var("HOME").unwrap_or_else(|_| ".".to_string());
-    PathBuf::from(home_dir).join(".rethmint").join("output")
 }
 
 impl ExternalContext {
@@ -30,30 +23,29 @@ impl ExternalContext {
         code_hash: B256,
     ) -> Result<Option<(EvmCompilerFn, libloading::Library)>, ExtError> {
         let label = code_hash.to_string();
-        let so_file = so_path().join(label).join("a.so");
+        let so_file = aot_out_path().join(label).join("a.so");
 
-        //if let Ok(true) = so_file.try_exists() {
-        //    let lib;
-        //    let f = {
-        //        lib = (unsafe { libloading::Library::new(&so_file) }).map_err(|err| {
-        //            ExtError::LibLoadingError {
-        //                err: err.to_string(),
-        //            }
-        //        })?;
-        //        let f: libloading::Symbol<'_, revmc::EvmCompilerFn> = unsafe {
-        //            lib.get(code_hash.to_string().as_ref()).map_err(|err| {
-        //                ExtError::GetSymbolError {
-        //                    err: err.to_string(),
-        //                }
-        //            })?
-        //        };
-        //        *f
-        //    };
-        //
-        //    return Ok(Some((f, lib)));
+        //if let Ok(_) = File::open(&so_file) {
+        let lib;
+        let f = {
+            lib = (unsafe { libloading::Library::new(&so_file) }).map_err(|err| {
+                ExtError::LibLoadingError {
+                    err: err.to_string(),
+                }
+            })?;
+            let f: libloading::Symbol<'_, revmc::EvmCompilerFn> = unsafe {
+                lib.get(code_hash.to_string().as_ref())
+                    .map_err(|err| ExtError::GetSymbolError {
+                        err: err.to_string(),
+                    })?
+            };
+            *f
+        };
+
+        return Ok(Some((f, lib)));
         //}
 
-        Ok(None)
+        //Ok(None)
     }
 
     fn work(&mut self, code_hash: B256, bytecode: revm::primitives::Bytes) {
@@ -70,19 +62,18 @@ pub fn register_handler<DB: Database>(handler: &mut EvmHandler<'_, ExternalConte
 
         match context.external.get_function(code_hash) {
             Ok(None) => {
-                // if there are no function in aot compiled lib, count the bytecode reference
                 let bytecode = context.evm.db.code_by_hash(code_hash).unwrap_or_default();
                 match bytecode {
                     revm::primitives::Bytecode::LegacyRaw(_)
                     | revm::primitives::Bytecode::LegacyAnalyzed(_) => {
                         context.external.work(code_hash, bytecode.original_bytes())
                     }
-                    // eof and eip7702 not supoorted by revmc llvm
                     revm::primitives::Bytecode::Eip7702(_) => {}
                     revm::primitives::Bytecode::Eof(_) => {}
                 }
                 prev(frame, memory, tables, context)
             }
+
             Ok(Some((f, _lib))) => {
                 println!("Executing with AOT Compiled Fn\n");
                 let res = panic::catch_unwind(AssertUnwindSafe(|| unsafe {
@@ -99,6 +90,7 @@ pub fn register_handler<DB: Database>(handler: &mut EvmHandler<'_, ExternalConte
 
                 Ok(res.unwrap())
             }
+
             Err(err) => {
                 tracing::error!("Get function: with bytecode hash {} {:#?}", code_hash, err);
                 prev(frame, memory, tables, context)

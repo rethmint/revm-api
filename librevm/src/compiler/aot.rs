@@ -1,15 +1,9 @@
 use revm::primitives::SpecId;
 use revmc::OptimizationLevel;
 use revmc::{EvmCompiler, EvmLlvmBackend};
-use std::env;
-use std::path::PathBuf;
 
+use crate::aot_out_path;
 use crate::error::CompilerError;
-
-fn aot_out_path() -> PathBuf {
-    let home_dir = env::var("HOME").unwrap_or_else(|_| ".".to_string());
-    PathBuf::from(home_dir).join(".rethmint").join("output")
-}
 
 pub struct RuntimeAot {
     pub cfg: AotCfg,
@@ -20,7 +14,7 @@ impl RuntimeAot {
         Self { cfg }
     }
 
-    pub fn compile(&self, name: &'static str, bytecode: &[u8]) -> Result<PathBuf, CompilerError> {
+    pub fn compile(&self, name: &'static str, bytecode: &[u8]) -> Result<(), CompilerError> {
         let _ = color_eyre::install();
 
         let context = revmc::llvm::inkwell::context::Context::create();
@@ -84,7 +78,7 @@ impl RuntimeAot {
                 err: err.to_string(),
             })?;
 
-        Ok(so_path)
+        Ok(())
     }
 }
 

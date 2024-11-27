@@ -2,9 +2,6 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum CompilerError {
-    #[error("Operating on db, err: {err}")]
-    DBError { err: String },
-
     #[error("Backend init error, err: {err}")]
     BackendInitError { err: String },
 

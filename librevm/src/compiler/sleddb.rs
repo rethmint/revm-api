@@ -7,6 +7,7 @@ use std::{env, path::PathBuf};
 
 use super::{KeyPrefix, SledDBKeySlice, SledDbKey};
 
+#[inline]
 pub fn sleddb_path() -> PathBuf {
     let home_dir = env::var("HOME").unwrap_or_else(|_| ".".to_string());
     PathBuf::from(home_dir).join(".rethmint").join("db")

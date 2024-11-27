@@ -54,10 +54,7 @@ impl CompileWorker {
             // 3. check condition of compile
             if new_count == threshold {
                 // Compile the bytecode
-                let label = SledDbKey::with_prefix(code_hash, KeyPrefix::SOPath)
-                    .to_b256()
-                    .to_string()
-                    .leak();
+                let label = code_hash.to_string().leak();
                 match aot_runtime.compile(label, bytecode.as_ref()) {
                     Ok(so_path) => {
                         tracing::info!("Compiled: bytecode hash {}", code_hash);

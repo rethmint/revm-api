@@ -1,20 +1,23 @@
 use alloy_primitives::B256;
 use revm::{handler::register::EvmHandler, Database};
 use revmc::EvmCompilerFn;
+use std::env;
 use std::{
     panic::{self, AssertUnwindSafe},
-    sync::{Arc, RwLock},
+    path::PathBuf,
+    sync::Arc,
 };
 
-use crate::{
-    compiler::{CompileWorker, KeyPrefix, SledDB, SledDBKeySlice, SledDbKey},
-    error::ExtError,
-    utils::ivec_to_pathbuf,
-    SLED_DB,
-};
+use crate::{compiler::CompileWorker, error::ExtError};
 
 pub struct ExternalContext {
     compile_worker: &'static mut CompileWorker,
+}
+
+#[inline]
+fn so_path() -> PathBuf {
+    let home_dir = env::var("HOME").unwrap_or_else(|_| ".".to_string());
+    PathBuf::from(home_dir).join(".rethmint").join("output")
 }
 
 impl ExternalContext {
@@ -26,38 +29,29 @@ impl ExternalContext {
         &self,
         code_hash: B256,
     ) -> Result<Option<(EvmCompilerFn, libloading::Library)>, ExtError> {
-        let sled_db =
-            SLED_DB.get_or_init(|| Arc::new(RwLock::new(SledDB::<SledDBKeySlice>::init())));
-        let key = SledDbKey::with_prefix(code_hash, KeyPrefix::SOPath);
+        let label = code_hash.to_string();
+        let so_file = so_path().join(label).join("a.so");
 
-        let maybe_so_path = {
-            let db_read = sled_db.read().map_err(|err| ExtError::DBError {
-                err: err.to_string(),
-            })?;
-            db_read.get(*key.as_inner()).unwrap_or(None)
-        };
-
-        if let Some(so_path) = maybe_so_path {
-            let so_path = ivec_to_pathbuf(&so_path).ok_or_else(|| ExtError::IVecCastError)?;
-            let lib;
-            let f = {
-                lib = (unsafe { libloading::Library::new(&so_path) }).map_err(|err| {
-                    ExtError::LibLoadingError {
-                        err: err.to_string(),
-                    }
-                })?;
-                let f: libloading::Symbol<'_, revmc::EvmCompilerFn> = unsafe {
-                    lib.get(code_hash.to_string().as_ref()).map_err(|err| {
-                        ExtError::GetSymbolError {
-                            err: err.to_string(),
-                        }
-                    })?
-                };
-                *f
-            };
-
-            return Ok(Some((f, lib)));
-        }
+        //if let Ok(true) = so_file.try_exists() {
+        //    let lib;
+        //    let f = {
+        //        lib = (unsafe { libloading::Library::new(&so_file) }).map_err(|err| {
+        //            ExtError::LibLoadingError {
+        //                err: err.to_string(),
+        //            }
+        //        })?;
+        //        let f: libloading::Symbol<'_, revmc::EvmCompilerFn> = unsafe {
+        //            lib.get(code_hash.to_string().as_ref()).map_err(|err| {
+        //                ExtError::GetSymbolError {
+        //                    err: err.to_string(),
+        //                }
+        //            })?
+        //        };
+        //        *f
+        //    };
+        //
+        //    return Ok(Some((f, lib)));
+        //}
 
         Ok(None)
     }

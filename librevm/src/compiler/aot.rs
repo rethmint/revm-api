@@ -62,7 +62,7 @@ impl RuntimeAot {
             }
         })?;
 
-        let module_out_dir = std::env::temp_dir().join(out_dir).join(name);
+        let module_out_dir = out_dir.join(name);
         std::fs::create_dir_all(&module_out_dir).map_err(|err| CompilerError::FileIOError {
             err: err.to_string(),
         })?;

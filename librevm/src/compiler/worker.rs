@@ -59,6 +59,7 @@ impl CompileWorker {
                     .leak();
                 match aot_runtime.compile(label, bytecode.as_ref()) {
                     Ok(so_path) => {
+                        tracing::info!("Compiled: bytecode hash {}", code_hash);
                         let db_write = match sled_db.write() {
                             Ok(lock) => lock,
                             Err(poisoned) => poisoned.into_inner(),
@@ -71,7 +72,7 @@ impl CompileWorker {
                             .unwrap();
                     }
                     Err(err) => {
-                        eprintln!("Failed to JIT compile: {:?}", err.to_string());
+                        tracing::error!("Compile: with bytecode hash {} {:#?}", code_hash, err);
                         return;
                     }
                 }

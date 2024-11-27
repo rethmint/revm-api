@@ -11,7 +11,6 @@ use std::{
 
 use crate::{
     compiler::{CompileWorker, KeyPrefix, SledDB, SledDBKeySlice, SledDbKey},
-    runtime::get_runtime,
     utils::ivec_to_pathbuf,
     SLED_DB,
 };
@@ -88,15 +87,19 @@ pub fn register_handler<DB: Database>(handler: &mut EvmHandler<'_, ExternalConte
                     f.call_with_interpreter_and_memory(interpreter, memory, context)
                 }));
 
-                if let Err(_err) = &res {}
+                if let Err(err) = &res {
+                    tracing::error!(
+                        "Extern Fn Call: with bytecode hash {} {:#?}",
+                        code_hash,
+                        err
+                    );
+                }
 
                 Ok(res.unwrap())
             }
             Err(err) => {
-                let runtime = get_runtime();
-                runtime.spawn(async move {});
-
-                panic!();
+                tracing::error!("Get function: with bytecode hash {} {:#?}", code_hash, err);
+                prev(frame, memory, tables, context)
             }
         }
     });

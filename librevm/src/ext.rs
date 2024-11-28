@@ -2,7 +2,6 @@ use alloy_primitives::B256;
 use revm::{handler::register::EvmHandler, Database};
 use revmc::EvmCompilerFn;
 use std::{
-    fs::File,
     panic::{self, AssertUnwindSafe},
     sync::Arc,
 };
@@ -25,27 +24,28 @@ impl ExternalContext {
         let label = code_hash.to_string();
         let so_file = aot_out_path().join(label).join("a.so");
 
-        //if let Ok(_) = File::open(&so_file) {
-        let lib;
-        let f = {
-            lib = (unsafe { libloading::Library::new(&so_file) }).map_err(|err| {
-                ExtError::LibLoadingError {
-                    err: err.to_string(),
-                }
-            })?;
-            let f: libloading::Symbol<'_, revmc::EvmCompilerFn> = unsafe {
-                lib.get(code_hash.to_string().as_ref())
-                    .map_err(|err| ExtError::GetSymbolError {
+        if so_file.is_file() {
+            let lib;
+            let f = {
+                lib = (unsafe { libloading::Library::new(&so_file) }).map_err(|err| {
+                    ExtError::LibLoadingError {
                         err: err.to_string(),
+                    }
+                })?;
+                let f: libloading::Symbol<'_, revmc::EvmCompilerFn> = unsafe {
+                    lib.get(code_hash.to_string().as_ref()).map_err(|err| {
+                        ExtError::GetSymbolError {
+                            err: err.to_string(),
+                        }
                     })?
+                };
+                *f
             };
-            *f
-        };
 
-        return Ok(Some((f, lib)));
-        //}
+            return Ok(Some((f, lib)));
+        }
 
-        //Ok(None)
+        Ok(None)
     }
 
     fn work(&mut self, code_hash: B256, bytecode: revm::primitives::Bytes) {

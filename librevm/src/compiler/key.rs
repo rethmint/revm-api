@@ -51,14 +51,12 @@ impl SledDbKey {
 
 pub enum KeyPrefix {
     Count,
-    SOPath,
 }
 
 impl KeyPrefix {
     fn as_byte(&self) -> u8 {
         match self {
             KeyPrefix::Count => 0x01,
-            KeyPrefix::SOPath => 0x02,
         }
     }
 }

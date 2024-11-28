@@ -1,6 +1,7 @@
 use std::{env, path::PathBuf, sync::Once};
 
-use chrono::Local;
+use chrono::Utc;
+use chrono_tz::Asia::Seoul;
 use once_cell::sync::OnceCell;
 use tracing_appender::{non_blocking::WorkerGuard, rolling};
 use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter, Registry};
@@ -10,7 +11,11 @@ static TRACER_GUARD: OnceCell<WorkerGuard> = OnceCell::new();
 
 fn log_path() -> PathBuf {
     let home_dir = env::var("HOME").unwrap_or_else(|_| ".".to_string());
-    let timestamp = Local::now().format("%Y-%m-%d-%H-%M-%S").to_string();
+    let timestamp = Utc::now()
+        .with_timezone(&Seoul)
+        .format("%Y-%m-%d-%H-%M-%S %z")
+        .to_string();
+
     let file = format!("{}.log", timestamp);
 
     PathBuf::from(home_dir)

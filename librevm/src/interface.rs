@@ -1,15 +1,16 @@
 use crate::{
-    compiler::{ register_handler, CompileWorker, ExternalContext, SledDB, SledDBKeySlice },
+    compiler::{ register_handler, CompileWorker, ExternalContext, SledDB },
     error::{ init_tracer, set_error },
     memory::{ ByteSliceView, UnmanagedVector },
     state::{ Db, GoStorage },
     utils::{ build_flat_buffer, set_evm_env },
 };
+use alloy_primitives::B256;
 use once_cell::sync::OnceCell;
 use revm::{ primitives::SpecId, Evm, EvmBuilder };
 use std::sync::{ Arc, RwLock };
 
-pub static SLED_DB: OnceCell<Arc<RwLock<SledDB<SledDBKeySlice>>>> = OnceCell::new();
+pub static SLED_DB: OnceCell<Arc<RwLock<SledDB<B256>>>> = OnceCell::new();
 
 #[allow(non_camel_case_types)]
 #[repr(C)]

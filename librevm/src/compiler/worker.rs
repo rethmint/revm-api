@@ -2,17 +2,17 @@ use std::sync::{ Arc, RwLock };
 
 use alloy_primitives::B256;
 
-use super::{ aot::{ AotCfg, RuntimeAot }, runtime::get_runtime, SledDB, SledDBKeySlice };
-use crate::{ compiler::SledDbKey, utils::ivec_to_u64 };
+use super::{ aot::{ AotCfg, RuntimeAot }, runtime::get_runtime, SledDB };
+use crate::utils::ivec_to_u64;
 
 pub struct CompileWorker {
     pub threshold: u64,
-    sled_db: Arc<RwLock<SledDB<SledDBKeySlice>>>,
+    sled_db: Arc<RwLock<SledDB<B256>>>,
     aot_runtime: Arc<RuntimeAot>,
 }
 
 impl CompileWorker {
-    pub fn new(threshold: u64, sled_db: Arc<RwLock<SledDB<SledDBKeySlice>>>) -> Self {
+    pub fn new(threshold: u64, sled_db: Arc<RwLock<SledDB<B256>>>) -> Self {
         Self {
             threshold,
             sled_db,
@@ -21,13 +21,12 @@ impl CompileWorker {
     }
 
     pub fn work(&mut self, code_hash: B256, bytecode: revm::primitives::Bytes) {
-        let key = SledDbKey::with_b256(code_hash);
         let count = {
             let db_read = match self.sled_db.read() {
                 Ok(lock) => lock,
                 Err(poisoned) => poisoned.into_inner(),
             };
-            let count_bytes = db_read.get(*key.as_inner()).unwrap_or(None);
+            let count_bytes = db_read.get(code_hash).unwrap_or(None);
             count_bytes.and_then(|v| ivec_to_u64(&v)).unwrap_or(0)
         };
         // 1. read bytecodeahash count from db
@@ -63,7 +62,7 @@ impl CompileWorker {
                     Ok(lock) => lock,
                     Err(poisoned) => poisoned.into_inner(),
                 };
-                db_write.put(*key.as_inner(), &new_count.to_be_bytes()).unwrap();
+                db_write.put(code_hash, &new_count.to_be_bytes()).unwrap();
             }
         });
     }

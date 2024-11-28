@@ -1,12 +1,9 @@
-use std::sync::{Arc, RwLock};
+use std::sync::{ Arc, RwLock };
 
 use alloy_primitives::B256;
 
-use super::{
-    aot::{AotCfg, RuntimeAot},
-    SledDB, SledDBKeySlice,
-};
-use crate::{compiler::SledDbKey, runtime::get_runtime, utils::ivec_to_u64};
+use super::{ aot::{ AotCfg, RuntimeAot }, runtime::get_runtime, SledDB, SledDBKeySlice };
+use crate::{ compiler::SledDbKey, utils::ivec_to_u64 };
 
 pub struct CompileWorker {
     pub threshold: u64,
@@ -66,9 +63,7 @@ impl CompileWorker {
                     Ok(lock) => lock,
                     Err(poisoned) => poisoned.into_inner(),
                 };
-                db_write
-                    .put(*key.as_inner(), &new_count.to_be_bytes())
-                    .unwrap();
+                db_write.put(*key.as_inner(), &new_count.to_be_bytes()).unwrap();
             }
         });
     }

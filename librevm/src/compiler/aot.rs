@@ -1,9 +1,10 @@
 use revm::primitives::SpecId;
 use revmc::OptimizationLevel;
-use revmc::{EvmCompiler, EvmLlvmBackend};
+use revmc::{ EvmCompiler, EvmLlvmBackend };
 
-use crate::aot_out_path;
 use crate::error::CompilerError;
+
+use super::path::aot_out_path;
 
 pub struct RuntimeAot {
     pub cfg: AotCfg,
@@ -22,16 +23,15 @@ impl RuntimeAot {
             &context,
             self.cfg.aot,
             self.cfg.opt_level,
-            &revmc::Target::Native,
-        )
-        .map_err(|err| CompilerError::BackendInitError {
+            &revmc::Target::Native
+        ).map_err(|err| CompilerError::BackendInit {
             err: err.to_string(),
         })?;
 
         let mut compiler = EvmCompiler::new(backend);
 
         let out_dir = aot_out_path();
-        std::fs::create_dir_all(&out_dir).map_err(|err| CompilerError::FileIOError {
+        std::fs::create_dir_all(&out_dir).map_err(|err| CompilerError::FileIO {
             err: err.to_string(),
         })?;
 
@@ -51,32 +51,28 @@ impl RuntimeAot {
 
         compiler.inspect_stack_length(true);
         let _f_id = compiler.translate(name, bytecode, spec_id).map_err(|err| {
-            CompilerError::BytecodeTranslationError {
+            CompilerError::BytecodeTranslation {
                 err: err.to_string(),
             }
         })?;
 
         let module_out_dir = out_dir.join(name);
-        std::fs::create_dir_all(&module_out_dir).map_err(|err| CompilerError::FileIOError {
+        std::fs::create_dir_all(&module_out_dir).map_err(|err| CompilerError::FileIO {
             err: err.to_string(),
         })?;
 
         // Compile.
         let obj = module_out_dir.join("a.o");
-        compiler
-            .write_object_to_file(&obj)
-            .map_err(|err| CompilerError::FileIOError {
-                err: err.to_string(),
-            })?;
+        compiler.write_object_to_file(&obj).map_err(|err| CompilerError::FileIO {
+            err: err.to_string(),
+        })?;
 
         // Link.
         let so_path = module_out_dir.join("a.so");
         let linker = revmc::Linker::new();
-        linker
-            .link(&so_path, [obj.to_str().unwrap()])
-            .map_err(|err| CompilerError::LinkError {
-                err: err.to_string(),
-            })?;
+        linker.link(&so_path, [obj.to_str().unwrap()]).map_err(|err| CompilerError::Link {
+            err: err.to_string(),
+        })?;
 
         Ok(())
     }

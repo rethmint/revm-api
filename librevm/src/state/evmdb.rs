@@ -78,6 +78,7 @@ pub fn compress_account_info(info: AccountInfo) -> Vec<u8> {
 
     vec
 }
+
 // return Account info with no code
 pub fn parse_account_info(value: Vec<u8>) -> AccountInfo {
     let balance_bytes: [u8; 32] = value[0..32].try_into().unwrap();

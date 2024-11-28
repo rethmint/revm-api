@@ -58,11 +58,7 @@ func ExecuteTx(
 	if err != nil && err.(syscall.Errno) != C.Success {
 		// ignore the opereation times out error
 		errno, ok := err.(syscall.Errno)
-		if ok && errno == syscall.ETIMEDOUT {
-			return copyAndDestroyUnmanagedVector(res), nil
-		}
-		// get_function checks if file exists, enoent: file not found
-		if ok && errno == syscall.ENOENT {
+		if ok && errno == syscall.ETIMEDOUT || errno == syscall.ENOENT {
 			return copyAndDestroyUnmanagedVector(res), nil
 		}
 		return nil, errorWithMessage(err, errmsg)
@@ -91,11 +87,7 @@ func QueryTx(
 	if err != nil && err.(syscall.Errno) != C.Success {
 		// ignore the operation timed out error
 		errno, ok := err.(syscall.Errno)
-		if ok && errno == syscall.ETIMEDOUT {
-			return copyAndDestroyUnmanagedVector(res), nil
-		}
-		// get_function checks if file exists, enoent: file not found
-		if ok && errno == syscall.ENOENT {
+		if ok && errno == syscall.ETIMEDOUT || errno == syscall.ENOENT{
 			return copyAndDestroyUnmanagedVector(res), nil
 		}
 		return nil, errorWithMessage(err, errmsg)

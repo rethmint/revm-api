@@ -2,15 +2,19 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum CompilerError {
-    #[error("Backend init error, err: {err}")]
-    BackendInitError { err: String },
+    #[error("Backend init error, err: {err}")] BackendInit {
+        err: String,
+    },
 
-    #[error("File I/O error, err: {err}")]
-    FileIOError { err: String },
+    #[error("File I/O error, err: {err}")] FileIO {
+        err: String,
+    },
 
-    #[error("Bytecode translation error, err: {err}")]
-    BytecodeTranslationError { err: String },
+    #[error("Bytecode translation error, err: {err}")] BytecodeTranslation {
+        err: String,
+    },
 
-    #[error("Link error, err: {err}")]
-    LinkError { err: String },
+    #[error("Link error, err: {err}")] Link {
+        err: String,
+    },
 }

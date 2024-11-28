@@ -5,8 +5,6 @@ use std::path::Path;
 use std::sync::Arc;
 use std::{env, path::PathBuf};
 
-use super::{KeyPrefix, SledDBKeySlice, SledDbKey};
-
 #[inline]
 pub fn sleddb_path() -> PathBuf {
     let home_dir = env::var("HOME").unwrap_or_else(|_| ".".to_string());
@@ -54,15 +52,6 @@ where
 
     pub fn key_iterator(&self) -> impl Iterator<Item = IVec> {
         self.db.iter().keys().filter_map(|res| res.ok())
-    }
-}
-
-impl SledDB<SledDBKeySlice> {
-    pub fn count_keys_iter(&self) -> impl Iterator<Item = SledDbKey> + '_ {
-        self.key_iterator().filter_map(|iv| {
-            let key = SledDbKey::from_ivec(iv);
-            key.match_prefix(KeyPrefix::Count).then_some(key)
-        })
     }
 }
 

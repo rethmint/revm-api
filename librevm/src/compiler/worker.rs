@@ -6,11 +6,7 @@ use super::{
     aot::{AotCfg, RuntimeAot},
     SledDB, SledDBKeySlice,
 };
-use crate::{
-    compiler::{KeyPrefix, SledDbKey},
-    runtime::get_runtime,
-    utils::ivec_to_u64,
-};
+use crate::{compiler::SledDbKey, runtime::get_runtime, utils::ivec_to_u64};
 
 pub struct CompileWorker {
     pub threshold: u64,
@@ -28,7 +24,7 @@ impl CompileWorker {
     }
 
     pub fn work(&mut self, code_hash: B256, bytecode: revm::primitives::Bytes) {
-        let key = SledDbKey::with_prefix(code_hash, KeyPrefix::Count);
+        let key = SledDbKey::with_b256(code_hash);
         let count = {
             let db_read = match self.sled_db.read() {
                 Ok(lock) => lock,

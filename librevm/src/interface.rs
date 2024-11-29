@@ -67,9 +67,6 @@ pub extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
     let go_storage = GoStorage::new(&db);
     let spec = SpecId::try_from_u8(default_spec_id).unwrap_or(SpecId::OSAKA);
     let builder = EvmBuilder::default();
-
-    init_tracer();
-
     let evm = builder.with_db(go_storage).with_spec_id(spec).build();
 
     let vm = Box::into_raw(Box::new(evm));

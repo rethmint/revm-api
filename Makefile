@@ -1,6 +1,6 @@
 .PHONY: all build build-rust build-go test precompile clean-compile-sleddb
 
-RETHMINT_DB_PATH := $(HOME)/.rethmint
+AOT_STORE_PATH := $(HOME)/.aotstore
 # Builds the Rust library librevm
 BUILDERS_PREFIX := rethmint/librevm-builder:0001
 BENCHMARK_PREFIX := rethmint/benchmark:0001
@@ -45,12 +45,12 @@ go-test:
 	go test -v -run Test_e2e_fib_eof_aot
 
 clean-compile-sleddb:
-	@echo "clean the db: $(RETHMINT_DB_PATH)"
-	@if [ -d "$(RETHMINT_DB_PATH)" ]; then \
-		rm -rf "$(RETHMINT_DB_PATH)"; \
-		echo "Directory $(RETHMINT_DB_PATH) removed successfully."; \
+	@echo "clean the db: $(AOT_STORE_PATH)"
+	@if [ -d "$(AOT_STORE_PATH)" ]; then \
+		rm -rf "$(AOT_STORE_PATH)"; \
+		echo "Directory $(AOT_STORE_PATH) removed successfully."; \
 	else \
-		echo "Directory $(RETHMINT_DB_PATH) does not exist."; \
+		echo "Directory $(AOT_STORE_PATH) does not exist."; \
 	fi
 
 # Use debug build for quick testing.

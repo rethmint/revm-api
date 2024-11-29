@@ -5,6 +5,7 @@ use crate::{
 use alloy_primitives::B256;
 use revm::primitives::SpecId;
 use revmc::EvmCompilerFn;
+use crate::{ compiler::{ path::aot_store_path, CompileWorker }, error::ExtError };
 
 pub struct ExternalContext {
     compile_worker: &'static mut CompileWorker,
@@ -20,7 +21,7 @@ impl ExternalContext {
         code_hash: B256,
     ) -> Result<Option<(EvmCompilerFn, libloading::Library)>, ExtError> {
         let label = code_hash.to_string();
-        let so_file = aot_out_path().join(label).join("a.so");
+        let so_file = aot_store_path().join(label).join("a.so");
         let exist: bool = so_file.try_exists().unwrap_or(false);
         if exist {
             let lib;

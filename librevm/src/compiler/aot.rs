@@ -4,7 +4,7 @@ use revmc::{EvmCompiler, EvmLlvmBackend};
 
 use crate::error::CompilerError;
 
-use super::path::aot_out_path;
+use super::path::aot_store_path;
 
 pub struct RuntimeAot {
     pub cfg: AotCfg,
@@ -36,7 +36,7 @@ impl RuntimeAot {
 
         let mut compiler = EvmCompiler::new(backend);
 
-        let out_dir = aot_out_path();
+        let out_dir = aot_store_path();
         std::fs::create_dir_all(&out_dir).map_err(|err| CompilerError::FileIO {
             err: err.to_string(),
         })?;

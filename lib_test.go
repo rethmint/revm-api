@@ -64,12 +64,12 @@ func setupTest(t *testing.T, aot bool, caller common.Address) (revm.VM, *testuti
 	return vm, kvStore
 }
 
-func Test_e2e_erc20_non_aot(t *testing.T) {
+func TestErc20WithoutAOT(t *testing.T) {
 	aot := false
 	Erc20CA(t, aot)
 }
 
-func Test_e2e_erc20_aot(t *testing.T) {
+func TestErc20WithAOT(t *testing.T) {
 	aot := true
 	Erc20CA(t, aot)
 }
@@ -153,12 +153,12 @@ func Erc20CA(t *testing.T, aot bool) {
 	Ca(t, ca)
 }
 
-func Test_e2e_fib_non_aot(t *testing.T) {
+func TestFibWithoutAOT(t *testing.T) {
 	aot := false
 	Fib(t, aot)
 }
 
-func Test_e2e_fib_aot(t *testing.T) {
+func TestFibWithAOT(t *testing.T) {
 	aot := true
 	Fib(t, aot)
 }

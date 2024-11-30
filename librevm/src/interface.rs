@@ -1,14 +1,14 @@
 use crate::{
-    compiler::{ register_handler, CompileWorker, ExternalContext, SledDB },
-    error::{ init_tracer, set_error },
-    memory::{ ByteSliceView, UnmanagedVector },
-    state::{ Db, GoStorage },
-    utils::{ build_flat_buffer, set_evm_env },
+    compiler::{register_handler, CompileWorker, ExternalContext, SledDB},
+    error::{init_tracer, set_error},
+    memory::{ByteSliceView, UnmanagedVector},
+    state::{Db, GoStorage},
+    utils::{build_flat_buffer, set_evm_env},
 };
 use alloy_primitives::B256;
 use once_cell::sync::OnceCell;
-use revm::{ primitives::SpecId, Evm, EvmBuilder };
-use std::sync::{ Arc, RwLock };
+use revm::{primitives::SpecId, Evm, EvmBuilder};
+use std::sync::{Arc, RwLock};
 
 pub static SLED_DB: OnceCell<Arc<RwLock<SledDB<B256>>>> = OnceCell::new();
 
@@ -65,7 +65,7 @@ pub fn to_evm<'a, EXT>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, EXT, GoStorage
 pub extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
     let db = Db::default();
     let go_storage = GoStorage::new(&db);
-    let spec = SpecId::try_from_u8(default_spec_id).unwrap_or(SpecId::CANCUN);
+    let spec = SpecId::try_from_u8(default_spec_id).unwrap_or(SpecId::OSAKA);
     let builder = EvmBuilder::default();
 
     init_tracer();
@@ -80,7 +80,7 @@ pub extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
 pub extern "C" fn init_aot_vm(default_spec_id: u8, compiler: *mut compiler_t) -> *mut evm_t {
     let db = Db::default();
     let go_storage = GoStorage::new(&db);
-    let spec = SpecId::try_from_u8(default_spec_id).unwrap_or(SpecId::CANCUN);
+    let spec = SpecId::try_from_u8(default_spec_id).unwrap_or(SpecId::OSAKA);
     let builder = EvmBuilder::default();
 
     init_tracer();
@@ -119,7 +119,7 @@ pub extern "C" fn execute_tx(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>
+    errmsg: Option<&mut UnmanagedVector>,
 ) -> UnmanagedVector {
     let data = if aot {
         execute::<ExternalContext>(vm_ptr, db, block, tx, errmsg)
@@ -137,7 +137,7 @@ pub extern "C" fn query_tx(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>
+    errmsg: Option<&mut UnmanagedVector>,
 ) -> UnmanagedVector {
     let data = if aot {
         query::<ExternalContext>(vm_ptr, db, block, tx, errmsg)
@@ -153,7 +153,7 @@ fn execute<EXT>(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>
+    errmsg: Option<&mut UnmanagedVector>,
 ) -> Vec<u8> {
     let evm = match to_evm::<EXT>(vm_ptr) {
         Some(vm) => vm,
@@ -182,7 +182,7 @@ fn query<EXT>(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>
+    errmsg: Option<&mut UnmanagedVector>,
 ) -> Vec<u8> {
     let evm = match to_evm::<EXT>(vm_ptr) {
         Some(vm) => vm,

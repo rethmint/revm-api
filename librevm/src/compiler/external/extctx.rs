@@ -1,6 +1,10 @@
+use crate::{
+    compiler::{path::aot_out_path, CompileWorker},
+    error::ExtError,
+};
 use alloy_primitives::B256;
+use revm::primitives::SpecId;
 use revmc::EvmCompilerFn;
-use crate::{ compiler::{ path::aot_out_path, CompileWorker }, error::ExtError };
 
 pub struct ExternalContext {
     compile_worker: &'static mut CompileWorker,
@@ -13,7 +17,7 @@ impl ExternalContext {
 
     pub fn get_function(
         &self,
-        code_hash: B256
+        code_hash: B256,
     ) -> Result<Option<(EvmCompilerFn, libloading::Library)>, ExtError> {
         let label = code_hash.to_string();
         let so_file = aot_out_path().join(label).join("a.so");
@@ -42,7 +46,7 @@ impl ExternalContext {
         Ok(None)
     }
 
-    pub fn work(&mut self, code_hash: B256, bytecode: revm::primitives::Bytes) {
-        self.compile_worker.work(code_hash, bytecode);
+    pub fn work(&mut self, spec_id: SpecId, code_hash: B256, bytecode: revm::primitives::Bytes) {
+        self.compile_worker.work(spec_id, code_hash, bytecode);
     }
 }

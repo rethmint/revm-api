@@ -1,9 +1,12 @@
-use alloy_primitives::{ Address, Bytes, B256, U256 };
-use revm::{ primitives::{ Account, AccountInfo, Bytecode, HashMap }, Database, DatabaseCommit };
+use alloy_primitives::{Address, Bytes, B256, U256};
+use revm::{
+    primitives::{Account, AccountInfo, Bytecode, HashMap},
+    Database, DatabaseCommit,
+};
 
 use crate::error::BackendError;
 
-use super::{ compress_account_info, parse_account_info, EvmStoreKey, GoStorage, Storage };
+use super::{compress_account_info, parse_account_info, EvmStoreKey, GoStorage, Storage};
 
 impl<'db> Database for GoStorage<'db> {
     type Error = BackendError;
@@ -68,7 +71,7 @@ impl<'a> DatabaseCommit for GoStorage<'a> {
                 let code_hash_key_slice = code_hash_key.as_slice();
                 let _ = self.set(
                     code_hash_key_slice,
-                    account.info.clone().code.unwrap().bytes_slice()
+                    account.info.clone().code.unwrap().bytes_slice(),
                 );
             }
 

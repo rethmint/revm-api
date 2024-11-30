@@ -1,6 +1,6 @@
 use revm::primitives::SpecId;
 use revmc::OptimizationLevel;
-use revmc::{ EvmCompiler, EvmLlvmBackend };
+use revmc::{EvmCompiler, EvmLlvmBackend};
 
 use crate::error::CompilerError;
 
@@ -15,7 +15,12 @@ impl RuntimeAot {
         Self { cfg }
     }
 
-    pub fn compile(&self, name: &'static str, bytecode: &[u8]) -> Result<(), CompilerError> {
+    pub fn compile(
+        &self,
+        name: &'static str,
+        bytecode: &[u8],
+        spec_id: SpecId,
+    ) -> Result<(), CompilerError> {
         let _ = color_eyre::install();
 
         let context = revmc::llvm::inkwell::context::Context::create();
@@ -23,8 +28,9 @@ impl RuntimeAot {
             &context,
             self.cfg.aot,
             self.cfg.opt_level,
-            &revmc::Target::Native
-        ).map_err(|err| CompilerError::BackendInit {
+            &revmc::Target::Native,
+        )
+        .map_err(|err| CompilerError::BackendInit {
             err: err.to_string(),
         })?;
 
@@ -47,8 +53,6 @@ impl RuntimeAot {
         compiler.set_module_name(name);
         compiler.validate_eof(true);
 
-        let spec_id = self.cfg.spec_id;
-
         compiler.inspect_stack_length(true);
         let _f_id = compiler.translate(name, bytecode, spec_id).map_err(|err| {
             CompilerError::BytecodeTranslation {
@@ -63,16 +67,20 @@ impl RuntimeAot {
 
         // Compile.
         let obj = module_out_dir.join("a.o");
-        compiler.write_object_to_file(&obj).map_err(|err| CompilerError::FileIO {
-            err: err.to_string(),
-        })?;
+        compiler
+            .write_object_to_file(&obj)
+            .map_err(|err| CompilerError::FileIO {
+                err: err.to_string(),
+            })?;
 
         // Link.
         let so_path = module_out_dir.join("a.so");
         let linker = revmc::Linker::new();
-        linker.link(&so_path, [obj.to_str().unwrap()]).map_err(|err| CompilerError::Link {
-            err: err.to_string(),
-        })?;
+        linker
+            .link(&so_path, [obj.to_str().unwrap()])
+            .map_err(|err| CompilerError::Link {
+                err: err.to_string(),
+            })?;
 
         Ok(())
     }
@@ -84,7 +92,6 @@ pub struct AotCfg {
     pub no_gas: bool,
     pub no_len_checks: bool,
     pub debug_assertions: bool,
-    pub spec_id: SpecId,
 }
 
 impl Default for AotCfg {
@@ -95,7 +102,6 @@ impl Default for AotCfg {
             no_gas: true,
             no_len_checks: true,
             debug_assertions: true,
-            spec_id: SpecId::PRAGUE,
         }
     }
 }

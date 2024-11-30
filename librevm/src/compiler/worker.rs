@@ -1,8 +1,13 @@
-use std::sync::{ Arc, RwLock };
+use std::sync::{Arc, RwLock};
 
 use alloy_primitives::B256;
+use revm::primitives::SpecId;
 
-use super::{ aot::{ AotCfg, RuntimeAot }, runtime::get_runtime, SledDB };
+use super::{
+    aot::{AotCfg, RuntimeAot},
+    runtime::get_runtime,
+    SledDB,
+};
 use crate::utils::ivec_to_u64;
 
 pub struct CompileWorker {
@@ -20,7 +25,7 @@ impl CompileWorker {
         }
     }
 
-    pub fn work(&mut self, code_hash: B256, bytecode: revm::primitives::Bytes) {
+    pub fn work(&mut self, spec_id: SpecId, code_hash: B256, bytecode: revm::primitives::Bytes) {
         let count = {
             let db_read = match self.sled_db.read() {
                 Ok(lock) => lock,
@@ -46,7 +51,7 @@ impl CompileWorker {
             if new_count == threshold {
                 // Compile the bytecode
                 let label = code_hash.to_string().leak();
-                match aot_runtime.compile(label, bytecode.as_ref()) {
+                match aot_runtime.compile(label, bytecode.as_ref(), spec_id) {
                     Ok(_) => {
                         tracing::info!("Compiled: bytecode hash {}", code_hash);
                     }

@@ -150,24 +150,36 @@ typedef struct {
   size_t len;
 } ByteSliceView;
 
+typedef struct {
+
+} compiler_t;
+
 void destroy_unmanaged_vector(UnmanagedVector v);
 
 UnmanagedVector execute_tx(evm_t *vm_ptr,
+                           bool aot,
                            Db db,
                            ByteSliceView block,
                            ByteSliceView tx,
                            UnmanagedVector *errmsg);
+
+evm_t *init_aot_vm(uint8_t default_spec_id, compiler_t *compiler);
+
+compiler_t *init_compiler(uint64_t threshold);
 
 evm_t *init_vm(uint8_t default_spec_id);
 
 UnmanagedVector new_unmanaged_vector(bool nil, const uint8_t *ptr, size_t length);
 
 UnmanagedVector query_tx(evm_t *vm_ptr,
+                         bool aot,
                          Db db,
                          ByteSliceView block,
                          ByteSliceView tx,
                          UnmanagedVector *errmsg);
 
-void release_vm(evm_t *vm);
+void release_compiler(compiler_t *compiler);
+
+void release_vm(evm_t *vm, bool aot);
 
 #endif /* __LIBREVMAPI__ */

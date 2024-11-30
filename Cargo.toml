@@ -1,10 +1,7 @@
 [workspace]
 resolver = "2"
 
-members = [
-	"librevm",
-	"types/rust",
-]
+members = ["librevm", "types/rust"]
 
 [profile.release]
 opt-level = 3
@@ -61,6 +58,18 @@ serde = { version = "1.0.188", default-features = false, features = [
 	"rc",
 ] }
 serde_json = { version = "1.0.94" }
-
-revm = "18.0.0"
-
+serde-generate = { git = "https://github.com/aptos-labs/serde-reflection", rev = "73b6bbf748334b71ff6d7d09d06a29e3062ca075" }
+serde-reflection = { git = "https://github.com/aptos-labs/serde-reflection", rev = "73b6bbf748334b71ff6d7d09d06a29e3062ca075" }
+sha2 = "0.10.8"
+sha3 = "0.10.6"
+smallvec = "1.6.1"
+tempfile = "3.2.0"
+serial_test = "1.0.0"
+tsu = "1.0.1"
+parking_lot = "0.12.1"
+base64 = "0.21.7"
+bigdecimal = "0.4"
+bech32 = "0.11"
+triomphe = "0.1.9"
+revm = { git = "https://github.com/rethmint/revm", rev = "bed7673494036cf2bb9d8353c700c0a3f94b06b5" }
+revmc = { git = "https://github.com/rethmint/revmc", rev = "213a7541919c51786227d82a880f385f51a7eee4" }

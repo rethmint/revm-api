@@ -10,10 +10,30 @@ type VM struct {
 	Inner api.VM
 }
 
+type Compiler struct {
+	Inner api.Compiler
+}
+
+func NewCompiler(threshold uint64) Compiler {
+	inner := api.InitCompiler(threshold)
+	return Compiler{inner}
+}
+
+func (compiler *Compiler) Destroy() {
+	api.ReleaseCompiler(compiler.Inner)
+}
+
 // NewVm return VM instance
 // handler
 func NewVM(SPEC_ID uint8) VM {
 	inner := api.InitVM(SPEC_ID)
+
+	return VM{inner}
+}
+
+func NewAotVM(SPEC_ID uint8, compiler Compiler) VM {
+	inner := api.InitAotVM(SPEC_ID, compiler.Inner)
+
 	return VM{inner}
 }
 

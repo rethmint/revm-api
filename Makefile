@@ -1,5 +1,6 @@
-.PHONY: all build build-rust build-go test precompile
+.PHONY: all build build-rust build-go test precompile clean-store
 
+AOT_STORE_PATH := $(HOME)/.aotstore
 # Builds the Rust library librevm
 BUILDERS_PREFIX := rethmint/librevm-builder:0001
 BENCHMARK_PREFIX := rethmint/benchmark:0001
@@ -10,8 +11,7 @@ USER_GROUP = $(shell id -g)
 SHARED_LIB_SRC = "" # File name of the shared library as created by the Rust build system
 SHARED_LIB_DST = "" # File name of the shared library that we store
 ifeq ($(OS),Windows_NT)
-	SHARED_LIB_SRC = librevmapi.dll
-	SHARED_LIB_DST = librevmapi.dll
+	# not supported
 else
 	UNAME_S := $(shell uname -s)
 	ifeq ($(UNAME_S),Linux)
@@ -24,20 +24,48 @@ else
 	endif
 endif
 
+# lint (macos)
+lint:
+	@export LLVM_SYS_180_PREFIX=$(shell brew --prefix llvm@18);\
+	cargo clippy --package revmapi --no-deps -- -D warnings
+	make fmt
+	
 fmt:
 	cargo fmt
 
 update-bindings:
 	cp librevm/bindings.h api
 
+test:
+	make build-rust-debug
+	go clean -testcache
+	go test -v -run TestEofFibWithAOT
+
+clean-store:
+	@echo "clean the db: $(AOT_STORE_PATH)"
+	@if [ -d "$(AOT_STORE_PATH)" ]; then \
+		rm -rf "$(AOT_STORE_PATH)"; \
+		echo "Directory $(AOT_STORE_PATH) removed successfully."; \
+	else \
+		echo "Directory $(AOT_STORE_PATH) does not exist."; \
+	fi
+
 # Use debug build for quick testing.
 # In order to use "--features backtraces" here we need a Rust nightly toolchain, which we don't have by default
+# build in macos to debug
 build-rust-debug:
+	@export LLVM_SYS_180_PREFIX=$(shell brew --prefix llvm@18);\
+	export LIBRARY_PATH="/opt/homebrew/lib:$LIBRARY_PATH";\
+	export LD_LIBRARY_PATH="/opt/homebrew/lib:$LD_LIBRARY_PATH";\
+	export RUST_BACKTRACE=full; \
 	cargo build
-	cp -fp target/debug/$(SHARED_LIB_SRC) api/$(SHARED_LIB_DST)
-	make update-bindings
+	@cp -fp target/debug/$(SHARED_LIB_SRC) api/$(SHARED_LIB_DST)
+	@make update-bindings
 
 build-rust-release:
+	@export LLVM_SYS_180_PREFIX=$(shell brew --prefix llvm@18);\
+	export LIBRARY_PATH="/opt/homebrew/lib:$LIBRARY_PATH";\
+	export LD_LIBRARY_PATH="/opt/homebrew/lib:$LD_LIBRARY_PATH";\
 	cargo build --release
 	rm -f api/$(SHARED_LIB_DST)
 	cp -fp target/release/$(SHARED_LIB_SRC) api/$(SHARED_LIB_DST)

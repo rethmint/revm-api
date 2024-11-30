@@ -7,10 +7,10 @@ import (
 	types "github.com/rethmint/revm-api/types/go"
 )
 
-func MockTx(caller common.Address, transactTo [20]byte, txData []byte, nonce uint64) types.TransactionEnv {
+func MockTx(caller common.Address, transactTo common.Address, txData []byte, nonce uint64) types.TransactionEnv {
 	return types.TransactionEnv{
 		Caller:         caller,
-		GasLimit:       3000000,
+		GasLimit:       300_000_000_000,
 		GasPrice:       common.BigToHash(big.NewInt(0)),
 		TransactTo:     transactTo,
 		Value:          common.BigToHash(big.NewInt(0)),
@@ -29,7 +29,7 @@ func MockBlock(num int64) types.BlockEnv {
 		Number:    common.BigToHash(big.NewInt(num)),
 		Coinbase:  common.Address{},
 		Timestamp: common.BigToHash(big.NewInt(1000000)),
-		GasLimit:  common.BigToHash(big.NewInt(10000000)),
+		GasLimit:  common.BigToHash(big.NewInt(1000_000_000_000)),
 		Basefee:   common.BigToHash(big.NewInt(0)),
 	}
 

@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	dbm "github.com/cosmos/cosmos-db"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 const KECCAK_EMPTY = "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
@@ -37,6 +38,16 @@ func (k *MockKVStore) CreateEOA(accountKey []byte) ([]byte, error) {
 	k.Set(accountKey, accountInfo.ToBytes())
 
 	return accountInfo.ToBytes(), nil
+}
+
+func (l MockKVStore) GetNonce(account common.Address) uint64 {
+	accountKey := append(AccountPrefix, account.Bytes()...)
+	accountInfo := l.Get(accountKey)
+	accInfo, err := AccountInfoFromBytes(accountInfo)
+	if err != nil {
+		panic("no account info")
+	}
+	return accInfo.Nonce
 }
 
 // Get wraps the underlying DB's Get method panicing on error.

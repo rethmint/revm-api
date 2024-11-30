@@ -3,6 +3,8 @@ mod external;
 mod path;
 mod runtime;
 mod sleddb;
+#[cfg(test)]
+mod test;
 mod worker;
 
 pub use external::*;

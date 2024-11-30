@@ -71,4 +71,8 @@ impl CompileWorker {
             }
         });
     }
+
+    pub fn aot_runtime(&self) -> &RuntimeAot {
+        &self.aot_runtime
+    }
 }

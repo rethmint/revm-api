@@ -16,12 +16,6 @@ Cargo.lock
 # MacOS
 .DS_Store
 
-# No native database
-librevm/data
-
-# No out file
-**/out/
-
 # Added by cargo
 **/target
 **/Cargo.lock

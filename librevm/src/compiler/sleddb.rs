@@ -44,10 +44,6 @@ where
     pub fn get(&self, key: K) -> Result<Option<IVec>> {
         self.db.get(key).map_err(|e| eyre::Report::new(e))
     }
-
-    pub fn key_iterator(&self) -> impl Iterator<Item = IVec> {
-        self.db.iter().keys().filter_map(|res| res.ok())
-    }
 }
 
 impl<K> Clone for SledDB<K>

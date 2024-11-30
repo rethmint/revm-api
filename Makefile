@@ -1,4 +1,4 @@
-.PHONY: all build build-rust build-go test precompile clean-compile-sleddb
+.PHONY: all build build-rust build-go test precompile clean-store
 
 AOT_STORE_PATH := $(HOME)/.aotstore
 # Builds the Rust library librevm
@@ -29,22 +29,19 @@ lint:
 	@export LLVM_SYS_180_PREFIX=$(shell brew --prefix llvm@18);\
 	cargo clippy --package revmapi --no-deps -- -D warnings
 	make fmt
+	
 fmt:
 	cargo fmt
 
 update-bindings:
 	cp librevm/bindings.h api
 
-lib-test:
+test:
 	make build-rust-debug
 	go clean -testcache
 	go test -v -run TestEofFibWithAOT
 
-go-test:
-	go clean -testcache
-	go test -v -run TestEofFibWithAOT
-
-clean-compile-sleddb:
+clean-store:
 	@echo "clean the db: $(AOT_STORE_PATH)"
 	@if [ -d "$(AOT_STORE_PATH)" ]; then \
 		rm -rf "$(AOT_STORE_PATH)"; \

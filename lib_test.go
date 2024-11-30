@@ -209,12 +209,12 @@ func Fib(t *testing.T, aot bool) {
 	Ca(t, ca)
 }
 
-func Test_e2e_fib_eof_non_aot(t *testing.T) {
+func TestEofFibWithoutAOT(t *testing.T) {
 	aot := false
 	FibEof(t, aot)
 }
 
-func Test_e2e_fib_eof_aot(t *testing.T) {
+func TestEofFibWithAOT(t *testing.T) {
 	aot := true
 	FibEof(t, aot)
 }

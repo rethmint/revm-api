@@ -1,9 +1,9 @@
-use std::{ env, path::PathBuf, sync::Once };
+use std::{env, path::PathBuf, sync::Once};
 
 use chrono::Utc;
 use once_cell::sync::OnceCell;
-use tracing_appender::{ non_blocking::WorkerGuard, rolling };
-use tracing_subscriber::{ fmt, layer::SubscriberExt, EnvFilter, Registry };
+use tracing_appender::{non_blocking::WorkerGuard, rolling};
+use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter, Registry};
 
 static TRACER_INIT: Once = Once::new();
 static TRACER_GUARD: OnceCell<WorkerGuard> = OnceCell::new();
@@ -14,7 +14,10 @@ fn log_path() -> PathBuf {
 
     let file = format!("{}.log", timestamp);
 
-    PathBuf::from(home_dir).join(".rethmint").join("log").join(file)
+    PathBuf::from(home_dir)
+        .join(".rethmint")
+        .join("log")
+        .join(file)
 }
 
 pub fn init_tracer() {
@@ -26,8 +29,7 @@ pub fn init_tracer() {
 
         let env_filter = EnvFilter::new("info");
 
-        let format = fmt
-            ::format()
+        let format = fmt::format()
             .with_level(true)
             .with_thread_ids(true)
             .with_file(true)
@@ -38,12 +40,11 @@ pub fn init_tracer() {
             .with(env_filter)
             // async dump to log
             .with(
-                fmt
-                    ::layer()
+                fmt::layer()
                     .event_format(format)
                     .with_ansi(false)
                     .with_writer(non_blocking)
-                    .with_target(false)
+                    .with_target(false),
             )
             // console
             .with(fmt::layer().with_writer(std::io::stdout));

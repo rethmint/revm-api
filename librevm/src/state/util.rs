@@ -1,5 +1,5 @@
-use alloy_primitives::{ B256, U256 };
-use revm::primitives::{ AccountInfo, Bytecode };
+use alloy_primitives::{B256, U256};
+use revm::primitives::{AccountInfo, Bytecode};
 
 // compress account info data with bigedien order, not included bytecode
 pub fn compress_account_info(info: AccountInfo) -> Vec<u8> {

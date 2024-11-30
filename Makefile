@@ -28,7 +28,7 @@ endif
 lint:
 	@export LLVM_SYS_180_PREFIX=$(shell brew --prefix llvm@18);\
 	cargo clippy --package revmapi --no-deps -- -D warnings
-	
+	make fmt
 fmt:
 	cargo fmt
 
@@ -38,11 +38,11 @@ update-bindings:
 lib-test:
 	make build-rust-debug
 	go clean -testcache
-	go test -v -run Test_e2e_fib_eof_aot
+	go test -v -run TestEofFibWithAOT
 
 go-test:
 	go clean -testcache
-	go test -v -run Test_e2e_fib_eof_aot
+	go test -v -run TestEofFibWithAOT
 
 clean-compile-sleddb:
 	@echo "clean the db: $(AOT_STORE_PATH)"

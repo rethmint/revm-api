@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 
-members = ["librevm", "types/rust"]
+members = ["revmcd", "librevm", "types/rust"]
 
 [profile.release]
 opt-level = 3

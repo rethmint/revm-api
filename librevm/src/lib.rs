@@ -1,4 +1,4 @@
-mod compiler;
+pub mod compiler;
 mod error;
 mod interface;
 mod memory;

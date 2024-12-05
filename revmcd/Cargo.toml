@@ -1,0 +1,17 @@
+[package]
+name = "revmcd"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+keywords.workspace = true
+license.workspace = true
+license-file.workspace = true
+readme.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+clap = { version = "4.5.22", features = ["derive"] }
+revmffi = { path = "../librevm" }
+revm = { workspace = true }
+revmc = { workspace = true }

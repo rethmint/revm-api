@@ -1,5 +1,5 @@
 [package]
-name = "revmapi"
+name = "revmffi"
 version = "0.0.1"
 publish = false
 description = "Revm Engine FFI API"

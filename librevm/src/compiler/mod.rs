@@ -7,6 +7,7 @@ mod sleddb;
 mod test;
 mod worker;
 
+pub use aot::*;
 pub use external::*;
 pub use sleddb::*;
 pub use worker::*;

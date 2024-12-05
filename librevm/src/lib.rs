@@ -2,7 +2,7 @@ mod compiler;
 mod error;
 mod interface;
 mod memory;
-mod state;
+mod states;
 mod utils;
 
 pub use interface::*;

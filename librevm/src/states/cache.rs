@@ -1,12 +1,9 @@
-use alloy_primitives::{Address, Bytes, B256, U256};
-use revm::{
-    primitives::{Account, AccountInfo, Bytecode, HashMap},
-    Database, DatabaseCommit,
-};
+use alloy_primitives::{ Address, Bytes, B256, U256 };
+use revm::{ primitives::{ Account, AccountInfo, Bytecode, HashMap }, Database, DatabaseCommit };
 
 use crate::error::BackendError;
 
-use super::{compress_account_info, parse_account_info, EvmStoreKey, GoStorage, Storage};
+use super::{ compress_account_info, parse_account_info, EvmStoreKey, GoStorage, Storage };
 
 impl<'db> Database for GoStorage<'db> {
     type Error = BackendError;
@@ -53,43 +50,35 @@ impl<'db> Database for GoStorage<'db> {
 // COMM: cold , selfdestructed , LoadedAsNotExisting are not supported
 impl<'a> DatabaseCommit for GoStorage<'a> {
     fn commit(&mut self, changes: HashMap<Address, Account>) {
-        for (address, account) in changes.iter() {
+        for (address, mut account) in changes {
             if !account.is_touched() {
-                // filter Loaded
+                continue;
+            }
+            if account.is_selfdestructed() {
+                let db_account = self.accounts.entry(address).or_default();
+                db_account.storage.clear();
+                db_account.account_state = AccountState::NotExisting;
+                db_account.info = AccountInfo::default();
                 continue;
             }
             let is_newly_created = account.is_created();
-            // account info update
-            let account_key = EvmStoreKey::Account(*address).key();
-            let account_key_slice = account_key.as_slice();
+            self.insert_contract(&mut account.info);
 
-            let account_info_vec: Vec<u8> = compress_account_info(account.info.clone());
-            self.set(account_key_slice, &account_info_vec).unwrap();
+            let db_account = self.accounts.entry(address).or_default();
+            db_account.info = account.info;
 
-            if is_newly_created && !account.info.is_empty_code_hash() {
-                let code_hash_key = EvmStoreKey::Code(account.info.code_hash()).key();
-                let code_hash_key_slice = code_hash_key.as_slice();
-                let _ = self.set(
-                    code_hash_key_slice,
-                    account.info.clone().code.unwrap().bytes_slice(),
-                );
-            }
-
-            // storage cache commit on value changed
-            let storage = account.storage.clone();
-            for (index, slot) in storage {
-                if slot.present_value == slot.original_value {
-                    continue;
-                }
-                let storage_key = EvmStoreKey::Storage(*address, index).key();
-                let storage_key_slice = storage_key.as_slice();
-
-                let mut vec = Vec::with_capacity(72);
-                let slot_present_value_vec = slot.present_value.to_be_bytes_vec();
-                vec.extend(&slot_present_value_vec);
-
-                self.set(storage_key_slice, &vec).unwrap();
-            }
+            db_account.account_state = if is_newly_created {
+                db_account.storage.clear();
+                AccountState::StorageCleared
+            } else if db_account.account_state.is_storage_cleared() {
+                // Preserve old account state if it already exists
+                AccountState::StorageCleared
+            } else {
+                AccountState::Touched
+            };
+            db_account.storage.extend(
+                account.storage.into_iter().map(|(key, value)| (key, value.present_value()))
+            );
         }
     }
 }

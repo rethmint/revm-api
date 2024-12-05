@@ -1,10 +1,11 @@
-mod db;
-mod evmkey;
+mod godb;
+mod cachedb;
 mod gstorage;
-mod statedb;
+mod cache;
 mod util;
+mod evmkey;
 
-pub use db::*;
+pub use godb::*;
 pub use evmkey::*;
 pub use gstorage::*;
 pub use util::*;

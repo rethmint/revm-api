@@ -6,7 +6,7 @@ use revm::{
     Evm,
 };
 
-use crate::{memory::ByteSliceView, state::GoStorage};
+use crate::{memory::ByteSliceView, states::GoStorage};
 
 pub fn set_evm_env<EXT>(evm: &mut Evm<EXT, GoStorage>, block: ByteSliceView, tx: ByteSliceView) {
     let block_bytes = block.read().unwrap();

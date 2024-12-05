@@ -2,7 +2,7 @@ use crate::{
     compiler::{register_handler, CompileWorker, ExternalContext, SledDB},
     error::{init_tracer, set_error},
     memory::{ByteSliceView, UnmanagedVector},
-    state::{Db, GoStorage},
+    states::{Db, GoStorage},
     utils::{build_flat_buffer, set_evm_env},
 };
 use alloy_primitives::B256;

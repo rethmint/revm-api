@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand, ValueEnum};
 use revm::primitives::{hex, Bytecode, Bytes, SpecId};
-use revmffi::compiler::RuntimeAot;
+use revmapi::compiler::RuntimeAot;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]

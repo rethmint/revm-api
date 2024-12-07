@@ -1,14 +1,14 @@
 use crate::{
-    compiler::{register_handler, CompileWorker, ExternalContext, SledDB},
-    error::{init_tracer, set_error},
-    memory::{ByteSliceView, UnmanagedVector},
-    states::{Db, GoStorage},
-    utils::{build_flat_buffer, set_evm_env},
+    compiler::{ register_handler, CompileWorker, ExternalContext, SledDB },
+    error::{ init_tracer, set_error },
+    memory::{ ByteSliceView, UnmanagedVector },
+    states::{ Db, GoCacheDB },
+    utils::{ build_flat_buffer, set_evm_env },
 };
 use alloy_primitives::B256;
 use once_cell::sync::OnceCell;
-use revm::{primitives::SpecId, Evm, EvmBuilder};
-use std::sync::{Arc, RwLock};
+use revm::{ primitives::SpecId, Evm, EvmBuilder };
+use std::sync::{ Arc, RwLock };
 
 pub static SLED_DB: OnceCell<Arc<RwLock<SledDB<B256>>>> = OnceCell::new();
 
@@ -50,11 +50,11 @@ pub extern "C" fn release_compiler(compiler: *mut compiler_t) {
 #[repr(C)]
 pub struct evm_t {}
 
-pub fn to_evm<'a, EXT>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, EXT, GoStorage<'a>>> {
+pub fn to_evm<'a, EXT>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, EXT, GoCacheDB<'a>>> {
     if ptr.is_null() {
         None
     } else {
-        let evm = unsafe { &mut *(ptr as *mut Evm<'a, EXT, GoStorage<'a>>) };
+        let evm = unsafe { &mut *(ptr as *mut Evm<'a, EXT, GoCacheDB<'a>>) };
         Some(evm)
     }
 }
@@ -62,9 +62,9 @@ pub fn to_evm<'a, EXT>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, EXT, GoStorage
 // initialize vm instance with handler
 // if aot mark is true, initialize compiler
 #[no_mangle]
-pub extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
+pub extern "C" fn create_vm(default_spec_id: u8) -> *mut evm_t {
     let db = Db::default();
-    let go_storage = GoStorage::new(&db);
+    let go_storage = GoCacheDB::new(&db);
     let spec = SpecId::try_from_u8(default_spec_id).unwrap_or(SpecId::OSAKA);
     let builder = EvmBuilder::default();
     let evm = builder.with_db(go_storage).with_spec_id(spec).build();
@@ -74,9 +74,9 @@ pub extern "C" fn init_vm(default_spec_id: u8) -> *mut evm_t {
 }
 
 #[no_mangle]
-pub extern "C" fn init_aot_vm(default_spec_id: u8, compiler: *mut compiler_t) -> *mut evm_t {
+pub extern "C" fn create_vm_with_compiler(default_spec_id: u8, compiler: *mut compiler_t) -> *mut evm_t {
     let db = Db::default();
-    let go_storage = GoStorage::new(&db);
+    let go_storage = GoCacheDB::new(&db);
     let spec = SpecId::try_from_u8(default_spec_id).unwrap_or(SpecId::OSAKA);
     let builder = EvmBuilder::default();
 
@@ -102,9 +102,9 @@ pub extern "C" fn release_vm(vm: *mut evm_t, aot: bool) {
     if !vm.is_null() {
         // this will free cache when it goes out of scope
         if aot {
-            let _ = unsafe { Box::from_raw(vm as *mut Evm<ExternalContext, GoStorage>) };
+            let _ = unsafe { Box::from_raw(vm as *mut Evm<ExternalContext, GoCacheDB>) };
         } else {
-            let _ = unsafe { Box::from_raw(vm as *mut Evm<(), GoStorage>) };
+            let _ = unsafe { Box::from_raw(vm as *mut Evm<(), GoCacheDB>) };
         }
     }
 }
@@ -116,7 +116,7 @@ pub extern "C" fn execute_tx(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>,
+    errmsg: Option<&mut UnmanagedVector>
 ) -> UnmanagedVector {
     let data = if aot {
         execute::<ExternalContext>(vm_ptr, db, block, tx, errmsg)
@@ -134,7 +134,7 @@ pub extern "C" fn query_tx(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>,
+    errmsg: Option<&mut UnmanagedVector>
 ) -> UnmanagedVector {
     let data = if aot {
         query::<ExternalContext>(vm_ptr, db, block, tx, errmsg)
@@ -150,7 +150,7 @@ fn execute<EXT>(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>,
+    errmsg: Option<&mut UnmanagedVector>
 ) -> Vec<u8> {
     let evm = match to_evm::<EXT>(vm_ptr) {
         Some(vm) => vm,
@@ -159,7 +159,7 @@ fn execute<EXT>(
         }
     };
 
-    let go_storage = GoStorage::new(&db);
+    let go_storage = GoCacheDB::new(&db);
     evm.context.evm.db = go_storage;
 
     set_evm_env(evm, block, tx);
@@ -179,7 +179,7 @@ fn query<EXT>(
     db: Db,
     block: ByteSliceView,
     tx: ByteSliceView,
-    errmsg: Option<&mut UnmanagedVector>,
+    errmsg: Option<&mut UnmanagedVector>
 ) -> Vec<u8> {
     let evm = match to_evm::<EXT>(vm_ptr) {
         Some(vm) => vm,
@@ -187,7 +187,7 @@ fn query<EXT>(
             panic!("Failed to get VM");
         }
     };
-    let go_storage = GoStorage::new(&db);
+    let go_storage = GoCacheDB::new(&db);
     evm.context.evm.db = go_storage;
 
     set_evm_env(evm, block, tx);

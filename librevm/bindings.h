@@ -56,6 +56,14 @@ enum GoError {
 };
 typedef int32_t GoError;
 
+typedef struct {
+
+} evm_t;
+
+typedef struct {
+
+} compiler_t;
+
 /**
  * An optional Vector type that requires explicit creation and destruction
  * and can be sent via FFI.
@@ -102,10 +110,6 @@ typedef struct {
 } UnmanagedVector;
 
 typedef struct {
-
-} evm_t;
-
-typedef struct {
   uint8_t _private[0];
 } db_t;
 
@@ -124,9 +128,205 @@ typedef struct {
 } U8SliceView;
 
 typedef struct {
-  int32_t (*read_db)(db_t*, U8SliceView, UnmanagedVector*, UnmanagedVector*);
-  int32_t (*write_db)(db_t*, U8SliceView, U8SliceView, UnmanagedVector*);
-  int32_t (*remove_db)(db_t*, U8SliceView, UnmanagedVector*);
+  /**
+   * Retrieves the storage root for a given address.
+   *
+   * # Parameters
+   * - `db_t`: A mutable pointer to the database.
+   * - `U8SliceView`: The address for which the storage root is being retrieved.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where the result will be stored.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where any error message will be stored.
+   *
+   * # Returns
+   * - `i32`: Status code indicating success or failure.
+   */
+  int32_t (*get_storage_root)(db_t*, U8SliceView, UnmanagedVector*, UnmanagedVector*);
+  /**
+   * Retrieves the code for a given address.
+   *
+   * # Parameters
+   * - `db_t`: A mutable pointer to the database.
+   * - `U8SliceView`: The address for which the code is being retrieved.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where the result will be stored.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where any error message will be stored.
+   *
+   * # Returns
+   * - `i32`: Status code indicating success or failure.
+   */
+  int32_t (*get_code)(db_t*, U8SliceView, UnmanagedVector*, UnmanagedVector*);
+  /**
+   * Retrieves the code hash for a given address.
+   *
+   * # Parameters
+   * - `db_t`: A mutable pointer to the database.
+   * - `U8SliceView`: The address for which the code hash is being retrieved.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where the result will be stored.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where any error message will be stored.
+   *
+   * # Returns
+   * - `i32`: Status code indicating success or failure.
+   */
+  int32_t (*get_code_hash)(db_t*, U8SliceView, UnmanagedVector*, UnmanagedVector*);
+  /**
+   * Retrieves the state for a given address and slot hash.
+   *
+   * # Parameters
+   * - `db_t`: A mutable pointer to the database.
+   * - `U8SliceView`: The address for which the state is being retrieved.
+   * - `U8SliceView`: The slot hash for which the state is being retrieved.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where the result will be stored.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where any error message will be stored.
+   *
+   * # Returns
+   * - `i32`: Status code indicating success or failure.
+   */
+  int32_t (*get_state)(db_t*, U8SliceView, U8SliceView, UnmanagedVector*, UnmanagedVector*);
+  /**
+   * Retrieves the balance for a given address.
+   *
+   * # Parameters
+   * - `db_t`: A mutable pointer to the database.
+   * - `U8SliceView`: The address for which the balance is being retrieved.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where the result will be stored.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where any error message will be stored.
+   *
+   * # Returns
+   * - `i32`: Status code indicating success or failure.
+   */
+  int32_t (*get_balance)(db_t*, U8SliceView, UnmanagedVector*, UnmanagedVector*);
+  /**
+   * Retrieves the nonce for a given address.
+   *
+   * # Parameters
+   * - `db_t`: A mutable pointer to the database.
+   * - `U8SliceView`: The address for which the nonce is being retrieved.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where the result will be stored.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where any error message will be stored.
+   *
+   * # Returns
+   * - `i32`: Status code indicating success or failure.
+   */
+  int32_t (*get_nonce)(db_t*, U8SliceView, UnmanagedVector*, UnmanagedVector*);
+  /**
+   * Adds balance to a given address.
+   *
+   * # Parameters
+   * - `db_t`: A mutable pointer to the database.
+   * - `U8SliceView`: The address to which the balance is being added.
+   * - `U8SliceView`: The amount of balance to add.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where any error message will be stored.
+   *
+   * # Returns
+   * - `i32`: Status code indicating success or failure.
+   */
+  int32_t (*add_balance)(db_t*, U8SliceView, U8SliceView, UnmanagedVector*);
+  /**
+   * Subtracts balance from a given address.
+   *
+   * # Parameters
+   * - `db_t`: A mutable pointer to the database.
+   * - `U8SliceView`: The address from which the balance is being subtracted.
+   * - `U8SliceView`: The amount of balance to subtract.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where any error message will be stored.
+   *
+   * # Returns
+   * - `i32`: Status code indicating success or failure.
+   */
+  int32_t (*sub_balance)(db_t*, U8SliceView, U8SliceView, UnmanagedVector*);
+  /**
+   * Sets the balance for a given address.
+   *
+   * # Parameters
+   * - `db_t`: A mutable pointer to the database.
+   * - `U8SliceView`: The address for which the balance is being set.
+   * - `U8SliceView`: The balance to set.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where any error message will be stored.
+   *
+   * # Returns
+   * - `i32`: Status code indicating success or failure.
+   */
+  int32_t (*set_balance)(db_t*, U8SliceView, U8SliceView, UnmanagedVector*);
+  /**
+   * Sets the nonce for a given address.
+   *
+   * # Parameters
+   * - `db_t`: A mutable pointer to the database.
+   * - `U8SliceView`: The address for which the nonce is being set.
+   * - `u64`: The nonce to set.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where any error message will be stored.
+   *
+   * # Returns
+   * - `i32`: Status code indicating success or failure.
+   */
+  int32_t (*set_nonce)(db_t*, U8SliceView, uint64_t, UnmanagedVector*);
+  /**
+   * Sets the code for a given address.
+   *
+   * # Parameters
+   * - `db_t`: A mutable pointer to the database.
+   * - `U8SliceView`: The address for which the code is being set.
+   * - `U8SliceView`: The code to set.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where any error message will be stored.
+   *
+   * # Returns
+   * - `i32`: Status code indicating success or failure.
+   */
+  int32_t (*set_code)(db_t*, U8SliceView, U8SliceView, UnmanagedVector*);
+  /**
+   * Sets the state for a given address and slot hash.
+   *
+   * # Parameters
+   * - `db_t`: A mutable pointer to the database.
+   * - `U8SliceView`: The address for which the state is being set.
+   * - `U8SliceView`: The slot hash for which the state is being set.
+   * - `U8SliceView`: The value to set.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where any error message will be stored.
+   *
+   * # Returns
+   * - `i32`: Status code indicating success or failure.
+   */
+  int32_t (*set_state)(db_t*, U8SliceView, U8SliceView, U8SliceView, UnmanagedVector*);
+  /**
+   * Sets the storage for a given address.
+   *
+   * # Parameters
+   * - `db_t`: A mutable pointer to the database.
+   * - `U8SliceView`: The address for which the storage is being set.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where the storage input will be stored.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where any error message will be stored.
+   *
+   * # Returns
+   * - `i32`: Status code indicating success or failure.
+   */
+  int32_t (*set_storage)(db_t*, U8SliceView, UnmanagedVector*, UnmanagedVector*);
+  /**
+   * Marks the given account as selfdestructed.
+   *
+   * This clears the account balance. The account's state object is still available until the state is committed,
+   * getStateObject will return a non-nil account after SelfDestruct.
+   *
+   * # Parameters
+   * - `db_t`: A mutable pointer to the database.
+   * - `U8SliceView`: The address of the account to selfdestruct.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where any error message will be stored.
+   *
+   * # Returns
+   * - `i32`: Status code indicating success or failure.
+   */
+  int32_t (*self_destruct)(db_t*, U8SliceView, UnmanagedVector*);
+  /**
+   * Commits the state mutations into the configured data stores.
+   *
+   * # Parameters
+   * - `db_t`: A mutable pointer to the database.
+   * - `u64`: The block number associated with the state transition.
+   * - `bool`: Flag indicating whether to delete empty objects.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where any error message will be stored.
+   *
+   * # Returns
+   * - `i32`: Status code indicating success or failure.
+   */
+  int32_t (*commit)(db_t*, uint64_t, bool, UnmanagedVector*);
 } Db_vtable;
 
 typedef struct {
@@ -150,9 +350,9 @@ typedef struct {
   size_t len;
 } ByteSliceView;
 
-typedef struct {
+evm_t *create_vm(uint8_t default_spec_id);
 
-} compiler_t;
+evm_t *create_vm_with_compiler(uint8_t default_spec_id, compiler_t *compiler);
 
 void destroy_unmanaged_vector(UnmanagedVector v);
 
@@ -163,11 +363,7 @@ UnmanagedVector execute_tx(evm_t *vm_ptr,
                            ByteSliceView tx,
                            UnmanagedVector *errmsg);
 
-evm_t *init_aot_vm(uint8_t default_spec_id, compiler_t *compiler);
-
 compiler_t *init_compiler(uint64_t threshold);
-
-evm_t *init_vm(uint8_t default_spec_id);
 
 UnmanagedVector new_unmanaged_vector(bool nil, const uint8_t *ptr, size_t length);
 

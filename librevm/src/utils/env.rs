@@ -1,14 +1,14 @@
-use alloy_primitives::{Address, Bytes, FixedBytes, TxKind, B256, U256};
-use flatbuffer_types::{block::Block, transaction::Transaction};
+use alloy_primitives::{ Address, Bytes, FixedBytes, TxKind, B256, U256 };
+use flatbuffer_types::{ block::Block, transaction::Transaction };
 
 use revm::{
-    primitives::{AccessList, AccessListItem, BlobExcessGasAndPrice, BlockEnv, TxEnv},
+    primitives::{ AccessList, AccessListItem, BlobExcessGasAndPrice, BlockEnv, TxEnv },
     Evm,
 };
 
-use crate::{memory::ByteSliceView, states::GoStorage};
+use crate::{ memory::ByteSliceView, states::GoCacheDB };
 
-pub fn set_evm_env<EXT>(evm: &mut Evm<EXT, GoStorage>, block: ByteSliceView, tx: ByteSliceView) {
+pub fn set_evm_env<EXT>(evm: &mut Evm<EXT, GoCacheDB>, block: ByteSliceView, tx: ByteSliceView) {
     let block_bytes = block.read().unwrap();
     let block = flatbuffers::root::<Block>(block_bytes).unwrap();
     let block_env = BlockEnv {
@@ -39,7 +39,8 @@ pub fn set_evm_env<EXT>(evm: &mut Evm<EXT, GoStorage>, block: ByteSliceView, tx:
         },
         nonce: Some(tx.nonce()),
         access_list: AccessList::from(
-            tx.access_list()
+            tx
+                .access_list()
                 .unwrap()
                 .into_iter()
                 .filter_map(|al| {
@@ -55,9 +56,8 @@ pub fn set_evm_env<EXT>(evm: &mut Evm<EXT, GoStorage>, block: ByteSliceView, tx:
                         })
                     })
                 })
-                .collect::<Vec<AccessListItem>>(),
-        )
-        .to_vec(),
+                .collect::<Vec<AccessListItem>>()
+        ).to_vec(),
         blob_hashes: Vec::new(),
         max_fee_per_blob_gas: None,
         authorization_list: None,

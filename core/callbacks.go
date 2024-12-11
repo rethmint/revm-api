@@ -1,4 +1,4 @@
-package api
+package core
 
 // Check https://akrennmair.github.io/golang-cgo-slides/ to learn
 // how this embedded C code works.

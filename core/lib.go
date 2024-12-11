@@ -1,4 +1,4 @@
-package api
+package core
 
 // #include <stdlib.h>
 // #include "bindings.h"

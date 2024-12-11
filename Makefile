@@ -59,7 +59,7 @@ build-rust-debug:
 	export LD_LIBRARY_PATH="/opt/homebrew/lib:$LD_LIBRARY_PATH";\
 	export RUST_BACKTRACE=full; \
 	cargo build
-	@cp -fp target/debug/$(SHARED_LIB_SRC) api/$(SHARED_LIB_DST)
+	@cp -fp target/debug/$(SHARED_LIB_SRC) core/$(SHARED_LIB_DST)
 	@make update-bindings
 
 build-rust-release:
@@ -67,16 +67,16 @@ build-rust-release:
 	export LIBRARY_PATH="/opt/homebrew/lib:$LIBRARY_PATH";\
 	export LD_LIBRARY_PATH="/opt/homebrew/lib:$LD_LIBRARY_PATH";\
 	cargo build --release
-	rm -f api/$(SHARED_LIB_DST)
-	cp -fp target/release/$(SHARED_LIB_SRC) api/$(SHARED_LIB_DST)
+	rm -f core/$(SHARED_LIB_DST)
+	cp -fp target/release/$(SHARED_LIB_SRC) core/$(SHARED_LIB_DST)
 	make update-bindings
 	@ #this pulls out ELF symbols, 80% size reduction!
 
 clean:
 	cargo clean
-	@-rm api/bindings.h
+	@-rm core/bindings.h
 	@-rm librevm/bindings.h
-	@-rm api/$(SHARED_LIB_DST)
+	@-rm core/$(SHARED_LIB_DST)
 	@echo cleaned.
 
 # Creates a release build in a containerized build environment of the shared library for glibc Linux (.so)
@@ -102,9 +102,8 @@ release-build:
 	make release-build-linux
 	make release-build-macos
 
-flatbuffer-gen:
-	@bash ./scripts/flatbuffer-gen.sh
-	cargo fix --allow-dirty
+protobuf-gen:
+	@bash ./scripts/protobufgen.sh
 	
 contracts-gen:
 	@bash ./scripts/contractsgen.sh

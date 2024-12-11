@@ -1,4 +1,4 @@
-package api
+package core
 
 // #include <stdlib.h>
 // #include "bindings.h"
@@ -8,42 +8,43 @@ import (
 	"runtime"
 	"syscall"
 
-	types "github.com/rethmint/revm-api/types/go"
+	"github.com/0xEyrie/revmc-ffi/state"
+	"github.com/initia-labs/movevm/types"
 )
 
-type VM struct {
+type EVM struct {
 	evm_ptr *C.evm_t
 	aot     bool
 }
 
-// ReleaseVM call ffi(`release_vm`) to release vm instance
-func ReleaseVM(vm VM) {
-	C.release_vm(vm.evm_ptr, C.bool(vm.aot))
+// DestroyVM call ffi(`release_vm`) to release vm instance
+func DestroyVM(vm EVM) {
+	C.destory_vm(vm.evm_ptr, C.bool(vm.aot))
 }
 
-// InitVM call ffi(`init_vm`) to initialize vm instance
-func InitVM(SPEC_ID uint8) VM {
-	return VM{
-		evm_ptr: C.init_vm(cu8(SPEC_ID)),
+// NewVM call ffi(`init_vm`) to initialize vm instance
+func NewVM(SPEC_ID uint8) EVM {
+	return EVM{
+		evm_ptr: C.new_vm(cu8(SPEC_ID)),
 		aot:     false,
 	}
 }
 
-// InitAotVM call ffi(`init_aot_vm`) to initialize vm instance
-func InitAotVM(SPEC_ID uint8, compiler Compiler) VM {
-	return VM{
-		evm_ptr: C.init_aot_vm(cu8(SPEC_ID), compiler.ptr),
+// NewVMWithCompiler call ffi(`init_aot_vm`) to initialize vm instance
+func NewVMWithCompiler(SPEC_ID uint8, compiler Compiler) EVM {
+	return EVM{
+		evm_ptr: C.new_vm_with_compiler(cu8(SPEC_ID), compiler.ptr),
 		aot:     true,
 	}
 }
 
 // ExecuteTx call ffi(`execute_tx`) to execute
 func ExecuteTx(
-	vm VM,
-	store KVStore,
+	vm EVM,
+	store state.StateDB,
 	block *[]byte,
 	tx *[]byte,
-) (types.ExecutionResult, error) {
+) (interface{}, error) {
 	var err error
 
 	dbState := buildDBState(store)
@@ -68,8 +69,8 @@ func ExecuteTx(
 }
 
 func QueryTx(
-	vm VM,
-	store KVStore,
+	vm EVM,
+	store state.StateDB,
 	block *[]byte,
 	tx *[]byte,
 ) (types.ExecutionResult, error) {
@@ -87,7 +88,7 @@ func QueryTx(
 	if err != nil && err.(syscall.Errno) != C.Success {
 		// ignore the operation timed out error
 		errno, ok := err.(syscall.Errno)
-		if ok && errno == syscall.ETIMEDOUT || errno == syscall.ENOENT{
+		if ok && errno == syscall.ETIMEDOUT || errno == syscall.ENOENT {
 			return copyAndDestroyUnmanagedVector(res), nil
 		}
 		return nil, errorWithMessage(err, errmsg)
@@ -101,11 +102,11 @@ type Compiler struct {
 }
 
 func ReleaseCompiler(compiler Compiler) {
-	C.release_compiler(compiler.ptr)
+	C.free_compiler(compiler.ptr)
 }
 
 func InitCompiler(threshold uint64) Compiler {
 	return Compiler{
-		ptr: C.init_compiler(C.uint64_t(threshold)),
+		ptr: C.new_compiler(C.uint64_t(threshold)),
 	}
 }

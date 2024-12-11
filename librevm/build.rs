@@ -11,6 +11,7 @@ fn main() {
                 "../proto/evm/v1/transaction.proto",
                 "../proto/evm/v1/block.proto",
                 "../proto/evm/v1/result.proto",
+                "../proto/evm/v1/account.proto",
             ],
             &["../proto/evm/v1/"]
         )

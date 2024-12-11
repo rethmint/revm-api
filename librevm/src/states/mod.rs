@@ -1,6 +1,5 @@
 mod cachedb;
-mod setter;
-mod getter;
+mod statedb;
 mod vtable;
 
 pub use cachedb::*;

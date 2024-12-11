@@ -26,7 +26,7 @@ pub fn to_compiler(ptr: *mut compiler_t) -> Option<&'static mut CompileWorker> {
 }
 
 #[no_mangle]
-pub extern "C" fn init_compiler(threshold: u64) -> *mut compiler_t {
+pub extern "C" fn new_compiler(threshold: u64) -> *mut compiler_t {
     let rt = tokio::runtime::Runtime::new().unwrap();
     rt.block_on(async {
         let sled_db = SLED_DB.get_or_init(|| Arc::new(RwLock::new(SledDB::init())));
@@ -37,7 +37,7 @@ pub extern "C" fn init_compiler(threshold: u64) -> *mut compiler_t {
 }
 
 #[no_mangle]
-pub extern "C" fn release_compiler(compiler: *mut compiler_t) {
+pub extern "C" fn free_compiler(compiler: *mut compiler_t) {
     if !compiler.is_null() {
         // this will free cache when it goes out of scope
         let _ = unsafe { Box::from_raw(compiler as *mut CompileWorker) };
@@ -62,7 +62,7 @@ pub fn to_evm<'a, EXT>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, EXT, GoCacheDB
 // initialize vm instance with handler
 // if aot mark is true, initialize compiler
 #[no_mangle]
-pub extern "C" fn create_vm(default_spec_id: u8) -> *mut evm_t {
+pub extern "C" fn new_vm(default_spec_id: u8) -> *mut evm_t {
     let db = Db::default();
     let go_storage = GoCacheDB::new(&db);
     let spec = SpecId::try_from_u8(default_spec_id).unwrap_or(SpecId::OSAKA);
@@ -74,7 +74,10 @@ pub extern "C" fn create_vm(default_spec_id: u8) -> *mut evm_t {
 }
 
 #[no_mangle]
-pub extern "C" fn create_vm_with_compiler(default_spec_id: u8, compiler: *mut compiler_t) -> *mut evm_t {
+pub extern "C" fn new_vm_with_compiler(
+    default_spec_id: u8,
+    compiler: *mut compiler_t
+) -> *mut evm_t {
     let db = Db::default();
     let go_storage = GoCacheDB::new(&db);
     let spec = SpecId::try_from_u8(default_spec_id).unwrap_or(SpecId::OSAKA);
@@ -98,7 +101,7 @@ pub extern "C" fn create_vm_with_compiler(default_spec_id: u8, compiler: *mut co
 }
 
 #[no_mangle]
-pub extern "C" fn release_vm(vm: *mut evm_t, aot: bool) {
+pub extern "C" fn free_vm(vm: *mut evm_t, aot: bool) {
     if !vm.is_null() {
         // this will free cache when it goes out of scope
         if aot {
@@ -128,7 +131,7 @@ pub extern "C" fn execute_tx(
 }
 
 #[no_mangle]
-pub extern "C" fn query_tx(
+pub extern "C" fn simulate_tx(
     vm_ptr: *mut evm_t,
     aot: bool,
     db: Db,
@@ -137,9 +140,9 @@ pub extern "C" fn query_tx(
     errmsg: Option<&mut UnmanagedVector>
 ) -> UnmanagedVector {
     let data = if aot {
-        query::<ExternalContext>(vm_ptr, db, block, tx, errmsg)
+        simulate::<ExternalContext>(vm_ptr, db, block, tx, errmsg)
     } else {
-        query::<()>(vm_ptr, db, block, tx, errmsg)
+        simulate::<()>(vm_ptr, db, block, tx, errmsg)
     };
 
     UnmanagedVector::new(Some(data))
@@ -174,7 +177,7 @@ fn execute<EXT>(
     }
 }
 
-fn query<EXT>(
+fn simulate<EXT>(
     vm_ptr: *mut evm_t,
     db: Db,
     block: ByteSliceView,

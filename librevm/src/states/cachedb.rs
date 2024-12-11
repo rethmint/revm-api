@@ -1,63 +1,105 @@
+use std::hash::Hash;
+
 use alloy_primitives::{ Address, Bytes, B256, U256 };
 use revm::db::AccountState;
-use revm::primitives::{ Account, AccountInfo, Bytecode, HashMap };
+use revm::precompile::bn128::add;
+use revm::primitives::{ Account, AccountInfo, BlockEnv, Bytecode, HashMap };
 use revm::{ Database, DatabaseCommit };
 
 use crate::error::{ BackendError, GoError };
 use crate::memory::{ U8SliceView, UnmanagedVector };
 
-use super::getter::Getter;
-use super::setter::{ Getter, Setter };
+use super::statedb::StateDB;
 use super::vtable::Db;
-
-pub struct StateDB<'r> {
-    pub db: &'r Db,
-}
-
-impl<'r> StateDB<'r> {
-    pub fn new(db: &'r Db) -> Self {
-        StateDB { db }
-    }
-}
 
 impl<'db> Database for StateDB<'db> {
     type Error = BackendError;
 
     #[doc = " Get basic account information."]
-    fn basic(&mut self, address: Address) -> Result<Option<AccountInfo>, Self::Error> {
-        let balance: U256 = self.get_balance(address).unwrap();
-        let nonce: U256 = self.get_nonce(address).unwrap();
-        let code_hash: U256 = self.get_code_hash(address).unwrap();
-        let code = self.get_code(address).unwrap();
-        Ok(
-            Some(AccountInfo {
-                balance,
-                nonce,
-                code_hash,
-                code: Bytecode::new_raw_checked(Bytes::copy_from_slice(&code)),
-            })
-        )
+    fn basic(&mut self, address: Address) -> Result<Option<AccountInfo>, BackendError> {
+        let mut error_msg = UnmanagedVector::default();
+        let mut output = UnmanagedVector::default();
+        let go_error: GoError = (self.db.vtable
+            .get_account)(
+                self.db.state,
+                U8SliceView::new(Some(address)),
+                &mut output as *mut UnmanagedVector,
+                &mut error_msg as *mut UnmanagedVector
+            )
+            .into();
+        let default = || format!("Failed to get account info from the db");
+        unsafe {
+            go_error.into_result(error_msg, default)?;
+        }
+        Ok(output)
     }
 
     #[doc = " Get account code by its hash."]
     fn code_by_hash(&mut self, code_hash: B256) -> Result<Bytecode, Self::Error> {
-        Err(BackendError::UnreachableCall)
+        let mut error_msg = UnmanagedVector::default();
+        let mut output = UnmanagedVector::default();
+        let go_error: GoError = (self.db.vtable
+            .get_code_by_hash)(
+                self.db.state,
+                U8SliceView::new(Some(code_hash)),
+                &mut output as *mut UnmanagedVector,
+                &mut error_msg as *mut UnmanagedVector
+            )
+            .into();
+        let default = || format!("Failed to get code from the db");
+        unsafe {
+            go_error.into_result(error_msg, default)?;
+        }
+        Ok(output)
     }
 
     #[doc = " Get storage value of address at index."]
     fn storage(&mut self, address: Address, index: U256) -> Result<U256, Self::Error> {
-        self.get_state(address, index)
+        let mut error_msg = UnmanagedVector::default();
+        let mut output = UnmanagedVector::default();
+        let go_error: GoError = (self.db.vtable
+            .get_storage)(
+                self.db.state,
+                U8SliceView::new(Some(address)),
+                U8SliceView::new(Some(index)),
+                &mut output as *mut UnmanagedVector,
+                &mut error_msg as *mut UnmanagedVector
+            )
+            .into();
+        let default = || format!("Failed to get storage from the db");
+        unsafe {
+            go_error.into_result(error_msg, default)?;
+        }
+        Ok(output)
     }
 
     #[doc = " Get block hash by block number."]
     fn block_hash(&mut self, number: u64) -> Result<B256, Self::Error> {
-        // TODO: UNSUPPORTED?
+        let mut error_msg = UnmanagedVector::default();
+        let mut output = UnmanagedVector::default();
+        let go_error: GoError = (self.db.vtable
+            .get_block_hash)(
+                self.db.state,
+                number,
+                &mut output as *mut UnmanagedVector,
+                &mut error_msg as *mut UnmanagedVector
+            )
+            .into();
+        let default = || format!("Failed to get block hash from the db");
+        unsafe {
+            go_error.into_result(error_msg, default)?;
+        }
+        Ok(output)
     }
 }
 
 impl<'a> DatabaseCommit for StateDB<'a> {
     #[doc = " Commit changes to the database."]
     fn commit(&mut self, changes: HashMap<Address, Account>) {
+        let changed_codes = vec![];
+        let changed_storages = vec![];
+        let changed_accounts = vec![];
+        let deleted_state = vec![];
         for (address, mut account) in changes {
             if !account.is_touched() {
                 continue;
@@ -85,5 +127,15 @@ impl<'a> DatabaseCommit for StateDB<'a> {
                 account.storage.into_iter().map(|(key, value)| (key, value.present_value()))
             );
         }
+        // commit by ffi call
+        let mut error_msg = UnmanagedVector::default();
+        let go_error: GoError = (self.db.vtable.commit)(
+            self.db.state,
+            U8SliceView::new(changed_codes),
+            U8SliceView::new(changed_storages),
+            U8SliceView::new(changed_accounts),
+            U8SliceView::new(deleted_state),
+            &mut error_msg as *mut UnmanagedVector
+        );
     }
 }

@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package evm.v1.transaction;
+
+message StorageKey {
+    bytes value = 1; // 32 bytes
+}
+
+message AccessListItem {
+    bytes address = 1; // 20 bytes
+    repeated StorageKey storage_keys = 2;
+}
+
+message Transaction {
+    bytes caller = 1; // 20 bytes
+    uint64 gas_limit = 2;
+    bytes gas_price = 3; // 32 bytes
+    uint64 nonce = 4;
+    bytes transact_to = 5; // 20 bytes
+    bytes value = 6; // 32 bytes
+    bytes data = 7;
+    bytes gas_priority_fee = 8; // 32 bytes
+    repeated AccessListItem access_list = 9;
+    repeated bytes blob_hashes = 10; // List of blob versioned hashes
+    bytes max_fee_per_blob_gas = 11; // 32 bytes
+    repeated bytes authorization_list = 12; // List of authorizations
+}

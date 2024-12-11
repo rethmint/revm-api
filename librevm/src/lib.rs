@@ -17,6 +17,9 @@ mod evm {
         pub mod result {
             include!(concat!(env!("OUT_DIR"), "/evm.v1.result.rs"));
         }
+        pub mod account {
+            include!(concat!(env!("OUT_DIR"), "/evm.v1.account.rs"));
+        }
     }
 }
 

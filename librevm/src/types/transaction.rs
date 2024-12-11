@@ -1,18 +1,19 @@
-use alloy_primitives::{ Address, Bytes, StorageKey, TxKind, U256 };
-use revm::primitives::{ AccessListItem, Authorization, TxEnv };
+use alloy_primitives::{ Address, Bytes, StorageKey, TxKind, B256, U256 };
+use prost::{ DecodeError, Message };
+use revm::primitives::{ AccessListItem, TxEnv };
 
-use crate::{ error::BackendError, v1::transaction::Transaction };
+use crate::{ memory::ByteSliceView, v1::transaction::Transaction };
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
-pub struct TransactionWrapper(Transaction);
+#[derive(Clone, Debug, PartialEq)]
+pub struct TransactionProto(Transaction);
 
-impl From<Transaction> for TransactionWrapper {
+impl From<Transaction> for TransactionProto {
     fn from(inner: Transaction) -> Self {
         Self(inner)
     }
 }
 
-impl TransactionWrapper {
+impl TransactionProto {
     pub fn new(inner: Transaction) -> Self {
         Self(inner)
     }
@@ -22,18 +23,15 @@ impl TransactionWrapper {
     }
 }
 
-impl TryFrom<TransactionWrapper> for TxEnv {
-    //TODO: make error for parsing
-    type Error = BackendError;
-
-    fn try_from(transaction: TransactionWrapper) -> Result<Self, Self::Error> {
+impl From<TransactionProto> for TxEnv {
+    fn from(transaction: TransactionProto) -> Self {
         let transaction = transaction.into_inner();
         let transact_to = Address::from_slice(&transaction.transact_to);
-        Ok(Self {
+        Self {
             chain_id: None,
             caller: Address::from_slice(&transaction.caller),
             gas_limit: transaction.gas_limit,
-            gas_price: U256::from_be_byte(transaction.gas_price),
+            gas_price: U256::from_be_slice(&transaction.gas_price),
             nonce: Some(transaction.nonce),
             transact_to: match transact_to {
                 Address::ZERO => TxKind::Create,
@@ -46,20 +44,28 @@ impl TryFrom<TransactionWrapper> for TxEnv {
                 .iter()
                 .map(|item| {
                     AccessListItem {
-                        address: Address(item.address),
+                        address: Address::from_slice(&item.address),
                         storage_keys: item.storage_keys
                             .iter()
-                            .map(|key| { StorageKey::from_slice(key) })
+                            .map(|key| { StorageKey::from_slice(&key.value) })
                             .collect(),
                     }
                 })
                 .collect(),
             blob_hashes: transaction.blob_hashes
                 .iter()
-                .map(|hash| { U256::from_be_slice(hash) })
+                .map(|hash| { B256::from_slice(hash) })
                 .collect(),
             max_fee_per_blob_gas: Some(U256::from_be_slice(&transaction.max_fee_per_blob_gas)),
             authorization_list: todo!(),
-        })
+        }
+    }
+}
+
+impl TryFrom<ByteSliceView> for TxEnv {
+    type Error = DecodeError;
+    fn try_from(value: ByteSliceView) -> Result<Self, Self::Error> {
+        let tx_bytes = value.read().unwrap();
+        Ok(TxEnv::from(TransactionProto::from(Transaction::decode(tx_bytes).unwrap())))
     }
 }

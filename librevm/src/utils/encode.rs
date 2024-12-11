@@ -1,5 +1,4 @@
-use alloy_primitives::Address;
-use revm::primitives::{ ExecutionResult, HaltReason, OutOfGasError, SuccessReason };
+use revm::primitives::ExecutionResult;
 
 pub fn build_flat_buffer(result: ExecutionResult) -> Vec<u8> {
     todo!()

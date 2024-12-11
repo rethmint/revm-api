@@ -1,5 +1,5 @@
-mod cachedb;
 mod statedb;
 mod vtable;
 
-pub use cachedb::*;
+pub use statedb::*;
+pub use vtable::*;

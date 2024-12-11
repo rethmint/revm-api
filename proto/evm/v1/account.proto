@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package evm.v1.account;
+
+message Account {
+  // Account balance.
+  bytes balance = 1;
+  // Account nonce.
+  uint64 nonce = 2;
+  // Code hash.
+  bytes code_hash = 3;
+}

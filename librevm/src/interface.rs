@@ -2,8 +2,8 @@ use crate::{
     compiler::{ register_handler, CompileWorker, ExternalContext, SledDB },
     error::{ init_tracer, set_error },
     memory::{ ByteSliceView, UnmanagedVector },
-    states::{ Db, GoCacheDB },
-    utils::{ build_flat_buffer, set_evm_env },
+    states::{ Db, StateDB },
+    utils::build_flat_buffer,
 };
 use alloy_primitives::B256;
 use once_cell::sync::OnceCell;
@@ -50,11 +50,11 @@ pub extern "C" fn free_compiler(compiler: *mut compiler_t) {
 #[repr(C)]
 pub struct evm_t {}
 
-pub fn to_evm<'a, EXT>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, EXT, GoCacheDB<'a>>> {
+pub fn to_evm<'a, EXT>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, EXT, StateDB<'a>>> {
     if ptr.is_null() {
         None
     } else {
-        let evm = unsafe { &mut *(ptr as *mut Evm<'a, EXT, GoCacheDB<'a>>) };
+        let evm = unsafe { &mut *(ptr as *mut Evm<'a, EXT, StateDB<'a>>) };
         Some(evm)
     }
 }
@@ -64,10 +64,10 @@ pub fn to_evm<'a, EXT>(ptr: *mut evm_t) -> Option<&'a mut Evm<'a, EXT, GoCacheDB
 #[no_mangle]
 pub extern "C" fn new_vm(default_spec_id: u8) -> *mut evm_t {
     let db = Db::default();
-    let go_storage = GoCacheDB::new(&db);
+    let state_db = StateDB::new(&db);
     let spec = SpecId::try_from_u8(default_spec_id).unwrap_or(SpecId::OSAKA);
     let builder = EvmBuilder::default();
-    let evm = builder.with_db(go_storage).with_spec_id(spec).build();
+    let evm = builder.with_db(state_db).with_spec_id(spec).build();
 
     let vm = Box::into_raw(Box::new(evm));
     vm as *mut evm_t
@@ -79,7 +79,7 @@ pub extern "C" fn new_vm_with_compiler(
     compiler: *mut compiler_t
 ) -> *mut evm_t {
     let db = Db::default();
-    let go_storage = GoCacheDB::new(&db);
+    let state_db = StateDB::new(&db);
     let spec = SpecId::try_from_u8(default_spec_id).unwrap_or(SpecId::OSAKA);
     let builder = EvmBuilder::default();
 
@@ -89,7 +89,7 @@ pub extern "C" fn new_vm_with_compiler(
         let compiler = unsafe { &mut *(compiler as *mut CompileWorker) };
         let ext = ExternalContext::new(compiler);
         builder
-            .with_db(go_storage)
+            .with_db(state_db)
             .with_spec_id(spec)
             .with_external_context::<ExternalContext>(ext)
             .append_handler_register(register_handler)
@@ -105,9 +105,9 @@ pub extern "C" fn free_vm(vm: *mut evm_t, aot: bool) {
     if !vm.is_null() {
         // this will free cache when it goes out of scope
         if aot {
-            let _ = unsafe { Box::from_raw(vm as *mut Evm<ExternalContext, GoCacheDB>) };
+            let _ = unsafe { Box::from_raw(vm as *mut Evm<ExternalContext, StateDB>) };
         } else {
-            let _ = unsafe { Box::from_raw(vm as *mut Evm<(), GoCacheDB>) };
+            let _ = unsafe { Box::from_raw(vm as *mut Evm<(), StateDB>) };
         }
     }
 }
@@ -162,10 +162,10 @@ fn execute<EXT>(
         }
     };
 
-    let go_storage = GoCacheDB::new(&db);
-    evm.context.evm.db = go_storage;
-
-    set_evm_env(evm, block, tx);
+    let statedb = StateDB::new(&db);
+    evm.context.evm.db = statedb;
+    evm.context.evm.inner.env.block = block.try_into().unwrap();
+    evm.context.evm.inner.env.tx = tx.try_into().unwrap();
 
     let result = evm.transact_commit();
     match result {
@@ -190,10 +190,11 @@ fn simulate<EXT>(
             panic!("Failed to get VM");
         }
     };
-    let go_storage = GoCacheDB::new(&db);
-    evm.context.evm.db = go_storage;
+    let state_db = StateDB::new(&db);
+    evm.context.evm.db = state_db;
+    evm.context.evm.inner.env.block = block.try_into().unwrap();
+    evm.context.evm.inner.env.tx = tx.try_into().unwrap();
 
-    set_evm_env(evm, block, tx);
     // transact without state commit
     let result = evm.transact();
     match result {

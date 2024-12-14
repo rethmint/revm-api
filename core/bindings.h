@@ -124,9 +124,74 @@ typedef struct {
 } U8SliceView;
 
 typedef struct {
-  int32_t (*read_db)(db_t*, U8SliceView, UnmanagedVector*, UnmanagedVector*);
-  int32_t (*write_db)(db_t*, U8SliceView, U8SliceView, UnmanagedVector*);
-  int32_t (*remove_db)(db_t*, U8SliceView, UnmanagedVector*);
+  /**
+   * Commits the state mutations into the configured data stores.
+   *
+   * # Parameters
+   * - `db_t`: A mutable pointer to the database.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where the codes will be stored.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where the storages will be stored.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where the accounts will be stored.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where the deleted accounts will be stored.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where any error message will be stored.
+   *
+   * # Returns
+   * - `i32`: Status code indicating success or failure.
+   */
+  int32_t (*commit)(db_t*, U8SliceView, U8SliceView, U8SliceView, U8SliceView, UnmanagedVector*);
+  /**
+   * Retrieves the account for a given address.
+   *
+   * # Parameters
+   * - `db_t`: A mutable pointer to the database.
+   * - `U8SliceView`: The address for which the account is being retrieved.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where the result will be stored.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where any error message will be stored.
+   *
+   * # Returns
+   * - `i32`: Status code indicating success or failure.
+   */
+  int32_t (*get_account)(db_t*, U8SliceView, UnmanagedVector*, UnmanagedVector*);
+  /**
+   * Retrieves the code by its hash.
+   *
+   * # Parameters
+   * - `db_t`: A mutable pointer to the database.
+   * - `U8SliceView`: The code hash for which the code is being retrieved.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where the result will be stored.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where any error message will be stored.
+   *
+   * # Returns
+   * - `i32`: Status code indicating success or failure.
+   */
+  int32_t (*get_code_by_hash)(db_t*, U8SliceView, UnmanagedVector*, UnmanagedVector*);
+  /**
+   * Retrieves the storage for a given address and key.
+   *
+   * # Parameters
+   * - `db_t`: A mutable pointer to the database.
+   * - `U8SliceView`: The address for which the storage is being retrieved.
+   * - `U8SliceView`: The key for which the storage is being retrieved.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where the result will be stored.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where any error message will be stored.
+   *
+   * # Returns
+   * - `i32`: Status code indicating success or failure.
+   */
+  int32_t (*get_storage)(db_t*, U8SliceView, U8SliceView, UnmanagedVector*, UnmanagedVector*);
+  /**
+   * Retrieves the block hash for a given block number.
+   *
+   * # Parameters
+   * - `db_t`: A mutable pointer to the database.
+   * - `u64`: The block number for which the block hash is being retrieved.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where the result will be stored.
+   * - `UnmanagedVector`: A mutable pointer to an unmanaged vector where any error message will be stored.
+   *
+   * # Returns
+   * - `i32`: Status code indicating success or failure.
+   */
+  int32_t (*get_block_hash)(db_t*, uint64_t, UnmanagedVector*, UnmanagedVector*);
 } Db_vtable;
 
 typedef struct {
@@ -163,23 +228,23 @@ UnmanagedVector execute_tx(evm_t *vm_ptr,
                            ByteSliceView tx,
                            UnmanagedVector *errmsg);
 
-evm_t *init_aot_vm(uint8_t default_spec_id, compiler_t *compiler);
+void free_compiler(compiler_t *compiler);
 
-compiler_t *init_compiler(uint64_t threshold);
+void free_vm(evm_t *vm, bool aot);
 
-evm_t *init_vm(uint8_t default_spec_id);
+compiler_t *new_compiler(uint64_t threshold);
 
 UnmanagedVector new_unmanaged_vector(bool nil, const uint8_t *ptr, size_t length);
 
-UnmanagedVector query_tx(evm_t *vm_ptr,
-                         bool aot,
-                         Db db,
-                         ByteSliceView block,
-                         ByteSliceView tx,
-                         UnmanagedVector *errmsg);
+evm_t *new_vm(uint8_t default_spec_id);
 
-void release_compiler(compiler_t *compiler);
+evm_t *new_vm_with_compiler(uint8_t default_spec_id, compiler_t *compiler);
 
-void release_vm(evm_t *vm, bool aot);
+UnmanagedVector simulate_tx(evm_t *vm_ptr,
+                            bool aot,
+                            Db db,
+                            ByteSliceView block,
+                            ByteSliceView tx,
+                            UnmanagedVector *errmsg);
 
 #endif /* __LIBREVMAPI__ */

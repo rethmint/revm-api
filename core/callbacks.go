@@ -7,14 +7,18 @@ package core
 #include "bindings.h"
 
 // typedefs for _cgo functions (db)
-typedef GoError (*read_db_fn)(db_t *ptr, U8SliceView key, UnmanagedVector *val, UnmanagedVector *errOut);
-typedef GoError (*write_db_fn)(db_t *ptr, U8SliceView key, U8SliceView val, UnmanagedVector *errOut);
-typedef GoError (*remove_db_fn)(db_t *ptr, U8SliceView key, UnmanagedVector *errOut);
-// and api
+typedef GoError (*commit_fn)(db_t *ptr, U8SliceView codes, U8SliceView storages, U8SliceView accounts, U8SliceView deletedAccounts, UnmanagedVector *errOut);
+typedef GoError (*get_account_fn)(db_t *ptr, U8SliceView address, UnmanagedVector *result, UnmanagedVector *errOut);
+typedef GoError (*get_code_by_hash_fn)(db_t *ptr, U8SliceView codeHash, UnmanagedVector *result, UnmanagedVector *errOut);
+typedef GoError (*get_storage_fn)(db_t *ptr, U8SliceView address, U8SliceView key, UnmanagedVector *result, UnmanagedVector *errOut);
+typedef GoError (*get_block_hash_fn)(db_t *ptr, uint64_t blockNumber, UnmanagedVector *result, UnmanagedVector *errOut);
+
 // forward declarations (db)
-GoError cGet_cgo(db_t *ptr, U8SliceView key, UnmanagedVector *val, UnmanagedVector *errOut);
-GoError cSet_cgo(db_t *ptr, U8SliceView key, U8SliceView val, UnmanagedVector *errOut);
-GoError cDelete_cgo(db_t *ptr, U8SliceView key, UnmanagedVector *errOut);
+GoError cCommit_cgo(db_t *ptr, U8SliceView codes, U8SliceView storages, U8SliceView accounts, U8SliceView deletedAccounts, UnmanagedVector *errOut);
+GoError cGetAccount_cgo(db_t *ptr, U8SliceView address, UnmanagedVector *result, UnmanagedVector *errOut);
+GoError cGetCodeByHash_cgo(db_t *ptr, U8SliceView codeHash, UnmanagedVector *result, UnmanagedVector *errOut);
+GoError cGetStorage_cgo(db_t *ptr, U8SliceView address, U8SliceView key, UnmanagedVector *result, UnmanagedVector *errOut);
+GoError cGetBlockHash_cgo(db_t *ptr, uint64_t blockNumber, UnmanagedVector *result, UnmanagedVector *errOut);
 */
 import "C"
 
@@ -23,7 +27,7 @@ import (
 	"runtime/debug"
 	"unsafe"
 
-	dbm "github.com/cosmos/cosmos-db"
+	"github.com/0xEyrie/revmc-ffi/state"
 )
 
 // Note: we have to include all exports in the same file (at least since they both import bindings.h),
@@ -47,46 +51,24 @@ type GasMeter interface {
 
 /****** DB ********/
 
-// KVStore copies a subset of types from cosmos-sdk
-// We may wish to make this more generic sometime in the future, but not now
-// https://github.com/cosmos/cosmos-sdk/blob/bef3689245bab591d7d169abd6bea52db97a70c7/store/types/store.go#L170
-type KVStore interface {
-	Get(key []byte) []byte
-	Set(key, value []byte)
-	Delete(key []byte)
-
-	// Iterator over a domain of keys in ascending order. End is exclusive.
-	// Start must be less than end, or the Iterator is invalid.
-	// Iterator must be closed by caller.
-	// To iterate over entire domain, use store.Iterator(nil, nil)
-	Iterator(start, end []byte) dbm.Iterator
-
-	// Iterator over a domain of keys in descending order. End is exclusive.
-	// Start must be less than end, or the Iterator is invalid.
-	// Iterator must be closed by caller.
-	ReverseIterator(start, end []byte) dbm.Iterator
-}
-
 var db_vtable = C.Db_vtable{
-	read_db:   (C.read_db_fn)(C.cGet_cgo),
-	write_db:  (C.write_db_fn)(C.cSet_cgo),
-	remove_db: (C.remove_db_fn)(C.cDelete_cgo),
+	commit:           (C.commit_fn)(C.cCommit_cgo),
+	get_account:      (C.get_account_fn)(C.cGetAccount_cgo),
+	get_code_by_hash: (C.get_code_by_hash_fn)(C.cGetAccount_cgo),
+	get_storage:      (C.get_storage_fn)(C.cGetStorage_cgo),
+	get_block_hash:   (C.get_block_hash_fn)(C.cGetBlockHash_cgo),
 }
 
 type DBState struct {
-	Store KVStore
-	// CallID is used to lookup the proper frame for iterators associated with this contract call (iterator.go)
-	CallID uint64
+	State state.StateDB
 }
 
 // use this to create C.Db in two steps, so the pointer lives as long as the calling stack
 //
-//	state := buildDBState(kv, callID)
-//	db := buildDB(&state, &gasMeter)
 //	// then pass db into some FFI function
-func buildDBState(kv KVStore) DBState {
+func buildDBState(state state.StateDB) DBState {
 	return DBState{
-		Store: kv,
+		State: state,
 	}
 }
 
@@ -99,67 +81,111 @@ func buildDB(state *DBState) C.Db {
 	}
 }
 
-//export cGet
-func cGet(ptr *C.db_t, key C.U8SliceView, val *C.UnmanagedVector, errOut *C.UnmanagedVector) (ret C.GoError) {
+//export cCommit
+func cCommit(ptr *C.db_t, codes C.U8SliceView, storages C.U8SliceView, accounts C.U8SliceView, deletedAccounts C.U8SliceView, errOut *C.UnmanagedVector) (ret C.GoError) {
 	defer recoverPanic(&ret)
 
-	if ptr == nil || val == nil || errOut == nil {
+	if ptr == nil || errOut == nil {
 		// we received an invalid pointer
 		return C.GoError_BadArgument
 	}
-	if !(*val).is_none || !(*errOut).is_none {
+	if !(*errOut).is_none {
 		panic("Got a non-none UnmanagedVector we're about to override. This is a bug because someone has to drop the old one.")
 	}
 
-	kv := *(*KVStore)(unsafe.Pointer(ptr))
-	k := copyU8Slice(key)
+	statedb := *(*state.StateDB)(unsafe.Pointer(ptr))
+	v0 := copyU8Slice(codes)
+	v1 := copyU8Slice(storages)
+	v2 := copyU8Slice(accounts)
+	v3 := copyU8Slice(deletedAccounts)
 
-	v := kv.Get(k)
+	statedb.Commit(v0, v1, v2, v3)
+
+	return C.GoError_None
+}
+
+//export cGetAccount
+func cGetAccount(ptr *C.db_t, address C.U8SliceView, account *C.UnmanagedVector, errOut *C.UnmanagedVector) (ret C.GoError) {
+	defer recoverPanic(&ret)
+
+	if ptr == nil || account == nil || errOut == nil {
+		// we received an invalid pointer
+		return C.GoError_BadArgument
+	}
+	if !(*account).is_none || !(*errOut).is_none {
+		panic("Got a non-none UnmanagedVector we're about to override. This is a bug because someone has to drop the old one.")
+	}
+
+	statedb := *(*state.StateDB)(unsafe.Pointer(ptr))
+	addr := copyU8Slice(address)
+	v := statedb.GetAccount(addr)
 
 	// v will equal nil when the key is missing
 	// https://github.com/cosmos/cosmos-sdk/blob/1083fa948e347135861f88e07ec76b0314296832/store/types/store.go#L174
-	*val = newUnmanagedVector(v)
+	*account = newUnmanagedVector(v)
 
 	return C.GoError_None
 }
 
-//export cSet
-func cSet(ptr *C.db_t, key C.U8SliceView, val C.U8SliceView, errOut *C.UnmanagedVector) (ret C.GoError) {
+//export cGetCodeByHash
+func cGetCodeByHash(ptr *C.db_t, codeHash C.U8SliceView, code *C.UnmanagedVector, errOut *C.UnmanagedVector) (ret C.GoError) {
 	defer recoverPanic(&ret)
 
-	if ptr == nil || errOut == nil {
+	if ptr == nil || code == nil || errOut == nil {
 		// we received an invalid pointer
 		return C.GoError_BadArgument
 	}
-	if !(*errOut).is_none {
+	if !(*code).is_none || !(*errOut).is_none {
 		panic("Got a non-none UnmanagedVector we're about to override. This is a bug because someone has to drop the old one.")
 	}
 
-	kv := *(*KVStore)(unsafe.Pointer(ptr))
-	k := copyU8Slice(key)
-	v := copyU8Slice(val)
+	statedb := *(*state.StateDB)(unsafe.Pointer(ptr))
+	k := copyU8Slice(codeHash)
+	v := statedb.GetCodeByHash(k)
 
-	kv.Set(k, v)
+	*code = newUnmanagedVector(v)
 
 	return C.GoError_None
 }
 
-//export cDelete
-func cDelete(ptr *C.db_t, key C.U8SliceView, errOut *C.UnmanagedVector) (ret C.GoError) {
+//export cGetStorage
+func cGetStorage(ptr *C.db_t, address C.U8SliceView, storageKey C.U8SliceView, storageValue *C.UnmanagedVector, errOut *C.UnmanagedVector) (ret C.GoError) {
 	defer recoverPanic(&ret)
 
-	if ptr == nil || errOut == nil {
+	if ptr == nil || storageValue == nil || errOut == nil {
 		// we received an invalid pointer
 		return C.GoError_BadArgument
 	}
-	if !(*errOut).is_none {
+	if !(*storageValue).is_none || !(*errOut).is_none {
 		panic("Got a non-none UnmanagedVector we're about to override. This is a bug because someone has to drop the old one.")
 	}
 
-	kv := *(*KVStore)(unsafe.Pointer(ptr))
-	k := copyU8Slice(key)
+	statedb := *(*state.StateDB)(unsafe.Pointer(ptr))
+	addr := copyU8Slice(address)
+	sk := copyU8Slice(storageKey)
+	v := statedb.GetStorage(addr, sk)
 
-	kv.Delete(k)
+	*storageValue = newUnmanagedVector(v)
+
+	return C.GoError_None
+}
+
+//export cGetBlockHash
+func cGetBlockHash(ptr *C.db_t, blockNumber C.uint64_t, blockHash *C.UnmanagedVector, errOut *C.UnmanagedVector) (ret C.GoError) {
+	defer recoverPanic(&ret)
+
+	if ptr == nil || blockHash == nil || errOut == nil {
+		// we received an invalid pointer
+		return C.GoError_BadArgument
+	}
+	if !(*blockHash).is_none || !(*errOut).is_none {
+		panic("Got a non-none UnmanagedVector we're about to override. This is a bug because someone has to drop the old one.")
+	}
+
+	statedb := *(*state.StateDB)(unsafe.Pointer(ptr))
+	bh := statedb.GetBlockHash(uint64(blockNumber))
+
+	*blockHash = newUnmanagedVector(bh)
 
 	return C.GoError_None
 }

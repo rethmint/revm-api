@@ -5,19 +5,27 @@ package core
 #include <stdio.h>
 
 // imports (db)
-GoError cGet(db_t *ptr, U8SliceView key, UnmanagedVector *val, UnmanagedVector *errOut);
-GoError cSet(db_t *ptr, U8SliceView key, U8SliceView val, UnmanagedVector *errOut);
-GoError cDelete(db_t *ptr, U8SliceView key, UnmanagedVector *errOut);
+GoError cCommit(db_t *ptr, U8SliceView codes, U8SliceView storages, U8SliceView accounts, U8SliceView deletedAccounts, UnmanagedVector *errOut);
+GoError cGetAccount(db_t *ptr, U8SliceView address, UnmanagedVector *result, UnmanagedVector *errOut);
+GoError cGetCodeByHash(db_t *ptr, U8SliceView codeHash, UnmanagedVector *result, UnmanagedVector *errOut);
+GoError cGetStorage(db_t *ptr, U8SliceView address, U8SliceView key, UnmanagedVector *result, UnmanagedVector *errOut);
+GoError cGetBlockHash(db_t *ptr, uint64_t blockNumber, UnmanagedVector *result, UnmanagedVector *errOut);
 
 // Gateway functions (db)
-GoError cGet_cgo(db_t *ptr, U8SliceView key, UnmanagedVector *val, UnmanagedVector *errOut) {
-	return cGet(ptr, key, val, errOut);
+GoError cCommit_cgo(db_t *ptr, U8SliceView codes, U8SliceView storages, U8SliceView accounts, U8SliceView deletedAccounts, UnmanagedVector *errOut) {
+	return cCommit(ptr, codes, storages, accounts, deletedAccounts, errOut);
 }
-GoError cSet_cgo(db_t *ptr, U8SliceView key, U8SliceView val, UnmanagedVector *errOut) {
-	return cSet(ptr, key, val, errOut);
+GoError cGetAccount_cgo(db_t *ptr, U8SliceView address, UnmanagedVector *result, UnmanagedVector *errOut) {
+	return cGetAccount(ptr, address, result, errOut);
 }
-GoError cDelete_cgo(db_t *ptr, U8SliceView key, UnmanagedVector *errOut) {
-	return cDelete(ptr, key, errOut);
+GoError cGetCodeByHash_cgo(db_t *ptr, U8SliceView codeHash, UnmanagedVector *result, UnmanagedVector *errOut) {
+	return cGetCodeByHash(ptr, codeHash, result, errOut);
+}
+GoError cGetStorage_cgo(db_t *ptr, U8SliceView address, U8SliceView key, UnmanagedVector *result, UnmanagedVector *errOut) {
+	return cGetStorage(ptr, address, key, result, errOut);
+}
+GoError cGetBlockHash_cgo(db_t *ptr, uint64_t blockNumber, UnmanagedVector *result, UnmanagedVector *errOut) {
+	return cGetBlockHash(ptr, blockNumber, result, errOut);
 }
 */
 import "C"

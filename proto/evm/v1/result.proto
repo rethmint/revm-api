@@ -1,6 +1,7 @@
 syntax = "proto3";
 
-package evm.v1.result;
+option go_package = "../types";
+package evm.v1;
 
 enum HaltReasonEnum {
   HALT_REASON_ENUM_UNSPECIFIED_UNSPECIFIED = 0;

@@ -3,7 +3,6 @@ use crate::{
     error::{ init_tracer, set_error },
     memory::{ ByteSliceView, UnmanagedVector },
     states::{ Db, StateDB },
-    utils::build_flat_buffer,
 };
 use alloy_primitives::B256;
 use once_cell::sync::OnceCell;
@@ -163,13 +162,14 @@ fn execute<EXT>(
     };
 
     let statedb = StateDB::new(&db);
+    // TODO: check is it safe way to set evm
     evm.context.evm.db = statedb;
     evm.context.evm.inner.env.block = block.try_into().unwrap();
     evm.context.evm.inner.env.tx = tx.try_into().unwrap();
 
     let result = evm.transact_commit();
     match result {
-        Ok(res) => build_flat_buffer(res),
+        Ok(res) => todo!(),
         Err(err) => {
             set_error(err, errmsg);
             Vec::new()
@@ -191,14 +191,15 @@ fn simulate<EXT>(
         }
     };
     let state_db = StateDB::new(&db);
+    // TODO: check is it safe way to set evm
     evm.context.evm.db = state_db;
     evm.context.evm.inner.env.block = block.try_into().unwrap();
     evm.context.evm.inner.env.tx = tx.try_into().unwrap();
 
-    // transact without state commit
-    let result = evm.transact();
+    // transact witout verification
+    let result = evm.transact_preverified();
     match result {
-        Ok(res) => build_flat_buffer(res.result),
+        Ok(res) => todo!(),
         Err(err) => {
             set_error(err, errmsg);
             Vec::new()

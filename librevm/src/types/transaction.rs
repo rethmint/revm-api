@@ -1,8 +1,16 @@
 use alloy_primitives::{ Address, Bytes, StorageKey, TxKind, B256, U256 };
 use prost::{ DecodeError, Message };
-use revm::primitives::{ AccessListItem, TxEnv };
+use revm::primitives::{
+    AccessListItem,
+    Authorization,
+    AuthorizationList,
+    RecoveredAuthority,
+    RecoveredAuthorization,
+    SignedAuthorization,
+    TxEnv,
+};
 
-use crate::{ memory::ByteSliceView, v1::transaction::Transaction };
+use crate::{ memory::ByteSliceView, v1::types::{ authorization_list, Transaction } };
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TransactionProto(Transaction);
@@ -57,7 +65,74 @@ impl From<TransactionProto> for TxEnv {
                 .map(|hash| { B256::from_slice(hash) })
                 .collect(),
             max_fee_per_blob_gas: Some(U256::from_be_slice(&transaction.max_fee_per_blob_gas)),
-            authorization_list: todo!(),
+            authorization_list: if let Some(list) = transaction.authorization_list {
+                match list.authorization_list {
+                    Some(al) =>
+                        match al {
+                            authorization_list::AuthorizationList::Signed(
+                                signed_authorization_list,
+                            ) =>
+                                Some(
+                                    AuthorizationList::Signed(
+                                        signed_authorization_list.signed
+                                            .iter()
+                                            .map(|sa| {
+                                                let inner = sa.inner.clone().unwrap();
+                                                SignedAuthorization::new_unchecked(
+                                                    Authorization {
+                                                        chain_id: inner.chain_id,
+                                                        address: Address::from_slice(
+                                                            &inner.address
+                                                        ),
+                                                        nonce: inner.chain_id,
+                                                    },
+                                                    u8::from_be_bytes(
+                                                        sa.y_parity.clone().try_into().unwrap()
+                                                    ),
+                                                    U256::from_be_slice(&sa.r),
+                                                    U256::from_be_slice(&sa.s)
+                                                )
+                                            })
+                                            .collect()
+                                    )
+                                ),
+                            authorization_list::AuthorizationList::Recovered(
+                                recovered_authorization_list,
+                            ) =>
+                                Some(
+                                    AuthorizationList::Recovered(
+                                        recovered_authorization_list.recovered
+                                            .iter()
+                                            .map(|ra| {
+                                                let inner = ra.inner.clone().unwrap();
+                                                let authority = if ra.authority.is_empty() {
+                                                    RecoveredAuthority::Invalid
+                                                } else {
+                                                    RecoveredAuthority::Valid(
+                                                        Address::from_slice(&ra.authority)
+                                                    )
+                                                };
+                                                RecoveredAuthorization::new_unchecked(
+                                                    Authorization {
+                                                        chain_id: inner.chain_id,
+                                                        address: Address::from_slice(
+                                                            &inner.address
+                                                        ),
+                                                        nonce: inner.nonce,
+                                                    },
+                                                    authority
+                                                )
+                                            })
+                                            .collect()
+                                    )
+                                ),
+                        }
+
+                    None => None,
+                }
+            } else {
+                None
+            },
         }
     }
 }

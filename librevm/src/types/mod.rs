@@ -1,7 +1,6 @@
 mod block;
 mod transaction;
 mod account;
-mod result;
+mod state;
 
-
-
+pub use state::*;

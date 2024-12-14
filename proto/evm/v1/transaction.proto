@@ -1,6 +1,7 @@
 syntax = "proto3";
 
-package evm.v1.transaction;
+option go_package = "../types";
+package evm.v1;
 
 message StorageKey {
     bytes value = 1; // 32 bytes
@@ -23,5 +24,39 @@ message Transaction {
     repeated AccessListItem access_list = 9;
     repeated bytes blob_hashes = 10; // List of blob versioned hashes
     bytes max_fee_per_blob_gas = 11; // 32 bytes
-    repeated bytes authorization_list = 12; // List of authorizations
+    optional AuthorizationList authorization_list = 12; // List of authorizations
+}
+
+message SignedAuthorizationList {
+    repeated SignedAuthorization signed = 1;
+}
+
+message SignedAuthorization {
+    Authorization inner = 1;
+    bytes y_parity = 2; // 1 bytes
+    bytes r = 3;
+    bytes s = 4;
+}
+
+message RecoveredAuthorizationList {
+    repeated RecoveredAuthorization recovered = 1;
+}
+
+message RecoveredAuthorization {
+    Authorization inner = 1;
+    bytes authority = 2;/// The result of the authority recovery process, which can either be a valid address or indicate a failure.
+}
+
+message AuthorizationList {
+    // Only one of the two arrays should be present
+    oneof authorization_list{
+        SignedAuthorizationList signed = 1;
+        RecoveredAuthorizationList recovered = 2;
+    }
+}
+
+message Authorization {
+    uint64 chain_id = 1;
+    bytes address = 2; // 20 bytes
+    uint64 nonce = 3;
 }

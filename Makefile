@@ -36,7 +36,7 @@ fmt:
 	cargo fmt
 
 update-bindings:
-	cp librevm/bindings.h api
+	cp librevm/bindings.h core
 
 test:
 	make build-rust-debug
@@ -85,8 +85,8 @@ clean:
 release-build-linux:
 	docker run --rm -v $(shell pwd):/code/ $(BUILDERS_PREFIX)-debian build_gnu_x86_64.sh
 	docker run --rm -v $(shell pwd):/code/ $(BUILDERS_PREFIX)-debian build_gnu_aarch64.sh
-	cp artifacts/librevmapi.x86_64.so api
-	cp artifacts/librevmapi.aarch64.so api
+	cp artifacts/librevmapi.x86_64.so core
+	cp artifacts/librevmapi.aarch64.so core
 	make update-bindings
 
 # Creates a release build in a containerized build environment of the shared library for macOS (.dylib)
@@ -96,7 +96,7 @@ release-build-macos:
 	docker run --rm -u $(USER_ID):$(USER_GROUP) \
 		-v $(shell pwd):/code/ \
 		$(BUILDERS_PREFIX)-cross build_macos.sh
-	cp artifacts/librevmapi.dylib api
+	cp artifacts/librevmapi.dylib core
 	make update-bindings
 
 release-build:

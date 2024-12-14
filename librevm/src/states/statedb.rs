@@ -1,10 +1,10 @@
-
 use alloy_primitives::{ Address, BlockHash, Bytes, B256, U256 };
 use revm::primitives::{ Account, AccountInfo, Bytecode, HashMap };
 use revm::{ Database, DatabaseCommit };
 
 use crate::error::{ BackendError, GoError };
 use crate::memory::{ U8SliceView, UnmanagedVector };
+use crate::types::{ DeletedAccounts, UpdatedAccounts, UpdatedCodes, UpdatedStorages };
 
 use super::vtable::Db;
 
@@ -33,9 +33,10 @@ impl<'db> Database for StateDB<'db> {
                 &mut error_msg as *mut UnmanagedVector
             )
             .into();
-        let default = || format!("Failed to get account info from the db");
         unsafe {
-            go_error.into_result(error_msg, default)?;
+            go_error.into_result(error_msg, ||
+                "Failed to get account info from the db".to_owned()
+            )?;
         }
         let account_info: AccountInfo = output.try_into().unwrap();
         Ok(Some(account_info))
@@ -53,9 +54,8 @@ impl<'db> Database for StateDB<'db> {
                 &mut error_msg as *mut UnmanagedVector
             )
             .into();
-        let default = || format!("Failed to get code from the db");
         unsafe {
-            go_error.into_result(error_msg, default)?;
+            go_error.into_result(error_msg, || "Failed to get code from the db".to_owned())?;
         }
         let bytecode_bytes = output.consume().unwrap();
         let bytecode = Bytecode::new_raw(Bytes::from(bytecode_bytes));
@@ -75,9 +75,8 @@ impl<'db> Database for StateDB<'db> {
                 &mut error_msg as *mut UnmanagedVector
             )
             .into();
-        let default = || format!("Failed to get storage from the db");
         unsafe {
-            go_error.into_result(error_msg, default)?;
+            go_error.into_result(error_msg, || "Failed to get storage from the db".to_owned())?;
         }
         let value_bytes = output.consume().unwrap();
         let value = U256::from_be_slice(value_bytes.as_slice());
@@ -96,9 +95,9 @@ impl<'db> Database for StateDB<'db> {
                 &mut error_msg as *mut UnmanagedVector
             )
             .into();
-        let default = || format!("Failed to get block hash from the db");
+
         unsafe {
-            go_error.into_result(error_msg, default)?;
+            go_error.into_result(error_msg, || "Failed to get block hash from the db".to_owned())?;
         }
 
         let block_hash = BlockHash::from_slice(&output.consume().unwrap());
@@ -109,49 +108,58 @@ impl<'db> Database for StateDB<'db> {
 impl<'a> DatabaseCommit for StateDB<'a> {
     #[doc = " Commit changes to the database."]
     fn commit(&mut self, changes: HashMap<Address, Account>) {
-        todo!();
-        // let changed_codes = vec![];
-        // let changed_storages = vec![];
-        // let changed_accounts = vec![];
-        // let deleted_state = vec![];
-        // for (address, mut account) in changes {
-        //     if !account.is_touched() {
-        //         continue;
-        //     }
-        //     if account.is_selfdestructed() {
-        //         self.self_destruct(address);
-        //         continue;
-        //     }
-        //     let is_newly_created = account.is_created();
-        //     self.insert_contract(&mut account.info);
+        let mut updated_codes: UpdatedCodes = HashMap::new();
+        let mut updated_storages: UpdatedStorages = HashMap::new();
+        let mut updated_accounts: UpdatedAccounts = HashMap::new();
+        let mut deleted_accounts: DeletedAccounts = Vec::new();
 
-        //     let db_account = self.accounts.entry(address).or_default();
-        //     db_account.info = account.info;
+        for (address, account) in changes {
+            if !account.is_touched() {
+                continue;
+            }
+            if account.is_selfdestructed() {
+                // Update Deleted Accounts
+                deleted_accounts.push(address);
+                continue;
+            }
+            let is_newly_created = account.is_created();
+            // Update Codes
+            if is_newly_created && !account.info.is_empty_code_hash() {
+                updated_codes.insert(
+                    account.info.code_hash,
+                    account.info.code.clone().unwrap().original_byte_slice().to_vec()
+                );
+            }
 
-        //     db_account.account_state = if is_newly_created {
-        //         db_account.storage.clear();
-        //         AccountState::StorageCleared
-        //     } else if db_account.account_state.is_storage_cleared() {
-        //         // Preserve old account state if it already exists
-        //         AccountState::StorageCleared
-        //     } else {
-        //         AccountState::Touched
-        //     };
-        //     db_account.storage.extend(
-        //         account.storage.into_iter().map(|(key, value)| (key, value.present_value()))
-        //     );
-        // }
-        // // commit by ffi call
-        // let mut error_msg = UnmanagedVector::default();
-        // let go_error: GoError = (self.db.vtable
-        //     .commit)(
-        //         self.db.state,
-        //         U8SliceView::new(changed_codes),
-        //         U8SliceView::new(changed_storages),
-        //         U8SliceView::new(changed_accounts),
-        //         U8SliceView::new(deleted_state),
-        //         &mut error_msg as *mut UnmanagedVector
-        //     )
-        //     .into();
+            // Update Accounts
+            updated_accounts.insert(address, account.clone().info.copy_without_code());
+
+            // Update Storages
+            let mut updated_storages_by_address = HashMap::new();
+            for (key, evm_storage_slot) in account.storage {
+                if evm_storage_slot.original_value != evm_storage_slot.present_value {
+                    updated_storages_by_address.insert(key, evm_storage_slot.present_value);
+                }
+            }
+            updated_storages.insert(address, updated_storages_by_address);
+        }
+        // Commited by ffi call in state database
+        let mut error_msg = UnmanagedVector::default();
+        let go_error: GoError = (self.db.vtable
+            .commit)(
+                self.db.state,
+                updated_codes.try_into().unwrap(),
+                updated_storages.try_into().unwrap(),
+                updated_accounts.try_into().unwrap(),
+                deleted_accounts.try_into().unwrap(),
+                &mut error_msg as *mut UnmanagedVector
+            )
+            .into();
+
+        unsafe {
+            let _ = go_error.into_result(error_msg, ||
+                "Failed to commit changes in the state db".to_owned()
+            );
+        }
     }
 }

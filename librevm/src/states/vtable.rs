@@ -113,20 +113,62 @@ pub struct Db {
     pub vtable: Db_vtable,
 }
 
+#[allow(unreachable_code)]
 impl Default for Db {
     fn default() -> Self {
         // Initialize a null pointer for the state field (no state by default)
-        let state = std::ptr::null_mut::<db_t>();
+        let _state = std::ptr::null_mut::<db_t>();
 
         // Initialize the vtable with default no-op functions (unreachable functions)
-        let vtable = Db_vtable {
-            commit: todo!(),
-            get_account: todo!(),
-            get_code_by_hash: todo!(),
-            get_storage: todo!(),
-            get_block_hash: todo!(),
+        let _vtable = Db_vtable {
+            commit: default_write_db,
+            get_account: default_read_db,
+            get_code_by_hash: default_read_db,
+            get_storage: default_read_db2,
+            get_block_hash: default_read_db3,
         };
 
-        Db { state, vtable }
+        Db { state: _state, vtable: _vtable }
     }
+}
+
+extern "C" fn default_write_db(
+    _: *mut db_t,
+    _: U8SliceView,
+    _: U8SliceView,
+    _: U8SliceView,
+    _: U8SliceView,
+    _: *mut UnmanagedVector
+) -> i32 {
+    panic!("Default write_db called");
+}
+
+extern "C" fn default_read_db(
+    _: *mut db_t,
+    _: U8SliceView,
+    _: *mut UnmanagedVector,
+    _: *mut UnmanagedVector
+) -> i32 {
+    panic!("Default read_db called");
+
+}
+
+extern "C" fn default_read_db2(
+    _: *mut db_t,
+    _: U8SliceView,
+    _: U8SliceView,
+    _: *mut UnmanagedVector,
+    _: *mut UnmanagedVector
+) -> i32 {
+    panic!("Default read_db called");
+
+}
+
+extern "C" fn default_read_db3(
+    _: *mut db_t,
+    _: u64,
+    _: *mut UnmanagedVector,
+    _: *mut UnmanagedVector
+) -> i32 {
+    panic!("Default read_db called");
 }

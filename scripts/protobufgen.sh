@@ -1,13 +1,14 @@
-#!/usr/bin/env bash
-set -e
-echo "Generating gogo proto code"
+#!/bin/bash
 
+export PATH="$PATH:$(go env GOPATH)/bin"
 cd proto
-proto_dirs=$(find ./ev, -path -prune -o -name '*.proto' -print0 | xargs -0 -n1 dirname | sort | uniq)
-for dir in $proto_dirs; do
-  for file in $(find "${dir}" -maxdepth 1 -name '*.proto'); do
-    protoc -I . -I "$GOPATH/src" --gogo_out=plugins=grpc:. "${file}"
-  done
-done
-cd ..
+PROTO_SRC_DIR="$(pwd)/evm/v1"
+OUT_DIR="$(pwd)/../types"
 
+mkdir -p $OUT_DIR
+
+for proto_file in $PROTO_SRC_DIR/*.proto; do
+  protoc -I=$PROTO_SRC_DIR --go_out=$OUT_DIR $proto_file
+done
+
+echo "Protobuf files generated in $OUT_DIR"

@@ -1,6 +1,7 @@
 syntax = "proto3";
 
-package evm.v1.block;
+option go_package = "../types";
+package evm.v1;
 
 message Block {
     bytes number = 1;
